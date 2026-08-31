@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=2.4";
+import { getPRNG } from "./utils.js?v=2.5";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -151,18 +151,15 @@ function recalculateLayout() {
 
     ctx.font = `${currentFontSize}px "${currentFont}"`;
     
-    // Notebook Layout matching reference photograph:
-    // Left vertical margin line at 85px. Text starts at 95px.
-    // Left Page (odd) text ends at 710px (leaving 90px empty space before crease).
-    // Right Page (even) text ends at 720px (leaving 80px empty space before outer right edge).
-    const isLeftPage = pageNumber % 2 === 1;
-    const leftMargin = 85;
-    const rightMarginDefault = isLeftPage ? 710 : 720;
+    // Identical symmetrical 15px gap margins on both Left and Right pages:
+    // Left edge gap: 15px (red line at 15px). Red line to text gap: 15px (text starts at 30px). Right edge gap: 15px (785px limit).
+    const leftMargin = 15;
+    const rightMargin = 785;
     
     const words = pageText.split(/(\s+)/); // Keep whitespace chunks as words
     const layout = [];
     let lineIndex = 0;
-    let cursorX = leftMargin + 10; // 95px starting text position
+    let cursorX = leftMargin + 15; // 30px starting text position
     
     const maxLines = Math.floor((VIRTUAL_HEIGHT - config.topMargin - config.bottomMargin) / config.lineSpacing);
     let isFull = false;
@@ -177,7 +174,7 @@ function recalculateLayout() {
         if (word.includes('\n')) {
             const newlines = word.split('\n').length - 1;
             lineIndex += newlines;
-            cursorX = leftMargin + 10;
+            cursorX = leftMargin + 15;
             
             if (lineIndex >= maxLines) {
                 isFull = true;
@@ -188,9 +185,6 @@ function recalculateLayout() {
             continue;
         }
 
-        // On line 0, restrict right limit to 550px to stay clear of top-right PAGE/DATE card
-        const currentRightMargin = (lineIndex === 0) ? 550 : rightMarginDefault;
-
         // Measure word width - adjusting for space character constraints
         let wordWidth = 0;
         for (let i = 0; i < word.length; i++) {
@@ -199,9 +193,9 @@ function recalculateLayout() {
             wordWidth += chW;
         }
         
-        // Wrap line if word exceeds current line's right margin
-        if (!/^\s+$/.test(word) && cursorX + wordWidth > currentRightMargin) {
-            cursorX = leftMargin + 10;
+        // Wrap line if word exceeds right margin limit (785px)
+        if (!/^\s+$/.test(word) && cursorX + wordWidth > rightMargin) {
+            cursorX = leftMargin + 15;
             lineIndex++;
         }
 
@@ -313,8 +307,8 @@ function drawPage() {
         ctx.stroke();
     }
 
-    // 2. Draw Left Margin Line (85px from left edge)
-    const leftMarginVal = 85;
+    // 2. Draw Left Margin Line
+    const leftMarginVal = 15;
     ctx.strokeStyle = "rgba(225, 95, 95, 0.65)"; // Soft margin red line
     ctx.lineWidth = 1.5;
     ctx.beginPath();
@@ -322,31 +316,17 @@ function drawPage() {
     ctx.lineTo(leftMarginVal, VIRTUAL_HEIGHT);
     ctx.stroke();
 
-    // 3. Draw Header Box (Double-row PAGE & DATE box in top-right)
+    // 3. Draw Header Lines/Boxes (Page & Date indicators in top-right header space)
     ctx.fillStyle = "#fdf6e6"; // Solid paper color mask
-    ctx.fillRect(VIRTUAL_WIDTH - 220, 15, 180, 46);
+    ctx.fillRect(VIRTUAL_WIDTH - 200, 5, 185, 22);
     
     ctx.strokeStyle = "rgba(166, 196, 240, 0.55)";
     ctx.lineWidth = 1;
-    ctx.strokeRect(VIRTUAL_WIDTH - 220, 15, 180, 46);
+    ctx.strokeRect(VIRTUAL_WIDTH - 200, 5, 185, 22);
     
-    ctx.font = "11px 'Inter', sans-serif";
-    ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
-    ctx.fillText("PAGE:", VIRTUAL_WIDTH - 208, 33);
-    
-    ctx.font = "13px 'Inter', sans-serif";
-    ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
-    ctx.fillText(pageNumber.toString(), VIRTUAL_WIDTH - 160, 33);
-    
-    ctx.beginPath();
-    ctx.moveTo(VIRTUAL_WIDTH - 220, 39);
-    ctx.lineTo(VIRTUAL_WIDTH - 40, 39);
-    ctx.stroke();
-    
-    ctx.font = "11px 'Inter', sans-serif";
-    ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
-    ctx.fillText("DATE:", VIRTUAL_WIDTH - 208, 53);
-    ctx.fillText("___/___/___", VIRTUAL_WIDTH - 165, 51);
+    ctx.font = "10px 'Inter', sans-serif";
+    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+    ctx.fillText(`PAGE: ${pageNumber}   DATE: ___/___/___`, VIRTUAL_WIDTH - 192, 19);
 
     // 4. Draw Handwritten Text Characters
     ctx.font = `${currentFontSize}px "${currentFont}"`;
@@ -417,10 +397,9 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     const fontSize = options.fontSize || currentFontSize;
     const jitterLevel = options.jitterLevel !== undefined ? options.jitterLevel : currentJitterLevel;
     
-    // Notebook Layout matching reference photograph:
-    const isLeftPage = pageNum % 2 === 1;
-    const leftMargin = 85;
-    const rightMarginDefault = isLeftPage ? 710 : 720;
+    // Identical symmetrical 15px gap margins on both Left and Right pages:
+    const leftMargin = 15;
+    const rightMargin = 785;
     
     // 1. Draw Ruled Lines
     staticCtx.strokeStyle = "rgba(166, 196, 240, 0.45)";
@@ -435,7 +414,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
         staticCtx.stroke();
     }
 
-    // 2. Draw Left Margin Line (85px from left edge)
+    // 2. Draw Left Margin Line
     staticCtx.strokeStyle = "rgba(225, 95, 95, 0.65)";
     staticCtx.lineWidth = 1.5;
     staticCtx.beginPath();
@@ -443,31 +422,17 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     staticCtx.lineTo(leftMargin, VIRTUAL_HEIGHT);
     staticCtx.stroke();
 
-    // 3. Draw Header Box (Double-row PAGE & DATE box in top-right)
+    // 3. Draw Header Box (in top header space above ruled lines)
     staticCtx.fillStyle = "#fdf6e6"; // Solid paper color mask
-    staticCtx.fillRect(VIRTUAL_WIDTH - 220, 15, 180, 46);
+    staticCtx.fillRect(VIRTUAL_WIDTH - 200, 5, 185, 22);
     
     staticCtx.strokeStyle = "rgba(166, 196, 240, 0.55)";
     staticCtx.lineWidth = 1;
-    staticCtx.strokeRect(VIRTUAL_WIDTH - 220, 15, 180, 46);
+    staticCtx.strokeRect(VIRTUAL_WIDTH - 200, 5, 185, 22);
     
-    staticCtx.font = "11px 'Inter', sans-serif";
-    staticCtx.fillStyle = "rgba(0, 0, 0, 0.4)";
-    staticCtx.fillText("PAGE:", VIRTUAL_WIDTH - 208, 33);
-    
-    staticCtx.font = "13px 'Inter', sans-serif";
-    staticCtx.fillStyle = "rgba(0, 0, 0, 0.75)";
-    staticCtx.fillText(pageNum.toString(), VIRTUAL_WIDTH - 160, 33);
-    
-    staticCtx.beginPath();
-    staticCtx.moveTo(VIRTUAL_WIDTH - 220, 39);
-    staticCtx.lineTo(VIRTUAL_WIDTH - 40, 39);
-    staticCtx.stroke();
-    
-    staticCtx.font = "11px 'Inter', sans-serif";
-    staticCtx.fillStyle = "rgba(0, 0, 0, 0.4)";
-    staticCtx.fillText("DATE:", VIRTUAL_WIDTH - 208, 53);
-    staticCtx.fillText("___/___/___", VIRTUAL_WIDTH - 165, 51);
+    staticCtx.font = "10px 'Inter', sans-serif";
+    staticCtx.fillStyle = "rgba(0, 0, 0, 0.5)";
+    staticCtx.fillText(`PAGE: ${pageNum}   DATE: ___/___/___`, VIRTUAL_WIDTH - 192, 19);
     
     if (!text) return;
     
@@ -477,7 +442,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     
     const words = text.split(/(\s+)/);
     let lineIndex = 0;
-    let cursorX = leftMargin + 10;
+    let cursorX = leftMargin + 15;
     const jitter = jitterSettings[jitterLevel];
     
     let textProcessed = "";
@@ -489,13 +454,13 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
         if (word.includes('\n')) {
             const newlines = word.split('\n').length - 1;
             lineIndex += newlines;
-            cursorX = leftMargin + 10;
+            cursorX = leftMargin + 15;
             if (lineIndex >= maxLines) break;
             textProcessed += word;
             continue;
         }
 
-        const currentRightMargin = (lineIndex === 0) ? 550 : rightMarginDefault;
+        const currentRightMargin = rightMargin;
 
         // Measure word width - adjusting for space character constraints
         let wordWidth = 0;
@@ -506,7 +471,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
         }
         
         if (!/^\s+$/.test(word) && cursorX + wordWidth > currentRightMargin) {
-            cursorX = leftMargin + 10;
+            cursorX = leftMargin + 15;
             lineIndex++;
         }
 
