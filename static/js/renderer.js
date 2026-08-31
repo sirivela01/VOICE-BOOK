@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=2.1";
+import { getPRNG } from "./utils.js?v=2.2";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -151,15 +151,15 @@ function recalculateLayout() {
 
     ctx.font = `${currentFontSize}px "${currentFont}"`;
     
-    // Symmetrical 1/2 cm margins on both Left and Right pages:
-    // Left margin at 30px (1/2 cm), right margin limit at 770px (30px from right edge)
-    const leftMargin = 30;
-    const rightMarginDefault = 770;
+    // Narrow margins on both Left and Right pages:
+    // Left margin at 15px, right margin limit at 785px (15px from right edge)
+    const leftMargin = 15;
+    const rightMarginDefault = 785;
     
     const words = pageText.split(/(\s+)/); // Keep whitespace chunks as words
     const layout = [];
     let lineIndex = 0;
-    let cursorX = leftMargin + 12; // Start with small indent
+    let cursorX = leftMargin + 8; // Start with small indent
     
     const maxLines = Math.floor((VIRTUAL_HEIGHT - config.topMargin - config.bottomMargin) / config.lineSpacing);
     let isFull = false;
@@ -174,7 +174,7 @@ function recalculateLayout() {
         if (word.includes('\n')) {
             const newlines = word.split('\n').length - 1;
             lineIndex += newlines;
-            cursorX = leftMargin + 12;
+            cursorX = leftMargin + 8;
             
             if (lineIndex >= maxLines) {
                 isFull = true;
@@ -199,7 +199,7 @@ function recalculateLayout() {
         
         // Wrap line if word exceeds current line's right margin
         if (!/^\s+$/.test(word) && cursorX + wordWidth > currentRightMargin) {
-            cursorX = leftMargin + 12;
+            cursorX = leftMargin + 8;
             lineIndex++;
         }
 
@@ -312,7 +312,7 @@ function drawPage() {
     }
 
     // 2. Draw Left Margin Line
-    const leftMarginVal = 30;
+    const leftMarginVal = 15;
     ctx.strokeStyle = "rgba(225, 95, 95, 0.65)"; // Soft margin red line
     ctx.lineWidth = 1.5;
     ctx.beginPath();
@@ -415,9 +415,9 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     const fontSize = options.fontSize || currentFontSize;
     const jitterLevel = options.jitterLevel !== undefined ? options.jitterLevel : currentJitterLevel;
     
-    // Symmetrical 1/2 cm margins on both Left and Right pages:
-    const leftMargin = 30;
-    const rightMarginDefault = 770;
+    // Narrow margins on both Left and Right pages:
+    const leftMargin = 15;
+    const rightMarginDefault = 785;
     
     // 1. Draw Ruled Lines
     staticCtx.strokeStyle = "rgba(166, 196, 240, 0.45)";
@@ -474,7 +474,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     
     const words = text.split(/(\s+)/);
     let lineIndex = 0;
-    let cursorX = leftMargin + 12;
+    let cursorX = leftMargin + 8;
     const jitter = jitterSettings[jitterLevel];
     
     let textProcessed = "";
@@ -486,7 +486,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
         if (word.includes('\n')) {
             const newlines = word.split('\n').length - 1;
             lineIndex += newlines;
-            cursorX = leftMargin + 12;
+            cursorX = leftMargin + 8;
             if (lineIndex >= maxLines) break;
             textProcessed += word;
             continue;
@@ -503,7 +503,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
         }
         
         if (!/^\s+$/.test(word) && cursorX + wordWidth > currentRightMargin) {
-            cursorX = leftMargin + 12;
+            cursorX = leftMargin + 8;
             lineIndex++;
         }
 
