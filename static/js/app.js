@@ -13,7 +13,6 @@ const bookColors = ["navy", "maroon", "forest", "plum"];
 
 // DOM elements
 let viewAuth, viewShelf, viewNotebook;
-let formLogin, formSignup;
 let btnLogout, btnBackShelf;
 let shelfBooksContainer, cardNewBook;
 let selectFont, inputFontSize, inputJitter, valFontSize, valJitter;
@@ -51,9 +50,6 @@ function cacheElements() {
     viewAuth = document.getElementById("view-auth");
     viewShelf = document.getElementById("view-shelf");
     viewNotebook = document.getElementById("view-notebook");
-    
-    formLogin = document.getElementById("form-login");
-    formSignup = document.getElementById("form-signup");
     
     btnLogout = document.getElementById("btn-logout");
     btnBackShelf = document.getElementById("btn-back-shelf");
@@ -411,19 +407,6 @@ async function handlePageOverflow(remainingText) {
 
 /* ================= 3. CORE UI EVENT BINDINGS ================= */
 function setupEventListeners() {
-    // Auth Toggles
-    document.getElementById("to-signup").addEventListener("click", (e) => {
-        e.preventDefault();
-        formLogin.classList.add("hidden");
-        formSignup.classList.remove("hidden");
-    });
-    
-    document.getElementById("to-login").addEventListener("click", (e) => {
-        e.preventDefault();
-        formSignup.classList.add("hidden");
-        formLogin.classList.remove("hidden");
-    });
-    
     // Google Sign In
     document.getElementById("btn-google-login").addEventListener("click", async () => {
         try {
@@ -431,39 +414,6 @@ function setupEventListeners() {
             showToast("Successfully logged in with Google!", "success");
         } catch (err) {
             console.error("Google Auth error:", err);
-            showToast(err.message, "error");
-        }
-    });
-    
-    // Login Submit
-    formLogin.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const email = document.getElementById("login-email").value.trim();
-        const pass = document.getElementById("login-password").value;
-        
-        try {
-            await loginUser(email, pass);
-            showToast("Successfully logged in!", "success");
-        } catch (err) {
-            showToast(err.message, "error");
-        }
-    });
-
-    // Signup Submit
-    formSignup.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const email = document.getElementById("signup-email").value.trim();
-        const pass = document.getElementById("signup-password").value;
-        
-        if (pass.length < 6) {
-            showToast("Password must be at least 6 characters.", "error");
-            return;
-        }
-        
-        try {
-            await registerUser(email, pass);
-            showToast("Registration completed!", "success");
-        } catch (err) {
             showToast(err.message, "error");
         }
     });
