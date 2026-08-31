@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Caveat:wght@400;700&family=Homemade+Apple&family=Reenie+Beanie&family=Architects+Daughter&display=swap" rel="stylesheet">
     <!-- Main Style -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='1.1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='1.2') }}">
 </head>
 <body>
     <!-- Background Gradient Grids -->
@@ -155,6 +155,9 @@
                 <!-- Notebook Canvas Area -->
                 <div class="notebook-workspace">
                     <div class="canvas-3d-wrapper">
+                        <!-- Book Cover Undercover (Hardcover border framing the stacks) -->
+                        <div class="notebook-undercover" id="notebook-undercover"></div>
+                        
                         <!-- Left Page Shadow stack (looks like stacked book paper) -->
                         <div class="notebook-stack-layer stack-1"></div>
                         <div class="notebook-stack-layer stack-2"></div>
@@ -255,6 +258,24 @@
         </div>
     </div>
 
+    <!-- ================= 3D BOOK OPENING ANIMATION OVERLAY ================= -->
+    <div id="book-opening-overlay" class="book-opening-overlay hidden">
+        <div class="book-3d-scene">
+            <div class="book-3d" id="anim-book-3d">
+                <div class="book-cover-back" id="anim-book-cover-back"></div>
+                <div class="book-pages-block"></div>
+                <div class="book-cover-front" id="anim-book-cover-front">
+                    <div class="book-cover-crease"></div>
+                    <div class="book-cover-content">
+                        <span class="book-cover-badge">365 Pages</span>
+                        <h2 class="book-cover-title" id="anim-book-title">Notebook</h2>
+                        <div class="book-cover-decor"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ================= TOAST / NOTIFICATION ================= -->
     <div id="toast" class="toast-notification">Notification Message</div>
 
@@ -270,6 +291,6 @@
     </script>
 
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='1.1') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='1.2') }}"></script>
 </body>
 </html>

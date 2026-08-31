@@ -316,27 +316,108 @@ async function openNotebook(bookId, name, pageNum) {
     const canvasEl = document.getElementById("notebook-canvas");
     initRenderer(canvasEl);
     
-    // Load page text
     setSaveStatus("saving", "Loading page...");
-    try {
-        const text = await getPageContent(activeBookId, activePageNumber);
+    
+    // Color palettes for 3D book cover
+    const colorsMap = {
+        navy: "linear-gradient(135deg, #2a4066 0%, #16243d 100%)",
+        maroon: "linear-gradient(135deg, #6c2a2a 0%, #441717 100%)",
+        forest: "linear-gradient(135deg, #224f33 0%, #112d1b 100%)",
+        plum: "linear-gradient(135deg, #56275e 0%, #35153b 100%)",
+        leather: "linear-gradient(135deg, #724729 0%, #4a2b16 100%)",
+        teal: "linear-gradient(135deg, #1b4d54 0%, #0c2b30 100%)",
+        gold: "linear-gradient(135deg, #88702b 0%, #5c4a16 100%)"
+    };
+    const backColorsMap = {
+        navy: "linear-gradient(135deg, #1d2c47 0%, #0f1a2b 100%)",
+        maroon: "linear-gradient(135deg, #4d1d1d 0%, #2e0f0f 100%)",
+        forest: "linear-gradient(135deg, #183824 0%, #0d1f13 100%)",
+        plum: "linear-gradient(135deg, #3d1c42 0%, #250d29 100%)",
+        leather: "linear-gradient(135deg, #52331c 0%, #301e10 100%)",
+        teal: "linear-gradient(135deg, #13393e 0%, #0a1f22 100%)",
+        gold: "linear-gradient(135deg, #604f1e 0%, #3b3012 100%)"
+    };
+    
+    // Determine spine color index based on book ID
+    const spineColors = ["navy", "maroon", "forest", "plum", "leather", "teal", "gold"];
+    const colorIdx = hashString(bookId) % spineColors.length;
+    const bookColor = spineColors[colorIdx];
+    
+    // Apply matching colored background to the workspace undercover border
+    const undercoverEl = document.getElementById("notebook-undercover");
+    if (undercoverEl) {
+        undercoverEl.style.background = colorsMap[bookColor];
+    }
+    
+    // 3D Closed Book Opening Animation Overlay Sequence
+    const overlay = document.getElementById("book-opening-overlay");
+    const coverFront = document.getElementById("anim-book-cover-front");
+    const coverBack = document.getElementById("anim-book-cover-back");
+    const animTitle = document.getElementById("anim-book-title");
+    
+    if (overlay && coverFront && coverBack && animTitle) {
+        animTitle.innerText = name;
+        coverFront.style.background = colorsMap[bookColor];
+        coverBack.style.background = backColorsMap[bookColor];
         
-        // Push values to renderer
-        setRenderOptions({
-            font: selectFont.value,
-            fontSize: parseInt(inputFontSize.value),
-            jitterLevel: parseInt(inputJitter.value),
-            activeBookId: activeBookId,
-            activePageNumber: activePageNumber
-        });
+        // Reset classes and show overlay
+        overlay.classList.remove("hidden", "active-overlay", "opening");
+        void overlay.offsetWidth; // Force Reflow
+        overlay.classList.add("active-overlay");
         
-        renderText(text, false); // Static draw
-        setSaveStatus("saved", "All changes saved");
+        // Step 1: Closed book zooms on screen, then swings cover open
+        setTimeout(() => {
+            overlay.classList.add("opening");
+        }, 550);
+        
+        // Step 2: Swap back workspace view and hide overlay
+        setTimeout(async () => {
+            showView("view-notebook");
+            
+            try {
+                const text = await getPageContent(activeBookId, activePageNumber);
+                setRenderOptions({
+                    font: selectFont.value,
+                    fontSize: parseInt(inputFontSize.value),
+                    jitterLevel: parseInt(inputJitter.value),
+                    activeBookId: activeBookId,
+                    activePageNumber: activePageNumber
+                });
+                renderText(text, false);
+                setSaveStatus("saved", "All changes saved");
+            } catch (err) {
+                console.error("Load page error:", err);
+                showToast("Error loading page content.", "error");
+                setSaveStatus("error", "Error loading page");
+            }
+            
+            // Fade out the overlay
+            overlay.classList.remove("active-overlay");
+            setTimeout(() => {
+                overlay.classList.add("hidden");
+                overlay.classList.remove("opening");
+            }, 400);
+        }, 1350);
+        
+    } else {
+        // Fallback if elements not found
         showView("view-notebook");
-    } catch (err) {
-        console.error("Load page error:", err);
-        showToast("Error loading page content.", "error");
-        setSaveStatus("error", "Error loading page");
+        try {
+            const text = await getPageContent(activeBookId, activePageNumber);
+            setRenderOptions({
+                font: selectFont.value,
+                fontSize: parseInt(inputFontSize.value),
+                jitterLevel: parseInt(inputJitter.value),
+                activeBookId: activeBookId,
+                activePageNumber: activePageNumber
+            });
+            renderText(text, false);
+            setSaveStatus("saved", "All changes saved");
+        } catch (err) {
+            console.error("Load page error:", err);
+            showToast("Error loading page content.", "error");
+            setSaveStatus("error", "Error loading page");
+        }
     }
 }
 

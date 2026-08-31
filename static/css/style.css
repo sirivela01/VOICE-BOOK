@@ -1147,3 +1147,188 @@ canvas#notebook-canvas {
     background: rgba(255, 255, 255, 0.02) !important;
     color: rgba(255, 255, 255, 0.2) !important;
 }
+
+/* Hardcover frame behind page stacks in workspace */
+.notebook-undercover {
+    position: absolute;
+    top: -8px;
+    bottom: -8px;
+    left: -12px;
+    right: -8px;
+    background: linear-gradient(135deg, #2a4066 0%, #16243d 100%);
+    border-radius: 6px 14px 14px 6px;
+    box-shadow: 
+        0 20px 40px rgba(0,0,0,0.55),
+        inset 3px 0 6px rgba(255,255,255,0.1);
+    z-index: 0;
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: background 0.3s ease;
+}
+
+.notebook-undercover::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 18px;
+    bottom: 0;
+    width: 6px;
+    background: linear-gradient(to right, rgba(0,0,0,0.4), transparent);
+    z-index: 1;
+}
+
+/* 3D Book Opening Transition Overlay */
+.book-opening-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(10, 11, 14, 0.94);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.4s ease-out;
+    pointer-events: none;
+}
+
+.book-opening-overlay.active-overlay {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.book-3d-scene {
+    width: 330px;
+    height: 450px;
+    perspective: 1500px;
+}
+
+.book-3d {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transform: rotateX(25deg) rotateY(-25deg) translateZ(-100px) scale(0.7);
+    opacity: 0;
+    transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease-out;
+}
+
+.book-opening-overlay.active-overlay .book-3d {
+    transform: rotateX(15deg) rotateY(-10deg) translateZ(0) scale(1);
+    opacity: 1;
+}
+
+.book-opening-overlay.opening .book-3d {
+    transform: rotateX(0deg) rotateY(0deg) scale(1.15);
+}
+
+/* Front Cover of 3D Book Animation */
+.book-cover-front {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #2a4066 0%, #16243d 100%);
+    border-radius: 4px 12px 12px 4px;
+    box-shadow: 10px 15px 35px rgba(0,0,0,0.5);
+    transform-origin: left center;
+    transform: rotateY(0deg);
+    transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+    z-index: 5;
+    backface-visibility: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.book-opening-overlay.opening .book-cover-front {
+    transform: rotateY(-140deg);
+}
+
+/* Back Cover of 3D Book Animation */
+.book-cover-back {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #1d2c47 0%, #0f1a2b 100%);
+    border-radius: 4px 12px 12px 4px;
+    box-shadow: -5px 15px 30px rgba(0,0,0,0.6);
+    z-index: 1;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Pages block inside the 3D Book Animation */
+.book-pages-block {
+    position: absolute;
+    top: 10px;
+    bottom: 10px;
+    right: 5px;
+    width: calc(100% - 15px);
+    background: #fdf6e6;
+    border-radius: 0 8px 8px 0;
+    box-shadow: inset 0 0 15px rgba(0,0,0,0.15);
+    z-index: 3;
+    background-image: repeating-linear-gradient(
+        to bottom,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.04) 2px,
+        rgba(0,0,0,0.04) 4px
+    );
+    border: 1px solid #e0d0b0;
+}
+
+/* Front Cover Crease */
+.book-cover-crease {
+    position: absolute;
+    top: 0;
+    left: 14px;
+    bottom: 0;
+    width: 2px;
+    background: rgba(0,0,0,0.25);
+    box-shadow: 1px 0 2px rgba(255,255,255,0.08);
+}
+
+/* Front Cover Visual Frame & Typography */
+.book-cover-content {
+    padding: 3rem 2rem;
+    height: calc(100% - 20px);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    border: 2px dashed rgba(255, 255, 255, 0.1);
+    margin: 10px;
+    border-radius: 6px;
+}
+
+.book-cover-badge {
+    padding: 0.35rem 0.8rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+.book-cover-title {
+    font-family: 'Times New Roman', serif;
+    font-size: 2.1rem;
+    color: #ffffff;
+    text-align: center;
+    margin: 2rem 0;
+    line-height: 1.25;
+    text-shadow: 0 3px 6px rgba(0,0,0,0.6);
+    font-weight: 500;
+}
+
+.book-cover-decor {
+    width: 80px;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.35), transparent);
+}
