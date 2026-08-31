@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=2.6";
+import { getPRNG } from "./utils.js?v=2.7";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -151,15 +151,15 @@ function recalculateLayout() {
 
     ctx.font = `${currentFontSize}px "${currentFont}"`;
     
-    // Safe margins on both Left and Right pages:
-    // Left edge gap: 30px (red line at 30px). Text starts at 40px. Right margin limit: 710px (leaving 90px safe buffer before edge).
-    const leftMargin = 30;
-    const rightMargin = 710;
+    // Borderless Paper Layout (Red Margin Line Removed):
+    // Text starts at 25px. Safe right wrapping limit at 720px (80px safe buffer before edge).
+    const leftMargin = 25;
+    const rightMargin = 720;
     
     const words = pageText.split(/(\s+)/); // Keep whitespace chunks as words
     const layout = [];
     let lineIndex = 0;
-    let cursorX = leftMargin + 10; // 40px starting text position
+    let cursorX = leftMargin; // 25px starting text position
     
     const maxLines = Math.floor((VIRTUAL_HEIGHT - config.topMargin - config.bottomMargin) / config.lineSpacing);
     let isFull = false;
@@ -174,7 +174,7 @@ function recalculateLayout() {
         if (word.includes('\n')) {
             const newlines = word.split('\n').length - 1;
             lineIndex += newlines;
-            cursorX = leftMargin + 10;
+            cursorX = leftMargin;
             
             if (lineIndex >= maxLines) {
                 isFull = true;
@@ -193,9 +193,9 @@ function recalculateLayout() {
             wordWidth += chW + 2.5;
         }
         
-        // Wrap line if word exceeds safe right margin limit (710px)
+        // Wrap line if word exceeds safe right margin limit (720px)
         if (!/^\s+$/.test(word) && cursorX + wordWidth > rightMargin) {
-            cursorX = leftMargin + 10;
+            cursorX = leftMargin;
             lineIndex++;
         }
 
@@ -307,14 +307,7 @@ function drawPage() {
         ctx.stroke();
     }
 
-    // 2. Draw Left Margin Line
-    const leftMarginVal = 30;
-    ctx.strokeStyle = "rgba(225, 95, 95, 0.65)"; // Soft margin red line
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(leftMarginVal, 0);
-    ctx.lineTo(leftMarginVal, VIRTUAL_HEIGHT);
-    ctx.stroke();
+    // 2. Left Margin Line Removed (Clean borderless paper)
 
     // 3. Draw Header Lines/Boxes (Page & Date indicators in top-right header space)
     ctx.fillStyle = "#fdf6e6"; // Solid paper color mask
@@ -414,13 +407,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
         staticCtx.stroke();
     }
 
-    // 2. Draw Left Margin Line (30px from left edge)
-    staticCtx.strokeStyle = "rgba(225, 95, 95, 0.65)";
-    staticCtx.lineWidth = 1.5;
-    staticCtx.beginPath();
-    staticCtx.moveTo(leftMargin, 0);
-    staticCtx.lineTo(leftMargin, VIRTUAL_HEIGHT);
-    staticCtx.stroke();
+    // 2. Left Margin Line Removed (Clean borderless paper)
 
     // 3. Draw Header Box (in top header space above ruled lines)
     staticCtx.fillStyle = "#fdf6e6"; // Solid paper color mask
@@ -442,7 +429,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     
     const words = text.split(/(\s+)/);
     let lineIndex = 0;
-    let cursorX = leftMargin + 10;
+    let cursorX = leftMargin;
     const jitter = jitterSettings[jitterLevel];
     
     let textProcessed = "";
@@ -454,7 +441,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
         if (word.includes('\n')) {
             const newlines = word.split('\n').length - 1;
             lineIndex += newlines;
-            cursorX = leftMargin + 10;
+            cursorX = leftMargin;
             if (lineIndex >= maxLines) break;
             textProcessed += word;
             continue;
@@ -471,7 +458,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
         }
         
         if (!/^\s+$/.test(word) && cursorX + wordWidth > currentRightMargin) {
-            cursorX = leftMargin + 10;
+            cursorX = leftMargin;
             lineIndex++;
         }
 
