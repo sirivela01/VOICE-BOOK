@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice-to-Handwriting Notebook</title>
+    <!-- Modern UI Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Caveat:wght@400;700&family=Homemade+Apple&family=Reenie+Beanie&family=Architects+Daughter&display=swap" rel="stylesheet">
+    <!-- Main Style -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Background Gradient Grids -->
+    <div class="bg-decorations">
+        <div class="glow-sphere glow-1"></div>
+        <div class="glow-sphere glow-2"></div>
+    </div>
+
+    <!-- App Container -->
+    <div id="app" class="app-container">
+        
+        <!-- ================= AUTH VIEW ================= -->
+        <section id="view-auth" class="view-panel active-view">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <div class="logo-icon">✍️</div>
+                    <h1>ScribeVoice</h1>
+                    <p class="tagline">Your spoken words, written in realistic handwriting.</p>
+                </div>
+                
+                <!-- Sign In Form -->
+                <form id="form-login" class="auth-form">
+                    <div class="input-group">
+                        <label for="login-email">Email Address</label>
+                        <input type="email" id="login-email" required placeholder="you@example.com">
+                    </div>
+                    <div class="input-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+                    <p class="auth-toggle">Don't have an account? <a href="#" id="to-signup">Sign Up</a></p>
+                </form>
+
+                <!-- Sign Up Form -->
+                <form id="form-signup" class="auth-form hidden">
+                    <div class="input-group">
+                        <label for="signup-email">Email Address</label>
+                        <input type="email" id="signup-email" required placeholder="you@example.com">
+                    </div>
+                    <div class="input-group">
+                        <label for="signup-password">Password</label>
+                        <input type="password" id="signup-password" required placeholder="Min 6 characters">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+                    <p class="auth-toggle">Already have an account? <a href="#" id="to-login">Log In</a></p>
+                </form>
+
+                <div class="auth-footer">
+                    <button id="btn-show-config" class="btn btn-link btn-xs">🔧 Firebase API Config</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= BOOKSHELF VIEW ================= -->
+        <section id="view-shelf" class="view-panel">
+            <header class="shelf-header">
+                <div class="header-logo">
+                    <span class="logo-emoji">✍️</span>
+                    <h2>My Bookshelf</h2>
+                </div>
+                <div class="header-user">
+                    <span id="user-display-email" class="user-email">user@example.com</span>
+                    <button id="btn-logout" class="btn btn-outline btn-sm">Sign Out</button>
+                </div>
+            </header>
+
+            <main class="shelf-content">
+                <div class="shelf-grid">
+                    <!-- "Create New Book" Card -->
+                    <div class="book-card create-card" id="card-new-book">
+                        <div class="create-card-content">
+                            <span class="plus-icon">+</span>
+                            <h3>New Notebook</h3>
+                            <p>Create a 365-page book</p>
+                        </div>
+                    </div>
+                    <!-- Dynamically populated books -->
+                    <div id="shelf-books-container" class="shelf-grid-contents"></div>
+                </div>
+            </main>
+        </section>
+
+        <!-- ================= NOTEBOOK VIEW ================= -->
+        <section id="view-notebook" class="view-panel">
+            <!-- Sidebar controls / navigation -->
+            <div class="notebook-layout">
+                <div class="notebook-sidebar">
+                    <button id="btn-back-shelf" class="btn btn-outline btn-block icon-btn">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                        Bookshelf
+                    </button>
+
+                    <div class="sidebar-meta">
+                        <h3 id="notebook-title" class="book-title">Notebook Title</h3>
+                        <div class="save-status" id="save-status">
+                            <span class="status-dot green"></span>
+                            <span class="status-text">All changes saved</span>
+                        </div>
+                    </div>
+
+                    <!-- Rendering controls -->
+                    <div class="control-section">
+                        <h4>Handwriting Style</h4>
+                        <div class="control-group">
+                            <select id="select-font" class="form-control">
+                                <option value="Caveat">Caveat (Clean Modern)</option>
+                                <option value="Homemade Apple" selected>Homemade Apple (Realistic Script)</option>
+                                <option value="Reenie Beanie">Reenie Beanie (Casual Sketch)</option>
+                                <option value="Architects Daughter">Architects Daughter (Neat Block)</option>
+                            </select>
+                        </div>
+
+                        <div class="control-group">
+                            <div class="slider-label">
+                                <span>Font Size</span>
+                                <span id="val-font-size">24px</span>
+                            </div>
+                            <input type="range" id="input-font-size" min="18" max="32" value="23" step="1">
+                        </div>
+
+                        <div class="control-group">
+                            <div class="slider-label">
+                                <span>Jitter Amount</span>
+                                <span id="val-jitter">Medium</span>
+                            </div>
+                            <input type="range" id="input-jitter" min="0" max="3" value="2" step="1">
+                        </div>
+                    </div>
+
+                    <!-- Recording / Speech Status panel -->
+                    <div class="voice-panel-card">
+                        <div class="voice-header">
+                            <div id="mic-status-indicator" class="mic-indicator"></div>
+                            <span id="speech-status-text">Microphone Idle</span>
+                        </div>
+                        <button id="btn-toggle-mic" class="btn btn-danger btn-block mic-pulse-btn">
+                            <svg class="icon mic-icon" viewBox="0 0 24 24">
+                                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+                            </svg>
+                            <span id="mic-btn-text">Start Dictation</span>
+                        </button>
+                        <div id="live-transcript-box" class="transcript-preview">
+                            <span class="placeholder-text">Live speech transcript preview will appear here...</span>
+                        </div>
+                    </div>
+
+                    <!-- Utility actions -->
+                    <div class="sidebar-utilities">
+                        <button id="btn-clear-page" class="btn btn-outline btn-block icon-btn text-danger">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                            Erase Page
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Notebook Canvas Area -->
+                <div class="notebook-workspace">
+                    <div class="canvas-3d-wrapper">
+                        <!-- Left Page Shadow stack (looks like stacked book paper) -->
+                        <div class="notebook-stack-layer stack-1"></div>
+                        <div class="notebook-stack-layer stack-2"></div>
+                        
+                        <div class="notebook-page-container">
+                            <canvas id="notebook-canvas" width="800" height="1000"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Floating Navigation Bar -->
+                    <div class="notebook-nav">
+                        <button id="btn-prev-page" class="nav-arrow" title="Previous Page">
+                            <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+                        </button>
+                        <span id="page-display-counter" class="page-counter">Page 1 of 365</span>
+                        <button id="btn-next-page" class="nav-arrow" title="Next Page">
+                            <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- ================= FIREBASE SETUP CONFIG MODAL ================= -->
+    <div id="modal-config" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Firebase Configuration Setup</h3>
+                <button class="modal-close" id="btn-close-config">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-help-text">
+                    Enter your Firebase Web App credentials below. These values will be securely stored in your browser's local storage and used to connect to your database.
+                </p>
+                <div class="form-group">
+                    <label for="config-raw">Paste Firebase SDK Config Object (Optional)</label>
+                    <textarea id="config-raw" rows="4" class="form-control font-code" placeholder='const firebaseConfig = {
+  apiKey: "AIzaSy...",
+  authDomain: "...",
+  ...
+};'></textarea>
+                </div>
+                <div class="divider"><span>OR ENTER MANUALLY</span></div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="config-api-key">API Key</label>
+                        <input type="text" id="config-api-key" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="config-auth-domain">Auth Domain</label>
+                        <input type="text" id="config-auth-domain" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="config-project-id">Project ID</label>
+                        <input type="text" id="config-project-id" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="config-storage-bucket">Storage Bucket</label>
+                        <input type="text" id="config-storage-bucket" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="config-sender-id">Messaging Sender ID</label>
+                        <input type="text" id="config-sender-id" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="config-app-id">App ID</label>
+                        <input type="text" id="config-app-id" class="form-control">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-clear-config" class="btn btn-outline">Clear Storage</button>
+                <button id="btn-save-config" class="btn btn-primary">Save Config</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= CREATE BOOK MODAL ================= -->
+    <div id="modal-create-book" class="modal-overlay">
+        <div class="modal-box modal-sm">
+            <div class="modal-header">
+                <h3>New Notebook</h3>
+                <button class="modal-close" id="btn-close-create-book">&times;</button>
+            </div>
+            <form id="form-create-book">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="input-book-name">Notebook Name</label>
+                        <input type="text" id="input-book-name" required placeholder="e.g., Daily Thoughts, Lecture Notes" class="form-control" autofocus>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" id="btn-cancel-create-book">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Book</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= TOAST / NOTIFICATION ================= -->
+    <div id="toast" class="toast-notification">Notification Message</div>
+
+    <!-- Firebase v10 SDK Core Libraries via CDN -->
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
+            }
+        }
+    </script>
+
+    <!-- App Modules -->
+    <script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
