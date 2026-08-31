@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=2.5";
+import { getPRNG } from "./utils.js?v=2.6";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -151,15 +151,15 @@ function recalculateLayout() {
 
     ctx.font = `${currentFontSize}px "${currentFont}"`;
     
-    // Identical symmetrical 15px gap margins on both Left and Right pages:
-    // Left edge gap: 15px (red line at 15px). Red line to text gap: 15px (text starts at 30px). Right edge gap: 15px (785px limit).
-    const leftMargin = 15;
-    const rightMargin = 785;
+    // Safe margins on both Left and Right pages:
+    // Left edge gap: 30px (red line at 30px). Text starts at 40px. Right margin limit: 710px (leaving 90px safe buffer before edge).
+    const leftMargin = 30;
+    const rightMargin = 710;
     
     const words = pageText.split(/(\s+)/); // Keep whitespace chunks as words
     const layout = [];
     let lineIndex = 0;
-    let cursorX = leftMargin + 15; // 30px starting text position
+    let cursorX = leftMargin + 10; // 40px starting text position
     
     const maxLines = Math.floor((VIRTUAL_HEIGHT - config.topMargin - config.bottomMargin) / config.lineSpacing);
     let isFull = false;
@@ -174,7 +174,7 @@ function recalculateLayout() {
         if (word.includes('\n')) {
             const newlines = word.split('\n').length - 1;
             lineIndex += newlines;
-            cursorX = leftMargin + 15;
+            cursorX = leftMargin + 10;
             
             if (lineIndex >= maxLines) {
                 isFull = true;
@@ -185,17 +185,17 @@ function recalculateLayout() {
             continue;
         }
 
-        // Measure word width - adjusting for space character constraints
+        // Measure word width - adding 2.5px safety buffer per char for glyph overhangs & jitter
         let wordWidth = 0;
         for (let i = 0; i < word.length; i++) {
             const ch = word[i];
             const chW = ch === " " ? Math.max(ctx.measureText(ch).width, currentFontSize * 0.32) : ctx.measureText(ch).width;
-            wordWidth += chW;
+            wordWidth += chW + 2.5;
         }
         
-        // Wrap line if word exceeds right margin limit (785px)
+        // Wrap line if word exceeds safe right margin limit (710px)
         if (!/^\s+$/.test(word) && cursorX + wordWidth > rightMargin) {
-            cursorX = leftMargin + 15;
+            cursorX = leftMargin + 10;
             lineIndex++;
         }
 
@@ -308,7 +308,7 @@ function drawPage() {
     }
 
     // 2. Draw Left Margin Line
-    const leftMarginVal = 15;
+    const leftMarginVal = 30;
     ctx.strokeStyle = "rgba(225, 95, 95, 0.65)"; // Soft margin red line
     ctx.lineWidth = 1.5;
     ctx.beginPath();
@@ -397,9 +397,9 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     const fontSize = options.fontSize || currentFontSize;
     const jitterLevel = options.jitterLevel !== undefined ? options.jitterLevel : currentJitterLevel;
     
-    // Identical symmetrical 15px gap margins on both Left and Right pages:
-    const leftMargin = 15;
-    const rightMargin = 785;
+    // Safe margins on both Left and Right pages:
+    const leftMargin = 30;
+    const rightMargin = 710;
     
     // 1. Draw Ruled Lines
     staticCtx.strokeStyle = "rgba(166, 196, 240, 0.45)";
@@ -414,7 +414,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
         staticCtx.stroke();
     }
 
-    // 2. Draw Left Margin Line
+    // 2. Draw Left Margin Line (30px from left edge)
     staticCtx.strokeStyle = "rgba(225, 95, 95, 0.65)";
     staticCtx.lineWidth = 1.5;
     staticCtx.beginPath();
@@ -442,7 +442,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     
     const words = text.split(/(\s+)/);
     let lineIndex = 0;
-    let cursorX = leftMargin + 15;
+    let cursorX = leftMargin + 10;
     const jitter = jitterSettings[jitterLevel];
     
     let textProcessed = "";
@@ -454,7 +454,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
         if (word.includes('\n')) {
             const newlines = word.split('\n').length - 1;
             lineIndex += newlines;
-            cursorX = leftMargin + 15;
+            cursorX = leftMargin + 10;
             if (lineIndex >= maxLines) break;
             textProcessed += word;
             continue;
@@ -462,16 +462,16 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
 
         const currentRightMargin = rightMargin;
 
-        // Measure word width - adjusting for space character constraints
+        // Measure word width - adding 2.5px safety buffer per char for glyph overhangs & jitter
         let wordWidth = 0;
         for (let i = 0; i < word.length; i++) {
             const ch = word[i];
             const chW = ch === " " ? Math.max(staticCtx.measureText(ch).width, fontSize * 0.32) : staticCtx.measureText(ch).width;
-            wordWidth += chW;
+            wordWidth += chW + 2.5;
         }
         
         if (!/^\s+$/.test(word) && cursorX + wordWidth > currentRightMargin) {
-            cursorX = leftMargin + 15;
+            cursorX = leftMargin + 10;
             lineIndex++;
         }
 
