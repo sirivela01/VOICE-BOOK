@@ -812,7 +812,9 @@ body {
 .canvas-3d-wrapper {
     position: relative;
     width: 100%;
-    max-width: min(1360px, 92vw, 112vh);
+    height: 100%;
+    max-width: 1360px;
+    max-height: 100%;
     aspect-ratio: 16 / 10;
     display: flex;
     justify-content: center;
