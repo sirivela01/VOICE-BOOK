@@ -49,8 +49,7 @@ export async function getUserBooks() {
 
     const q = query(
         collection(db, "books"),
-        where("userId", "==", user.uid),
-        orderBy("createdAt", "desc")
+        where("userId", "==", user.uid)
     );
 
     const querySnapshot = await getDocs(q);
@@ -61,6 +60,14 @@ export async function getUserBooks() {
             ...doc.data()
         });
     });
+
+    // Sort by creation date descending on the client-side to bypass database index requirements
+    books.sort((a, b) => {
+        const timeA = a.createdAt ? (a.createdAt.seconds || 0) : 0;
+        const timeB = b.createdAt ? (b.createdAt.seconds || 0) : 0;
+        return timeB - timeA;
+    });
+
     return books;
 }
 
