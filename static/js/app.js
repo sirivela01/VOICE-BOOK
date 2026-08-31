@@ -16,6 +16,8 @@ let viewAuth, viewShelf, viewNotebook;
 let btnLogout, btnBackShelf;
 let bookcaseContainer, btnAddRow;
 let targetSlotIndex = 0;
+let modalMode = "create"; // "create" or "rename"
+let activeRenameBookId = null;
 let selectFont, inputFontSize, inputJitter, valFontSize, valJitter;
 let btnToggleMic, micStatusIndicator, speechStatusText, liveTranscriptBox;
 let btnPrevPage, btnNextPage, btnClearPage, pageDisplayCounter, notebookTitle;
@@ -240,18 +242,14 @@ async function loadBookshelf() {
                     
                     // Rename handler
                     const renameBtn = bookEl.querySelector(".spine-rename-btn");
-                    renameBtn.addEventListener("click", async (e) => {
+                    renameBtn.addEventListener("click", (e) => {
                         e.stopPropagation();
-                        const newName = prompt(`Enter new name for "${book.name}":`, book.name);
-                        if (newName && newName.trim() && newName.trim() !== book.name) {
-                            try {
-                                await renameBook(book.id, newName.trim());
-                                showToast("Notebook renamed successfully!", "success");
-                                loadBookshelf();
-                            } catch (err) {
-                                showToast(`Failed to rename: ${err.message}`, "error");
-                            }
-                        }
+                        modalMode = "rename";
+                        activeRenameBookId = book.id;
+                        document.getElementById("modal-create-title").innerText = "Rename Notebook";
+                        document.getElementById("btn-submit-create-book").innerText = "Rename Book";
+                        document.getElementById("input-book-name").value = book.name;
+                        showModal(modalCreateBook);
                     });
                     
                     cell.appendChild(bookEl);
@@ -294,7 +292,10 @@ async function loadBookshelf() {
 }
 
 function promptCreateBookAtSlot(slotIndex) {
+    modalMode = "create";
     targetSlotIndex = slotIndex;
+    document.getElementById("modal-create-title").innerText = "Create New Notebook";
+    document.getElementById("btn-submit-create-book").innerText = "Create Book";
     formCreateBook.reset();
     showModal(modalCreateBook);
 }
@@ -561,19 +562,37 @@ function setupEventListeners() {
     document.getElementById("btn-close-create-book").addEventListener("click", () => closeModal(modalCreateBook));
     document.getElementById("btn-cancel-create-book").addEventListener("click", () => closeModal(modalCreateBook));
     
-    // Create Book Submission
+    // Create/Rename Book Submission
     formCreateBook.addEventListener("submit", async (e) => {
         e.preventDefault();
         const name = document.getElementById("input-book-name").value.trim();
         if (!name) return;
         
-        try {
-            const newId = await createBook(name, targetSlotIndex);
-            closeModal(modalCreateBook);
-            showToast("Notebook created!", "success");
-            openNotebook(newId, name, 1);
-        } catch (err) {
-            showToast(err.message, "error");
+        if (modalMode === "create") {
+            try {
+                const newId = await createBook(name, targetSlotIndex);
+                closeModal(modalCreateBook);
+                showToast("Notebook created!", "success");
+                openNotebook(newId, name, 1);
+            } catch (err) {
+                showToast(err.message, "error");
+            }
+        } else {
+            try {
+                await renameBook(activeRenameBookId, name);
+                closeModal(modalCreateBook);
+                showToast("Notebook renamed successfully!", "success");
+                
+                // Update workspace title if active notebook is renamed
+                if (activeBookId === activeRenameBookId) {
+                    activeBookName = name;
+                    notebookTitle.innerText = name;
+                }
+                
+                loadBookshelf();
+            } catch (err) {
+                showToast(`Failed to rename: ${err.message}`, "error");
+            }
         }
     });
 
@@ -649,18 +668,13 @@ function setupEventListeners() {
     });
 
     // Rename notebook by clicking the title in the workspace header
-    notebookTitle.addEventListener("click", async () => {
-        const newName = prompt("Rename notebook:", activeBookName);
-        if (newName && newName.trim() && newName.trim() !== activeBookName) {
-            try {
-                await renameBook(activeBookId, newName.trim());
-                activeBookName = newName.trim();
-                notebookTitle.innerText = activeBookName;
-                showToast("Notebook renamed successfully!", "success");
-            } catch (err) {
-                showToast(`Failed to rename: ${err.message}`, "error");
-            }
-        }
+    notebookTitle.addEventListener("click", () => {
+        modalMode = "rename";
+        activeRenameBookId = activeBookId;
+        document.getElementById("modal-create-title").innerText = "Rename Notebook";
+        document.getElementById("btn-submit-create-book").innerText = "Rename Book";
+        document.getElementById("input-book-name").value = activeBookName;
+        showModal(modalCreateBook);
     });
     
     // Erase page
