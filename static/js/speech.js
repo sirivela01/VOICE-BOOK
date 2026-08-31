@@ -3,7 +3,7 @@ const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecogni
 
 let recognition = null;
 let isRecording = false;
-let processedFinalLength = 0;
+let lastProcessedIndex = -1;
 
 /**
  * Checks if Speech Recognition is supported by the user's browser.
@@ -33,7 +33,7 @@ export function startListening(onWordsAdded, onInterimResult, onStatusChange) {
         recognition.interimResults = true;
         recognition.lang = 'en-US';
 
-        processedFinalLength = 0;
+        lastProcessedIndex = -1;
         isRecording = true;
 
         recognition.onstart = () => {
@@ -59,8 +59,8 @@ export function startListening(onWordsAdded, onInterimResult, onStatusChange) {
             if (isRecording) {
                 console.log("Speech recognition stopped automatically. Restarting...");
                 try {
-                    // Reset processed length because the transcript index starts over on restart
-                    processedFinalLength = 0;
+                    // Reset processed index because the transcript index starts over on restart
+                    lastProcessedIndex = -1;
                     recognition.start();
                 } catch (e) {
                     console.error("Failed to auto-restart speech recognition:", e);
@@ -71,21 +71,22 @@ export function startListening(onWordsAdded, onInterimResult, onStatusChange) {
         };
 
         recognition.onresult = (event) => {
-            let finalTranscript = '';
             let interimTranscript = '';
+            let newFinals = [];
 
             for (let i = 0; i < event.results.length; ++i) {
                 if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript + ' ';
+                    if (i > lastProcessedIndex) {
+                        newFinals.push(event.results[i][0].transcript.trim());
+                        lastProcessedIndex = i;
+                    }
                 } else {
                     interimTranscript += event.results[i][0].transcript;
                 }
             }
 
-            // Extract only the newly finalized text in this step
-            if (finalTranscript.length > processedFinalLength) {
-                const newText = finalTranscript.substring(processedFinalLength).trim();
-                processedFinalLength = finalTranscript.length;
+            if (newFinals.length > 0) {
+                const newText = newFinals.join(' ');
                 if (newText) {
                     onWordsAdded(newText);
                 }
