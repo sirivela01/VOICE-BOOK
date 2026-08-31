@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=1.5";
+import { getPRNG } from "./utils.js?v=1.6";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -8,11 +8,11 @@ let ctx = null;
 
 // Layout config
 const config = {
-    topMargin: 110,
+    topMargin: 50,
     bottomMargin: 50,
-    leftMargin: 95,
-    rightMargin: 740,
-    lineSpacing: 21,
+    leftMargin: 55,
+    rightMargin: 745,
+    lineSpacing: 22,
     inkColor: "#1d3d84", // Premium ballpoint/fountain blue
 };
 
@@ -309,6 +309,9 @@ function drawPage() {
     ctx.stroke();
 
     // 3. Draw Header Lines/Boxes (Page & Date indicators in top-right)
+    ctx.fillStyle = "#fdf6e6"; // Solid paper color to mask blue lines underneath
+    ctx.fillRect(VIRTUAL_WIDTH - 210, 30, 160, 46);
+    
     ctx.strokeStyle = "rgba(166, 196, 240, 0.55)";
     ctx.lineWidth = 1;
     ctx.strokeRect(VIRTUAL_WIDTH - 210, 30, 160, 46);
@@ -422,6 +425,9 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     staticCtx.stroke();
 
     // 3. Draw Header Box
+    staticCtx.fillStyle = "#fdf6e6"; // Solid paper color to mask blue lines underneath
+    staticCtx.fillRect(VIRTUAL_WIDTH - 210, 30, 160, 46);
+    
     staticCtx.strokeStyle = "rgba(166, 196, 240, 0.55)";
     staticCtx.lineWidth = 1;
     staticCtx.strokeRect(VIRTUAL_WIDTH - 210, 30, 160, 46);
