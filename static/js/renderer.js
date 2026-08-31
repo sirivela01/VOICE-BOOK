@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=2.0";
+import { getPRNG } from "./utils.js?v=2.1";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -151,12 +151,10 @@ function recalculateLayout() {
 
     ctx.font = `${currentFontSize}px "${currentFont}"`;
     
-    // Page-specific margins to prevent center-crease & shadow overlaps:
-    // Left Page (odd) has 30px outer left margin, 620px right limit (180px safe spine margin clear of 3D shadows)
-    // Right Page (even) has 160px left limit (160px safe spine margin clear of 3D shadows), 760px outer right margin
-    const isLeftPage = pageNumber % 2 === 1;
-    const leftMargin = isLeftPage ? 30 : 160;
-    const rightMarginDefault = isLeftPage ? 620 : 760;
+    // Symmetrical 1/2 cm margins on both Left and Right pages:
+    // Left margin at 30px (1/2 cm), right margin limit at 770px (30px from right edge)
+    const leftMargin = 30;
+    const rightMarginDefault = 770;
     
     const words = pageText.split(/(\s+)/); // Keep whitespace chunks as words
     const layout = [];
@@ -188,8 +186,8 @@ function recalculateLayout() {
         }
 
         // Determine current line right margin limit
-        // On Line 0 of Left Page, limit to 580px to avoid PAGE/DATE header card area
-        const currentRightMargin = (isLeftPage && lineIndex === 0) ? 580 : rightMarginDefault;
+        // On Line 0 of both pages, limit to 580px to avoid PAGE/DATE header card area
+        const currentRightMargin = (lineIndex === 0) ? 580 : rightMarginDefault;
 
         // Measure word width - adjusting for space character constraints
         let wordWidth = 0;
@@ -314,8 +312,7 @@ function drawPage() {
     }
 
     // 2. Draw Left Margin Line
-    const isLeftPage = pageNumber % 2 === 1;
-    const leftMarginVal = isLeftPage ? 30 : 160;
+    const leftMarginVal = 30;
     ctx.strokeStyle = "rgba(225, 95, 95, 0.65)"; // Soft margin red line
     ctx.lineWidth = 1.5;
     ctx.beginPath();
@@ -418,10 +415,9 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     const fontSize = options.fontSize || currentFontSize;
     const jitterLevel = options.jitterLevel !== undefined ? options.jitterLevel : currentJitterLevel;
     
-    // Page-specific margins to prevent center-crease overlaps:
-    const isLeftPage = pageNum % 2 === 1;
-    const leftMargin = isLeftPage ? 30 : 160;
-    const rightMarginDefault = isLeftPage ? 620 : 760;
+    // Symmetrical 1/2 cm margins on both Left and Right pages:
+    const leftMargin = 30;
+    const rightMarginDefault = 770;
     
     // 1. Draw Ruled Lines
     staticCtx.strokeStyle = "rgba(166, 196, 240, 0.45)";
@@ -496,7 +492,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
             continue;
         }
 
-        const currentRightMargin = (isLeftPage && lineIndex === 0) ? 580 : rightMarginDefault;
+        const currentRightMargin = (lineIndex === 0) ? 580 : rightMarginDefault;
 
         // Measure word width - adjusting for space character constraints
         let wordWidth = 0;
