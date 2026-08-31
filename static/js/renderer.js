@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=1.9";
+import { getPRNG } from "./utils.js?v=2.0";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -151,12 +151,12 @@ function recalculateLayout() {
 
     ctx.font = `${currentFontSize}px "${currentFont}"`;
     
-    // Page-specific margins to prevent center-crease overlaps:
-    // Left Page (odd) has 30px outer left margin, 90px inner right spine margin
-    // Right Page (even) has 90px inner left spine margin, 30px outer right margin
+    // Page-specific margins to prevent center-crease & shadow overlaps:
+    // Left Page (odd) has 30px outer left margin, 620px right limit (180px safe spine margin clear of 3D shadows)
+    // Right Page (even) has 160px left limit (160px safe spine margin clear of 3D shadows), 760px outer right margin
     const isLeftPage = pageNumber % 2 === 1;
-    const leftMargin = isLeftPage ? 30 : 90;
-    const rightMargin = isLeftPage ? 710 : 770;
+    const leftMargin = isLeftPage ? 30 : 160;
+    const rightMarginDefault = isLeftPage ? 620 : 760;
     
     const words = pageText.split(/(\s+)/); // Keep whitespace chunks as words
     const layout = [];
@@ -180,13 +180,16 @@ function recalculateLayout() {
             
             if (lineIndex >= maxLines) {
                 isFull = true;
-                // Capture index of overflow text
                 overflowIndex = pageText.indexOf(word, textProcessed.length);
                 break;
             }
             textProcessed += word;
             continue;
         }
+
+        // Determine current line right margin limit
+        // On Line 0 of Left Page, limit to 580px to avoid PAGE/DATE header card area
+        const currentRightMargin = (isLeftPage && lineIndex === 0) ? 580 : rightMarginDefault;
 
         // Measure word width - adjusting for space character constraints
         let wordWidth = 0;
@@ -196,8 +199,8 @@ function recalculateLayout() {
             wordWidth += chW;
         }
         
-        // Wrap line if it exceeds margins (excluding trailing whitespace)
-        if (!/^\s+$/.test(word) && cursorX + wordWidth > rightMargin) {
+        // Wrap line if word exceeds current line's right margin
+        if (!/^\s+$/.test(word) && cursorX + wordWidth > currentRightMargin) {
             cursorX = leftMargin + 12;
             lineIndex++;
         }
@@ -213,14 +216,12 @@ function recalculateLayout() {
         let wordX = cursorX;
         const lineY = config.topMargin + lineIndex * config.lineSpacing + (config.lineSpacing * 0.72); // baseline
 
-        // Seeded randomness for variable spacing
         const seedStr = `${bookId}_${pageNumber}_word_${w}`;
         const prng = getPRNG(seedStr);
         const jitter = jitterSettings[currentJitterLevel];
 
         for (let c = 0; c < word.length; c++) {
             const char = word[c];
-            // Fix collapsed words by enforcing a minimum space width relative to font-size
             const charWidth = char === " " ? Math.max(ctx.measureText(char).width, currentFontSize * 0.32) : ctx.measureText(char).width;
             
             layout.push({
@@ -232,7 +233,6 @@ function recalculateLayout() {
                 charIndex: c
             });
 
-            // Advance cursor per character with small variable spacing jitter
             const spacingJitter = (prng() - 0.5) * jitter.spacing;
             wordX += charWidth + spacingJitter;
         }
@@ -315,7 +315,7 @@ function drawPage() {
 
     // 2. Draw Left Margin Line
     const isLeftPage = pageNumber % 2 === 1;
-    const leftMarginVal = isLeftPage ? 30 : 90;
+    const leftMarginVal = isLeftPage ? 30 : 160;
     ctx.strokeStyle = "rgba(225, 95, 95, 0.65)"; // Soft margin red line
     ctx.lineWidth = 1.5;
     ctx.beginPath();
@@ -420,8 +420,8 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     
     // Page-specific margins to prevent center-crease overlaps:
     const isLeftPage = pageNum % 2 === 1;
-    const leftMargin = isLeftPage ? 30 : 90;
-    const rightMargin = isLeftPage ? 710 : 770;
+    const leftMargin = isLeftPage ? 30 : 160;
+    const rightMarginDefault = isLeftPage ? 620 : 760;
     
     // 1. Draw Ruled Lines
     staticCtx.strokeStyle = "rgba(166, 196, 240, 0.45)";
@@ -496,6 +496,8 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
             continue;
         }
 
+        const currentRightMargin = (isLeftPage && lineIndex === 0) ? 580 : rightMarginDefault;
+
         // Measure word width - adjusting for space character constraints
         let wordWidth = 0;
         for (let i = 0; i < word.length; i++) {
@@ -504,7 +506,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
             wordWidth += chW;
         }
         
-        if (!/^\s+$/.test(word) && cursorX + wordWidth > rightMargin) {
+        if (!/^\s+$/.test(word) && cursorX + wordWidth > currentRightMargin) {
             cursorX = leftMargin + 12;
             lineIndex++;
         }

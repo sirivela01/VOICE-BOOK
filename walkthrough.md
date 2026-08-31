@@ -24,7 +24,11 @@ We have successfully migrated the single-page portrait notebook canvas to a high
 *   **Collapsing Prevention:** Enforced a minimum space character width constraint (`currentFontSize * 0.32` pixels) to prevent cursive handwriting fonts (like `Homemade Apple`) from collapsing whitespace and making words run together.
 *   **PAGE & DATE indicators:** Repositioned PAGE & DATE cards to start at `y = 15` and stretch to `180px` wide. Added a solid `#fdf6e6` paper mask directly under the cards to hide the blue rules behind them.
 
-### 4. Interactive Navigation & Dictation Flows
+### 4. Speech Recognition Bug Fixes (Prevent Word Truncation)
+*   **The Problem:** The Web Speech API (`continuous` mode) frequently corrects and adjusts older finalized text. The previous code extracted finalized words using string length differences (`substring`), causing letters to get offset, truncated, or dropped (e.g. `"Kumar"` becoming `"K"`, or `"What"` losing `"at"`).
+*   **The Solution:** Rewrote `speech.js` to track final speech segments by **immutable event result indices** (`lastProcessedIndex`). Once index `i` is marked final, it is locked. The engine only extracts and appends new results from index `i + 1`, completely avoiding substring offsets.
+
+### 5. Interactive Navigation & Dictation Flows
 *   **Dual Page Loading:** Spawns parallel asynchronous promises to fetch odd and even pages. Initializes the active side using typewriter queues (`initRenderer`) while drawing the inactive page statically.
 *   **Typing Overflow:** As you type or speak, the ink automatically writes down the left page. Once full, it shifts to the top of the adjacent right page on the same spread. Once both pages are full, the spread performs a page-flip animation.
 *   **Mobile Adaptability:** On mobile devices, the workspace hides the inactive canvas to show a single focused canvas, keeping text readable.
@@ -34,7 +38,6 @@ We have successfully migrated the single-page portrait notebook canvas to a high
 ## 🧪 Verification Plan
 
 ### Manual Verification
-1.  Open the web application at the cache-busted URL: [https://voice-book-llh4.onrender.com/?v=1.8](https://voice-book-llh4.onrender.com/?v=1.8)
+1.  Open the web application at the cache-busted URL: [https://voice-book-llh4.onrender.com/?v=1.9](https://voice-book-llh4.onrender.com/?v=1.9)
 2.  Open any notebook from the shelf. Verify that the 3D cover swings open and reveals the side-by-side double page layout.
-3.  Type or speak a sentence that reaches the end of a line on the Left page. Check that the words automatically wrap to the next line without running into the center crease.
-4.  Confirm that the spaces between words are clearly visible and legible, and do not collapse.
+3.  Activate dictation and speak continuously. Ensure that words ending near the margin (like `"Kumar"`) wrap entirely to the next line without getting their letters truncated or leaving a single letter behind.
