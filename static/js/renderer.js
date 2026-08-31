@@ -370,3 +370,120 @@ function drawPage() {
         }
     }
 }
+
+/**
+ * Renders a static, non-animating page onto a canvas.
+ * Useful for displaying side-by-side pages in a double page spread.
+ */
+export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
+    if (!canvasElement) return;
+    
+    // Scale canvas backing store for High-DPI screens
+    const dpr = window.devicePixelRatio || 1;
+    canvasElement.width = VIRTUAL_WIDTH * dpr;
+    canvasElement.height = VIRTUAL_HEIGHT * dpr;
+    
+    const staticCtx = canvasElement.getContext('2d');
+    staticCtx.scale(dpr, dpr);
+    
+    const font = options.font || currentFont;
+    const fontSize = options.fontSize || currentFontSize;
+    const jitterLevel = options.jitterLevel !== undefined ? options.jitterLevel : currentJitterLevel;
+    
+    // 1. Draw Ruled Lines
+    staticCtx.strokeStyle = "rgba(166, 196, 240, 0.45)";
+    staticCtx.lineWidth = 1;
+    
+    const maxLines = Math.floor((VIRTUAL_HEIGHT - config.topMargin - config.bottomMargin) / config.lineSpacing);
+    for (let i = 0; i < maxLines; i++) {
+        const y = config.topMargin + i * config.lineSpacing;
+        staticCtx.beginPath();
+        staticCtx.moveTo(0, y);
+        staticCtx.lineTo(VIRTUAL_WIDTH, y);
+        staticCtx.stroke();
+    }
+
+    // 2. Draw Left Margin Line
+    staticCtx.strokeStyle = "rgba(225, 95, 95, 0.65)";
+    staticCtx.lineWidth = 1.5;
+    staticCtx.beginPath();
+    staticCtx.moveTo(config.leftMargin, 0);
+    staticCtx.lineTo(config.leftMargin, VIRTUAL_HEIGHT);
+    staticCtx.stroke();
+
+    // 3. Draw Header Box
+    staticCtx.strokeStyle = "rgba(166, 196, 240, 0.4)";
+    staticCtx.lineWidth = 1;
+    staticCtx.strokeRect(VIRTUAL_WIDTH - 190, 35, 140, 32);
+    staticCtx.font = "11px 'Inter', sans-serif";
+    staticCtx.fillStyle = "rgba(0, 0, 0, 0.35)";
+    staticCtx.fillText("PAGE:", VIRTUAL_WIDTH - 180, 55);
+    staticCtx.font = "14px 'Inter', sans-serif";
+    staticCtx.fillStyle = "rgba(0, 0, 0, 0.7)";
+    staticCtx.fillText(pageNum.toString(), VIRTUAL_WIDTH - 135, 56);
+    
+    if (!text) return;
+    
+    staticCtx.font = `${fontSize}px "${font}"`;
+    staticCtx.fillStyle = config.inkColor;
+    staticCtx.textBaseline = "alphabetic";
+    
+    const words = text.split(/(\s+)/);
+    let lineIndex = 0;
+    let cursorX = config.leftMargin + 12;
+    const jitter = jitterSettings[jitterLevel];
+    
+    let textProcessed = "";
+    
+    for (let w = 0; w < words.length; w++) {
+        const word = words[w];
+        if (word === "") continue;
+
+        if (word.includes('\n')) {
+            const newlines = word.split('\n').length - 1;
+            lineIndex += newlines;
+            cursorX = config.leftMargin + 12;
+            if (lineIndex >= maxLines) break;
+            textProcessed += word;
+            continue;
+        }
+
+        const wordWidth = staticCtx.measureText(word).width;
+        if (!/^\s+$/.test(word) && cursorX + wordWidth > config.rightMargin) {
+            cursorX = config.leftMargin + 12;
+            lineIndex++;
+        }
+
+        if (lineIndex >= maxLines) break;
+
+        let wordX = cursorX;
+        const lineY = config.topMargin + lineIndex * config.lineSpacing + (config.lineSpacing * 0.72);
+        const seedStr = `${bookId}_${pageNum}_word_${w}`;
+        const prng = getPRNG(seedStr);
+
+        for (let c = 0; c < word.length; c++) {
+            const char = word[c];
+            const charWidth = staticCtx.measureText(char).width;
+            
+            const seedCharStr = `${bookId}_${pageNum}_char_${textProcessed.length + c}_${char}`;
+            const prngChar = getPRNG(seedCharStr);
+            
+            const rotJitter = (prngChar() - 0.5) * jitter.rotation * (Math.PI / 180);
+            const wobbleX = (prngChar() - 0.5) * jitter.wobble;
+            const wobbleY = (prngChar() - 0.5) * jitter.wobble;
+            const scaleJitter = 1.0 + (prngChar() - 0.5) * jitter.scale;
+            
+            staticCtx.save();
+            staticCtx.translate(wordX + wobbleX, lineY + wobbleY);
+            staticCtx.rotate(rotJitter);
+            staticCtx.scale(scaleJitter, scaleJitter);
+            staticCtx.fillText(char, 0, 0);
+            staticCtx.restore();
+
+            const spacingJitter = (prng() - 0.5) * jitter.spacing;
+            wordX += charWidth + spacingJitter;
+        }
+        cursorX = wordX;
+        textProcessed += word;
+    }
+}

@@ -2,7 +2,7 @@ import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./fire
 import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js";
 import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js";
 import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText } from "./renderer.js";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, renderPageStatic } from "./renderer.js";
 import { showToast, hashString, debounce } from "./utils.js";
 
 // Session App State
@@ -307,14 +307,9 @@ async function openNotebook(bookId, name, pageNum) {
     activePageNumber = pageNum;
     
     notebookTitle.innerText = name;
-    pageDisplayCounter.innerText = `Page ${activePageNumber} of 365`;
     
     // Clear live transcription elements
     liveTranscriptBox.innerHTML = `<span class="placeholder-text">Live speech transcript preview will appear here...</span>`;
-    
-    // Initialize Renderer
-    const canvasEl = document.getElementById("notebook-canvas");
-    initRenderer(canvasEl);
     
     setSaveStatus("saving", "Loading page...");
     
@@ -373,23 +368,7 @@ async function openNotebook(bookId, name, pageNum) {
         // Step 2: Swap back workspace view and hide overlay
         setTimeout(async () => {
             showView("view-notebook");
-            
-            try {
-                const text = await getPageContent(activeBookId, activePageNumber);
-                setRenderOptions({
-                    font: selectFont.value,
-                    fontSize: parseInt(inputFontSize.value),
-                    jitterLevel: parseInt(inputJitter.value),
-                    activeBookId: activeBookId,
-                    activePageNumber: activePageNumber
-                });
-                renderText(text, false);
-                setSaveStatus("saved", "All changes saved");
-            } catch (err) {
-                console.error("Load page error:", err);
-                showToast("Error loading page content.", "error");
-                setSaveStatus("error", "Error loading page");
-            }
+            await loadActivePage();
             
             // Fade out the overlay
             overlay.classList.remove("active-overlay");
@@ -402,72 +381,59 @@ async function openNotebook(bookId, name, pageNum) {
     } else {
         // Fallback if elements not found
         showView("view-notebook");
-        try {
-            const text = await getPageContent(activeBookId, activePageNumber);
-            setRenderOptions({
-                font: selectFont.value,
-                fontSize: parseInt(inputFontSize.value),
-                jitterLevel: parseInt(inputJitter.value),
-                activeBookId: activeBookId,
-                activePageNumber: activePageNumber
-            });
-            renderText(text, false);
-            setSaveStatus("saved", "All changes saved");
-        } catch (err) {
-            console.error("Load page error:", err);
-            showToast("Error loading page content.", "error");
-            setSaveStatus("error", "Error loading page");
-        }
+        await loadActivePage();
     }
 }
 
 async function turnPage(direction) {
     if (!activeBookId) return;
     
-    // Prevent changing page during active page flip animation to avoid document race conditions
-    const pageWrapper = document.querySelector(".canvas-3d-wrapper");
-    if (pageWrapper.classList.contains("flip-forward") || pageWrapper.classList.contains("flip-backward")) return;
+    const bookSpread = document.getElementById("notebook-book-spread");
+    if (bookSpread && (bookSpread.classList.contains("flip-forward") || bookSpread.classList.contains("flip-backward"))) return;
     
-    // Stop recording first
     if (isMicActive()) {
         stopListening();
     }
     
-    // Save current page immediately
     await saveActivePageData();
     
+    const currentLeft = activePageNumber % 2 === 1 ? activePageNumber : activePageNumber - 1;
+    
     if (direction === "next") {
-        if (activePageNumber >= 365) {
-            showToast("You have reached page 365! Create a new book.", "info");
+        const targetPage = currentLeft + 2;
+        if (targetPage > 365) {
+            showToast("You have reached the end of the notebook!", "info");
             return;
         }
         
-        pageWrapper.classList.add("flip-forward");
+        if (bookSpread) bookSpread.classList.add("flip-forward");
         setTimeout(async () => {
-            activePageNumber++;
+            activePageNumber = targetPage;
             await loadActivePage();
         }, 300);
-        
-        setTimeout(() => pageWrapper.classList.remove("flip-forward"), 600);
-        
+        setTimeout(() => {
+            if (bookSpread) bookSpread.classList.remove("flip-forward");
+        }, 600);
     } else {
-        if (activePageNumber <= 1) return;
+        const targetPage = currentLeft - 2;
+        if (targetPage < 1) return;
         
-        pageWrapper.classList.add("flip-backward");
+        if (bookSpread) bookSpread.classList.add("flip-backward");
         setTimeout(async () => {
-            activePageNumber--;
+            activePageNumber = targetPage;
             await loadActivePage();
         }, 300);
-        
-        setTimeout(() => pageWrapper.classList.remove("flip-backward"), 600);
+        setTimeout(() => {
+            if (bookSpread) bookSpread.classList.remove("flip-backward");
+        }, 600);
     }
 }
 
 async function goToPage(targetPage) {
     if (!activeBookId) return;
     
-    const pageWrapper = document.querySelector(".canvas-3d-wrapper");
-    if (pageWrapper.classList.contains("flip-forward") || pageWrapper.classList.contains("flip-backward")) return;
+    const bookSpread = document.getElementById("notebook-book-spread");
+    if (bookSpread && (bookSpread.classList.contains("flip-forward") || bookSpread.classList.contains("flip-backward"))) return;
     
     if (isMicActive()) {
         stopListening();
@@ -478,35 +444,93 @@ async function goToPage(targetPage) {
     const direction = targetPage > activePageNumber ? "forward" : "backward";
     
     if (direction === "forward") {
-        pageWrapper.classList.add("flip-forward");
+        if (bookSpread) bookSpread.classList.add("flip-forward");
         setTimeout(async () => {
             activePageNumber = targetPage;
             await loadActivePage();
         }, 300);
-        setTimeout(() => pageWrapper.classList.remove("flip-forward"), 600);
+        setTimeout(() => {
+            if (bookSpread) bookSpread.classList.remove("flip-forward");
+        }, 600);
     } else {
-        pageWrapper.classList.add("flip-backward");
+        if (bookSpread) bookSpread.classList.add("flip-backward");
         setTimeout(async () => {
             activePageNumber = targetPage;
             await loadActivePage();
         }, 300);
-        setTimeout(() => pageWrapper.classList.remove("flip-backward"), 600);
+        setTimeout(() => {
+            if (bookSpread) bookSpread.classList.remove("flip-backward");
+        }, 600);
     }
 }
 
 async function loadActivePage() {
-    pageDisplayCounter.innerText = `Page ${activePageNumber} of 365`;
-    setSaveStatus("saving", "Loading page...");
+    const leftPageNum = activePageNumber % 2 === 1 ? activePageNumber : activePageNumber - 1;
+    const rightPageNum = leftPageNum + 1;
+    
+    pageDisplayCounter.innerText = `Pages ${leftPageNum}-${rightPageNum} of 365`;
+    setSaveStatus("saving", "Loading pages...");
     
     try {
-        const text = await getPageContent(activeBookId, activePageNumber);
-        setRenderOptions({ activePageNumber: activePageNumber });
-        renderText(text, false);
+        const [leftText, rightText] = await Promise.all([
+            getPageContent(activeBookId, leftPageNum),
+            getPageContent(activeBookId, rightPageNum)
+        ]);
+        
+        const canvasLeft = document.getElementById("notebook-canvas-left");
+        const canvasRight = document.getElementById("notebook-canvas-right");
+        
+        if (activePageNumber === leftPageNum) {
+            initRenderer(canvasLeft);
+            setRenderOptions({ 
+                activePageNumber: leftPageNum,
+                font: selectFont.value,
+                fontSize: parseInt(inputFontSize.value),
+                jitterLevel: parseInt(inputJitter.value),
+                activeBookId: activeBookId
+            });
+            renderText(leftText, false);
+            
+            renderPageStatic(canvasRight, rightText, rightPageNum, {
+                font: selectFont.value,
+                fontSize: parseInt(inputFontSize.value),
+                jitterLevel: parseInt(inputJitter.value)
+            });
+        } else {
+            initRenderer(canvasRight);
+            setRenderOptions({ 
+                activePageNumber: rightPageNum,
+                font: selectFont.value,
+                fontSize: parseInt(inputFontSize.value),
+                jitterLevel: parseInt(inputJitter.value),
+                activeBookId: activeBookId
+            });
+            renderText(rightText, false);
+            
+            renderPageStatic(canvasLeft, leftText, leftPageNum, {
+                font: selectFont.value,
+                fontSize: parseInt(inputFontSize.value),
+                jitterLevel: parseInt(inputJitter.value)
+            });
+        }
+        
+        const containerLeft = document.getElementById("page-container-left");
+        const containerRight = document.getElementById("page-container-right");
+        if (containerLeft && containerRight) {
+            if (activePageNumber === leftPageNum) {
+                containerLeft.classList.remove("inactive-page-mobile");
+                containerRight.classList.add("inactive-page-mobile");
+            } else {
+                containerRight.classList.remove("inactive-page-mobile");
+                containerLeft.classList.add("inactive-page-mobile");
+            }
+        }
+        
         setSaveStatus("saved", "All changes saved");
         await updateCurrentPage(activeBookId, activePageNumber);
     } catch (err) {
-        console.error("Failed to load page:", err);
-        setSaveStatus("error", "Failed loading page");
+        console.error("Failed to load page spread:", err);
+        setSaveStatus("error", "Failed loading pages");
     }
 }
 
@@ -556,7 +580,7 @@ function setupSpeechRecognition() {
 
 /**
  * Handles text that fills the page entirely.
- * Automatically saves, performs page-flip, increments counter, and resumes writing the overflow text.
+ * Automatically saves, transitions from Left to Right page, or flips the book spread forward.
  */
 async function handlePageOverflow(remainingText) {
     console.log("Canvas full. Auto-paginating remaining words:", remainingText);
@@ -570,31 +594,109 @@ async function handlePageOverflow(remainingText) {
         return;
     }
     
-    // Animate page flip
-    const pageWrapper = document.querySelector(".canvas-3d-wrapper");
-    pageWrapper.classList.add("flip-forward");
+    const canvasLeft = document.getElementById("notebook-canvas-left");
+    const canvasRight = document.getElementById("notebook-canvas-right");
+    const containerLeft = document.getElementById("page-container-left");
+    const containerRight = document.getElementById("page-container-right");
     
-    setTimeout(async () => {
-        activePageNumber++;
-        pageDisplayCounter.innerText = `Page ${activePageNumber} of 365`;
+    const isLeftPageActive = activePageNumber % 2 === 1;
+    
+    if (isLeftPageActive) {
+        // Left page was active, overflow to the right page on the same spread
+        const leftText = getPageText();
+        activePageNumber++; // Now even (right page)
         
-        // Reset page elements on canvas
-        clearPage();
-        setRenderOptions({ activePageNumber: activePageNumber });
+        // Render left page statically
+        renderPageStatic(canvasLeft, leftText, activePageNumber - 1, {
+            font: selectFont.value,
+            fontSize: parseInt(inputFontSize.value),
+            jitterLevel: parseInt(inputJitter.value)
+        });
         
-        // Fetch any existing content (should be blank for a new page, but pulls if there was text)
-        const existingText = await getPageContent(activeBookId, activePageNumber);
-        const nextText = existingText ? (existingText + " " + remainingText) : remainingText;
+        // Target right page as active animating canvas
+        initRenderer(canvasRight);
+        setRenderOptions({ 
+            activePageNumber: activePageNumber,
+            font: selectFont.value,
+            fontSize: parseInt(inputFontSize.value),
+            jitterLevel: parseInt(inputJitter.value),
+            activeBookId: activeBookId
+        });
         
-        // Write text progressively onto the new page
+        // Fetch any existing content for right page
+        const rightText = await getPageContent(activeBookId, activePageNumber);
+        const nextText = rightText ? (rightText + " " + remainingText) : remainingText;
+        
+        // Start writing text progressively onto right page
         renderText(nextText, true, handlePageOverflow);
         
-        // Save initial state
+        // Sync UI counters and mobile visibility classes
+        pageDisplayCounter.innerText = `Pages ${activePageNumber - 1}-${activePageNumber} of 365`;
+        if (containerLeft && containerRight) {
+            containerRight.classList.remove("inactive-page-mobile");
+            containerLeft.classList.add("inactive-page-mobile");
+        }
+        
         await saveActivePageData();
         await updateCurrentPage(activeBookId, activePageNumber);
-    }, 300);
-    
-    setTimeout(() => pageWrapper.classList.remove("flip-forward"), 600);
+    } else {
+        // Right page was active, we must flip to the next double spread (left page of next spread)
+        const bookSpread = document.getElementById("notebook-book-spread");
+        if (bookSpread) {
+            bookSpread.classList.add("flip-forward");
+        }
+        
+        setTimeout(async () => {
+            activePageNumber++; // Now odd (left page of next spread)
+            const leftPageNum = activePageNumber;
+            const rightPageNum = leftPageNum + 1;
+            
+            pageDisplayCounter.innerText = `Pages ${leftPageNum}-${rightPageNum} of 365`;
+            
+            // Clear right page content and render left page canvas
+            initRenderer(canvasLeft);
+            setRenderOptions({ 
+                activePageNumber: leftPageNum,
+                font: selectFont.value,
+                fontSize: parseInt(inputFontSize.value),
+                jitterLevel: parseInt(inputJitter.value),
+                activeBookId: activeBookId
+            });
+            
+            // Fetch contents for new spread
+            const [leftText, rightText] = await Promise.all([
+                getPageContent(activeBookId, leftPageNum),
+                getPageContent(activeBookId, rightPageNum)
+            ]);
+            
+            const nextText = leftText ? (leftText + " " + remainingText) : remainingText;
+            
+            // Start animating left page
+            renderText(nextText, true, handlePageOverflow);
+            
+            // Render right page statically
+            renderPageStatic(canvasRight, rightText, rightPageNum, {
+                font: selectFont.value,
+                fontSize: parseInt(inputFontSize.value),
+                jitterLevel: parseInt(inputJitter.value)
+            });
+            
+            // Sync mobile visibility
+            if (containerLeft && containerRight) {
+                containerLeft.classList.remove("inactive-page-mobile");
+                containerRight.classList.add("inactive-page-mobile");
+            }
+            
+            await saveActivePageData();
+            await updateCurrentPage(activeBookId, activePageNumber);
+        }, 300);
+        
+        setTimeout(() => {
+            if (bookSpread) {
+                bookSpread.classList.remove("flip-forward");
+            }
+        }, 600);
+    }
 }
 
 /* ================= 3. CORE UI EVENT BINDINGS ================= */
