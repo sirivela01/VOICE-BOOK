@@ -150,3 +150,17 @@ export async function updateCurrentPage(bookId, pageNumber) {
         currentPage: pageNumber
     });
 }
+
+/**
+ * Renames an existing notebook document in Firestore.
+ * @param {string} bookId 
+ * @param {string} newName 
+ * @returns {Promise<void>}
+ */
+export async function renameBook(bookId, newName) {
+    const db = getFirebaseDb();
+    const bookDocRef = doc(db, "books", bookId);
+    await updateDoc(bookDocRef, {
+        name: newName
+    });
+}

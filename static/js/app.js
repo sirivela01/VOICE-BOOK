@@ -1,6 +1,6 @@
 import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js";
 import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage } from "./db.js";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js";
 import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js";
 import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText } from "./renderer.js";
 import { showToast, hashString, debounce } from "./utils.js";
@@ -213,12 +213,13 @@ async function loadBookshelf() {
                         <div class="spine-gold-band gold-top"></div>
                         <div class="spine-title">${escapeHTML(book.name)}</div>
                         <button class="spine-delete-btn" title="Delete notebook">×</button>
+                        <button class="spine-rename-btn" title="Rename notebook">✎</button>
                         <div class="spine-gold-band gold-bottom"></div>
                     `;
                     
                     // Click handler to open notebook
                     bookEl.addEventListener("click", (e) => {
-                        if (e.target.closest(".spine-delete-btn")) return;
+                        if (e.target.closest(".spine-delete-btn") || e.target.closest(".spine-rename-btn")) return;
                         openNotebook(book.id, book.name, book.currentPage || 1);
                     });
                     
@@ -233,6 +234,22 @@ async function loadBookshelf() {
                                 loadBookshelf();
                             } catch (err) {
                                 showToast(`Failed to delete: ${err.message}`, "error");
+                            }
+                        }
+                    });
+                    
+                    // Rename handler
+                    const renameBtn = bookEl.querySelector(".spine-rename-btn");
+                    renameBtn.addEventListener("click", async (e) => {
+                        e.stopPropagation();
+                        const newName = prompt(`Enter new name for "${book.name}":`, book.name);
+                        if (newName && newName.trim() && newName.trim() !== book.name) {
+                            try {
+                                await renameBook(book.id, newName.trim());
+                                showToast("Notebook renamed successfully!", "success");
+                                loadBookshelf();
+                            } catch (err) {
+                                showToast(`Failed to rename: ${err.message}`, "error");
                             }
                         }
                     });
@@ -256,6 +273,20 @@ async function loadBookshelf() {
             }
             bookcaseContainer.appendChild(shelfRow);
         }
+        
+        // Locking / unlocking the Add Row button
+        const totalSlots = totalRows * 5;
+        const filledSlots = booksMap.size;
+        if (filledSlots >= totalSlots) {
+            btnAddRow.disabled = false;
+            btnAddRow.classList.remove("disabled-locked");
+            btnAddRow.title = "Click to add a new shelf row (5 slots)";
+        } else {
+            btnAddRow.disabled = true;
+            btnAddRow.classList.add("disabled-locked");
+            btnAddRow.title = `Locked! Fill all current ${totalSlots} slots to unlock (currently ${filledSlots}/${totalSlots} filled)`;
+        }
+        
     } catch (err) {
         console.error("Load bookshelf error:", err);
         bookcaseContainer.innerHTML = `<div class="error-text" style="color: var(--danger); padding: 2rem; text-align: center;">Failed to load notebooks. Check database configurations.</div>`;
@@ -346,6 +377,37 @@ async function turnPage(direction) {
             await loadActivePage();
         }, 300);
         
+        setTimeout(() => pageWrapper.classList.remove("flip-backward"), 600);
+    }
+}
+
+async function goToPage(targetPage) {
+    if (!activeBookId) return;
+    
+    const pageWrapper = document.querySelector(".canvas-3d-wrapper");
+    if (pageWrapper.classList.contains("flip-forward") || pageWrapper.classList.contains("flip-backward")) return;
+    
+    if (isMicActive()) {
+        stopListening();
+    }
+    
+    await saveActivePageData();
+    
+    const direction = targetPage > activePageNumber ? "forward" : "backward";
+    
+    if (direction === "forward") {
+        pageWrapper.classList.add("flip-forward");
+        setTimeout(async () => {
+            activePageNumber = targetPage;
+            await loadActivePage();
+        }, 300);
+        setTimeout(() => pageWrapper.classList.remove("flip-forward"), 600);
+    } else {
+        pageWrapper.classList.add("flip-backward");
+        setTimeout(async () => {
+            activePageNumber = targetPage;
+            await loadActivePage();
+        }, 300);
         setTimeout(() => pageWrapper.classList.remove("flip-backward"), 600);
     }
 }
@@ -556,6 +618,50 @@ function setupEventListeners() {
     // Navigation buttons
     btnPrevPage.addEventListener("click", () => turnPage("prev"));
     btnNextPage.addEventListener("click", () => turnPage("next"));
+    
+    // Page counter click (Go to specific page)
+    pageDisplayCounter.addEventListener("click", () => {
+        const userInput = prompt(`Go to page (1-365):`, activePageNumber);
+        if (userInput) {
+            const targetPage = parseInt(userInput);
+            if (!isNaN(targetPage) && targetPage >= 1 && targetPage <= 365) {
+                if (targetPage === activePageNumber) return;
+                goToPage(targetPage);
+            } else {
+                showToast("Please enter a valid page number between 1 and 365.", "error");
+            }
+        }
+    });
+
+    // Tap page left/right sides to turn page
+    const pageWrapper = document.querySelector(".canvas-3d-wrapper");
+    pageWrapper.addEventListener("click", (e) => {
+        const rect = pageWrapper.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const width = rect.width;
+        
+        // Left 45% = previous, Right 55% = next, middle 10% ignored
+        if (clickX < width * 0.45) {
+            turnPage("prev");
+        } else if (clickX > width * 0.55) {
+            turnPage("next");
+        }
+    });
+
+    // Rename notebook by clicking the title in the workspace header
+    notebookTitle.addEventListener("click", async () => {
+        const newName = prompt("Rename notebook:", activeBookName);
+        if (newName && newName.trim() && newName.trim() !== activeBookName) {
+            try {
+                await renameBook(activeBookId, newName.trim());
+                activeBookName = newName.trim();
+                notebookTitle.innerText = activeBookName;
+                showToast("Notebook renamed successfully!", "success");
+            } catch (err) {
+                showToast(`Failed to rename: ${err.message}`, "error");
+            }
+        }
+    });
     
     // Erase page
     btnClearPage.addEventListener("click", () => {

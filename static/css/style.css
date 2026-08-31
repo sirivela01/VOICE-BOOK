@@ -1072,3 +1072,49 @@ canvas#notebook-canvas {
         padding: 1rem;
     }
 }
+
+/* Interactive Page Counter & Tap-To-Turn Canvas Cursors */
+.page-counter {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s, transform 0.2s;
+}
+.page-counter:hover {
+    color: var(--accent);
+    transform: scale(1.05);
+}
+
+.canvas-3d-wrapper {
+    cursor: pointer;
+}
+
+/* Notebook Title Editing Hover Effects */
+.book-title {
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.book-title:hover {
+    color: var(--accent);
+}
+.book-title:hover::after {
+    content: ' ✎';
+    font-size: 0.85rem;
+    color: var(--accent);
+    opacity: 0.8;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+/* Locked Shelf Add Row Button */
+.btn-add-shelf.disabled-locked {
+    opacity: 0.4;
+    cursor: not-allowed !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+    color: rgba(255, 255, 255, 0.2) !important;
+    box-shadow: none !important;
+}
+.btn-add-shelf.disabled-locked:hover {
+    background: rgba(255, 255, 255, 0.02) !important;
+    color: rgba(255, 255, 255, 0.2) !important;
+}
