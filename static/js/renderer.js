@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=2.7";
+import { getPRNG } from "./utils.js?v=2.8";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -151,15 +151,16 @@ function recalculateLayout() {
 
     ctx.font = `${currentFontSize}px "${currentFont}"`;
     
-    // Borderless Paper Layout (Red Margin Line Removed):
-    // Text starts at 25px. Safe right wrapping limit at 720px (80px safe buffer before edge).
-    const leftMargin = 25;
-    const rightMargin = 720;
+    // Layout per user instruction:
+    // Text starts right at left edge (15px - no wasted left space).
+    // Generous right-side space (wrap limit at 690px, leaving 110px empty space on the right).
+    const leftMargin = 15;
+    const rightMargin = 690;
     
     const words = pageText.split(/(\s+)/); // Keep whitespace chunks as words
     const layout = [];
     let lineIndex = 0;
-    let cursorX = leftMargin; // 25px starting text position
+    let cursorX = leftMargin; // 15px starting text position
     
     const maxLines = Math.floor((VIRTUAL_HEIGHT - config.topMargin - config.bottomMargin) / config.lineSpacing);
     let isFull = false;
@@ -185,15 +186,15 @@ function recalculateLayout() {
             continue;
         }
 
-        // Measure word width - adding 2.5px safety buffer per char for glyph overhangs & jitter
+        // Measure word width - adding 2.0px safety buffer per char for glyph overhangs & jitter
         let wordWidth = 0;
         for (let i = 0; i < word.length; i++) {
             const ch = word[i];
             const chW = ch === " " ? Math.max(ctx.measureText(ch).width, currentFontSize * 0.32) : ctx.measureText(ch).width;
-            wordWidth += chW + 2.5;
+            wordWidth += chW + 2.0;
         }
         
-        // Wrap line if word exceeds safe right margin limit (720px)
+        // Wrap line if word exceeds right margin limit (690px)
         if (!/^\s+$/.test(word) && cursorX + wordWidth > rightMargin) {
             cursorX = leftMargin;
             lineIndex++;
@@ -390,9 +391,11 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     const fontSize = options.fontSize || currentFontSize;
     const jitterLevel = options.jitterLevel !== undefined ? options.jitterLevel : currentJitterLevel;
     
-    // Safe margins on both Left and Right pages:
-    const leftMargin = 30;
-    const rightMargin = 710;
+    // Layout per user instruction:
+    // Text starts right at left edge (15px - no wasted left space).
+    // Generous right-side space (wrap limit at 690px, leaving 110px empty space on the right).
+    const leftMargin = 15;
+    const rightMargin = 690;
     
     // 1. Draw Ruled Lines
     staticCtx.strokeStyle = "rgba(166, 196, 240, 0.45)";
@@ -449,12 +452,12 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
 
         const currentRightMargin = rightMargin;
 
-        // Measure word width - adding 2.5px safety buffer per char for glyph overhangs & jitter
+        // Measure word width - adding 2.0px safety buffer per char for glyph overhangs & jitter
         let wordWidth = 0;
         for (let i = 0; i < word.length; i++) {
             const ch = word[i];
             const chW = ch === " " ? Math.max(staticCtx.measureText(ch).width, fontSize * 0.32) : staticCtx.measureText(ch).width;
-            wordWidth += chW + 2.5;
+            wordWidth += chW + 2.0;
         }
         
         if (!/^\s+$/.test(word) && cursorX + wordWidth > currentRightMargin) {
