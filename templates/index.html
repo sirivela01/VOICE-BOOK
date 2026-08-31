@@ -63,17 +63,18 @@
             </header>
 
             <main class="shelf-content">
-                <div class="shelf-grid">
-                    <!-- "Create New Book" Card -->
-                    <div class="book-card create-card" id="card-new-book">
-                        <div class="create-card-content">
-                            <span class="plus-icon">+</span>
-                            <h3>New Notebook</h3>
-                            <p>Create a 365-page book</p>
-                        </div>
+                <!-- 3D Bookcase Container -->
+                <div class="bookcase-wrapper">
+                    <div class="bookcase" id="bookcase-container">
+                        <!-- Dynamically populated shelves and vertical books -->
                     </div>
-                    <!-- Dynamically populated books -->
-                    <div id="shelf-books-container" class="shelf-grid-contents"></div>
+                </div>
+
+                <!-- Shelf controls -->
+                <div class="shelf-actions">
+                    <button id="btn-add-row" class="btn btn-outline btn-add-shelf">
+                        <span class="plus-sign">+</span> Add Shelf Row
+                    </button>
                 </div>
             </main>
         </section>

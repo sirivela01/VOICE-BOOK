@@ -21,7 +21,7 @@ import { getCurrentUser } from "./auth.js";
  * @param {string} name Title of the notebook
  * @returns {Promise<string>} The new document ID (bookId)
  */
-export async function createBook(name) {
+export async function createBook(name, slotIndex = 0) {
     const db = getFirebaseDb();
     const user = getCurrentUser();
     if (!user) throw new Error("User must be authenticated to create a notebook.");
@@ -31,7 +31,8 @@ export async function createBook(name) {
         name: name,
         createdAt: serverTimestamp(),
         currentPage: 1,
-        maxPages: 365
+        maxPages: 365,
+        slotIndex: slotIndex
     };
 
     const docRef = await addDoc(collection(db, "books"), bookData);

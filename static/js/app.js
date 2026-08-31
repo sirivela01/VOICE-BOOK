@@ -14,7 +14,8 @@ const bookColors = ["navy", "maroon", "forest", "plum"];
 // DOM elements
 let viewAuth, viewShelf, viewNotebook;
 let btnLogout, btnBackShelf;
-let shelfBooksContainer, cardNewBook;
+let bookcaseContainer, btnAddRow;
+let targetSlotIndex = 0;
 let selectFont, inputFontSize, inputJitter, valFontSize, valJitter;
 let btnToggleMic, micStatusIndicator, speechStatusText, liveTranscriptBox;
 let btnPrevPage, btnNextPage, btnClearPage, pageDisplayCounter, notebookTitle;
@@ -53,8 +54,8 @@ function cacheElements() {
     
     btnLogout = document.getElementById("btn-logout");
     btnBackShelf = document.getElementById("btn-back-shelf");
-    shelfBooksContainer = document.getElementById("shelf-books-container");
-    cardNewBook = document.getElementById("card-new-book");
+    bookcaseContainer = document.getElementById("bookcase-container");
+    btnAddRow = document.getElementById("btn-add-row");
     
     selectFont = document.getElementById("select-font");
     inputFontSize = document.getElementById("input-font-size");
@@ -144,80 +145,127 @@ function setSaveStatus(type, message) {
 async function loadBookshelf() {
     if (!isFirebaseInitialized()) return;
     
-    shelfBooksContainer.innerHTML = `<div class="loading-text">Loading notebooks...</div>`;
+    bookcaseContainer.innerHTML = `<div class="loading-text" style="color: white; padding: 2rem; text-align: center;">Loading your 3D bookshelf...</div>`;
     try {
         const books = await getUserBooks();
-        shelfBooksContainer.innerHTML = "";
+        bookcaseContainer.innerHTML = "";
         
-        if (books.length === 0) {
-            shelfBooksContainer.innerHTML = `
-                <div class="empty-shelf-message">
-                    <p>Your bookshelf is empty.</p>
-                    <p>Click "New Notebook" to create your first book!</p>
-                </div>
-            `;
-            return;
+        // Map books by slotIndex
+        const booksMap = new Map();
+        
+        // Group books that already have a slot index
+        books.forEach(book => {
+            if (book.slotIndex !== undefined && book.slotIndex !== null) {
+                booksMap.set(parseInt(book.slotIndex), book);
+            }
+        });
+        
+        // Auto-assign any legacy books that do not have a slot index to the first free slots
+        let searchSlot = 0;
+        books.forEach(book => {
+            if (book.slotIndex === undefined || book.slotIndex === null) {
+                while (booksMap.has(searchSlot)) {
+                    searchSlot++;
+                }
+                book.slotIndex = searchSlot;
+                booksMap.set(searchSlot, book);
+            }
+        });
+        
+        // Determine how many rows to render (minimum 5, or more if books require it or user added them)
+        let savedRows = parseInt(localStorage.getItem("voice_book_shelf_rows") || "5");
+        let maxSlot = 24; // 5 columns * 5 rows - 1
+        booksMap.forEach((book, slot) => {
+            if (slot > maxSlot) maxSlot = slot;
+        });
+        
+        const requiredRows = Math.ceil((maxSlot + 1) / 5);
+        const totalRows = Math.max(savedRows, requiredRows, 5);
+        
+        // Update localStorage if it grew due to database load
+        if (totalRows > savedRows) {
+            localStorage.setItem("voice_book_shelf_rows", totalRows.toString());
         }
         
-        books.forEach(book => {
-            // Assign color based on name hash
-            const colorIdx = hashString(book.name) % bookColors.length;
-            const bookColor = bookColors[colorIdx];
+        const spineColors = ["navy", "maroon", "forest", "plum", "leather", "teal", "gold"];
+        
+        for (let r = 0; r < totalRows; r++) {
+            const shelfRow = document.createElement("div");
+            shelfRow.className = "shelf-row";
             
-            const card = document.createElement("div");
-            card.className = "book-card";
-            card.setAttribute("data-color", bookColor);
-            
-            const dateStr = book.createdAt ? new Date(book.createdAt.seconds * 1000).toLocaleDateString(undefined, {
-                month: 'short', day: 'numeric', year: 'numeric'
-            }) : 'Just now';
-            
-            card.innerHTML = `
-                <div class="book-cover">
-                    <span class="book-badge">365 Pages</span>
-                    <h3 class="book-card-title">${escapeHTML(book.name)}</h3>
-                </div>
-                <div class="book-card-meta">
-                    <div class="book-pages">
-                        <span>Pg. ${book.currentPage || 1}</span>
-                    </div>
-                    <span class="book-date">${dateStr}</span>
-                    <button class="btn-delete-book" data-id="${book.id}" data-name="${escapeHTML(book.name)}" title="Delete notebook">
-                        <svg class="icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                    </button>
-                </div>
-            `;
-            
-            // Clicking card opens the book (except when clicking delete)
-            card.addEventListener("click", (e) => {
-                if (e.target.closest(".btn-delete-book")) return;
-                openNotebook(book.id, book.name, book.currentPage || 1);
-            });
-            
-            // Delete confirmation
-            const deleteBtn = card.querySelector(".btn-delete-book");
-            deleteBtn.addEventListener("click", async (e) => {
-                e.stopPropagation();
-                const id = deleteBtn.getAttribute("data-id");
-                const name = deleteBtn.getAttribute("data-name");
+            for (let c = 0; c < 5; c++) {
+                const slotIndex = r * 5 + c;
+                const cell = document.createElement("div");
+                cell.className = "shelf-cell";
                 
-                if (confirm(`Are you sure you want to delete the notebook "${name}"? This deletes all 365 pages forever.`)) {
-                    try {
-                        await deleteBook(id);
-                        showToast(`Notebook "${name}" deleted.`, "success");
-                        loadBookshelf();
-                    } catch (err) {
-                        showToast(`Failed to delete: ${err.message}`, "error");
-                    }
+                if (booksMap.has(slotIndex)) {
+                    const book = booksMap.get(slotIndex);
+                    const colorIdx = hashString(book.id) % spineColors.length;
+                    const spineColor = spineColors[colorIdx];
+                    
+                    const bookEl = document.createElement("div");
+                    bookEl.className = `spine-book spine-${spineColor}`;
+                    bookEl.setAttribute("data-id", book.id);
+                    bookEl.setAttribute("data-slot", slotIndex);
+                    bookEl.title = `Click to open "${book.name}" (Page ${book.currentPage || 1})`;
+                    
+                    bookEl.innerHTML = `
+                        <div class="spine-gold-band gold-top"></div>
+                        <div class="spine-title">${escapeHTML(book.name)}</div>
+                        <button class="spine-delete-btn" title="Delete notebook">×</button>
+                        <div class="spine-gold-band gold-bottom"></div>
+                    `;
+                    
+                    // Click handler to open notebook
+                    bookEl.addEventListener("click", (e) => {
+                        if (e.target.closest(".spine-delete-btn")) return;
+                        openNotebook(book.id, book.name, book.currentPage || 1);
+                    });
+                    
+                    // Delete confirmation handler
+                    const deleteBtn = bookEl.querySelector(".spine-delete-btn");
+                    deleteBtn.addEventListener("click", async (e) => {
+                        e.stopPropagation();
+                        if (confirm(`Are you sure you want to delete "${book.name}"? This deletes all 365 pages forever.`)) {
+                            try {
+                                await deleteBook(book.id);
+                                showToast(`Notebook "${book.name}" deleted.`, "success");
+                                loadBookshelf();
+                            } catch (err) {
+                                showToast(`Failed to delete: ${err.message}`, "error");
+                            }
+                        }
+                    });
+                    
+                    cell.appendChild(bookEl);
+                } else {
+                    // Empty placeholder book spine
+                    const emptyEl = document.createElement("div");
+                    emptyEl.className = "spine-book empty-slot";
+                    emptyEl.title = "Click to create a new notebook in this slot";
+                    emptyEl.innerHTML = `<div class="spine-add-icon">+</div>`;
+                    
+                    emptyEl.addEventListener("click", () => {
+                        promptCreateBookAtSlot(slotIndex);
+                    });
+                    
+                    cell.appendChild(emptyEl);
                 }
-            });
-            
-            shelfBooksContainer.appendChild(card);
-        });
+                
+                shelfRow.appendChild(cell);
+            }
+            bookcaseContainer.appendChild(shelfRow);
+        }
     } catch (err) {
         console.error("Load bookshelf error:", err);
-        shelfBooksContainer.innerHTML = `<div class="error-text">Failed to load notebooks. Check database configurations.</div>`;
+        bookcaseContainer.innerHTML = `<div class="error-text" style="color: var(--danger); padding: 2rem; text-align: center;">Failed to load notebooks. Check database configurations.</div>`;
     }
+}
+
+function promptCreateBookAtSlot(slotIndex) {
+    targetSlotIndex = slotIndex;
+    formCreateBook.reset();
+    showModal(modalCreateBook);
 }
 
 /* ================= 2. NOTEBOOK HANDLERS ================= */
@@ -439,9 +487,12 @@ function setupEventListeners() {
         loadBookshelf();
     });
     
-    cardNewBook.addEventListener("click", () => {
-        formCreateBook.reset();
-        showModal(modalCreateBook);
+    btnAddRow.addEventListener("click", () => {
+        let savedRows = parseInt(localStorage.getItem("voice_book_shelf_rows") || "5");
+        savedRows++;
+        localStorage.setItem("voice_book_shelf_rows", savedRows.toString());
+        loadBookshelf();
+        showToast("New shelf row added!", "info");
     });
     
     // Close Modals
@@ -455,7 +506,7 @@ function setupEventListeners() {
         if (!name) return;
         
         try {
-            const newId = await createBook(name);
+            const newId = await createBook(name, targetSlotIndex);
             closeModal(modalCreateBook);
             showToast("Notebook created!", "success");
             openNotebook(newId, name, 1);
