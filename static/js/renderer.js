@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=1.7";
+import { getPRNG } from "./utils.js?v=1.8";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -151,10 +151,17 @@ function recalculateLayout() {
 
     ctx.font = `${currentFontSize}px "${currentFont}"`;
     
+    // Page-specific margins to prevent center-crease overlaps:
+    // Left Page (odd) has 30px outer left margin, 90px inner right spine margin
+    // Right Page (even) has 90px inner left spine margin, 30px outer right margin
+    const isLeftPage = pageNumber % 2 === 1;
+    const leftMargin = isLeftPage ? 30 : 90;
+    const rightMargin = isLeftPage ? 710 : 770;
+    
     const words = pageText.split(/(\s+)/); // Keep whitespace chunks as words
     const layout = [];
     let lineIndex = 0;
-    let cursorX = config.leftMargin + 12; // Start with small indent
+    let cursorX = leftMargin + 12; // Start with small indent
     
     const maxLines = Math.floor((VIRTUAL_HEIGHT - config.topMargin - config.bottomMargin) / config.lineSpacing);
     let isFull = false;
@@ -169,7 +176,7 @@ function recalculateLayout() {
         if (word.includes('\n')) {
             const newlines = word.split('\n').length - 1;
             lineIndex += newlines;
-            cursorX = config.leftMargin + 12;
+            cursorX = leftMargin + 12;
             
             if (lineIndex >= maxLines) {
                 isFull = true;
@@ -181,12 +188,17 @@ function recalculateLayout() {
             continue;
         }
 
-        // Measure word
-        const wordWidth = ctx.measureText(word).width;
+        // Measure word width - adjusting for space character constraints
+        let wordWidth = 0;
+        for (let i = 0; i < word.length; i++) {
+            const ch = word[i];
+            const chW = ch === " " ? Math.max(ctx.measureText(ch).width, currentFontSize * 0.32) : ctx.measureText(ch).width;
+            wordWidth += chW;
+        }
         
         // Wrap line if it exceeds margins (excluding trailing whitespace)
-        if (!/^\s+$/.test(word) && cursorX + wordWidth > config.rightMargin) {
-            cursorX = config.leftMargin + 12;
+        if (!/^\s+$/.test(word) && cursorX + wordWidth > rightMargin) {
+            cursorX = leftMargin + 12;
             lineIndex++;
         }
 
@@ -208,7 +220,8 @@ function recalculateLayout() {
 
         for (let c = 0; c < word.length; c++) {
             const char = word[c];
-            const charWidth = ctx.measureText(char).width;
+            // Fix collapsed words by enforcing a minimum space width relative to font-size
+            const charWidth = char === " " ? Math.max(ctx.measureText(char).width, currentFontSize * 0.32) : ctx.measureText(char).width;
             
             layout.push({
                 char: char,
@@ -301,11 +314,13 @@ function drawPage() {
     }
 
     // 2. Draw Left Margin Line
+    const isLeftPage = pageNumber % 2 === 1;
+    const leftMarginVal = isLeftPage ? 30 : 90;
     ctx.strokeStyle = "rgba(225, 95, 95, 0.65)"; // Soft margin red line
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(config.leftMargin, 0);
-    ctx.lineTo(config.leftMargin, VIRTUAL_HEIGHT);
+    ctx.moveTo(leftMarginVal, 0);
+    ctx.lineTo(leftMarginVal, VIRTUAL_HEIGHT);
     ctx.stroke();
 
     // 3. Draw Header Lines/Boxes (Page & Date indicators in top-right)
@@ -403,6 +418,11 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     const fontSize = options.fontSize || currentFontSize;
     const jitterLevel = options.jitterLevel !== undefined ? options.jitterLevel : currentJitterLevel;
     
+    // Page-specific margins to prevent center-crease overlaps:
+    const isLeftPage = pageNum % 2 === 1;
+    const leftMargin = isLeftPage ? 30 : 90;
+    const rightMargin = isLeftPage ? 710 : 770;
+    
     // 1. Draw Ruled Lines
     staticCtx.strokeStyle = "rgba(166, 196, 240, 0.45)";
     staticCtx.lineWidth = 1;
@@ -420,8 +440,8 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     staticCtx.strokeStyle = "rgba(225, 95, 95, 0.65)";
     staticCtx.lineWidth = 1.5;
     staticCtx.beginPath();
-    staticCtx.moveTo(config.leftMargin, 0);
-    staticCtx.lineTo(config.leftMargin, VIRTUAL_HEIGHT);
+    staticCtx.moveTo(leftMargin, 0);
+    staticCtx.lineTo(leftMargin, VIRTUAL_HEIGHT);
     staticCtx.stroke();
 
     // 3. Draw Header Box
@@ -458,7 +478,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     
     const words = text.split(/(\s+)/);
     let lineIndex = 0;
-    let cursorX = config.leftMargin + 12;
+    let cursorX = leftMargin + 12;
     const jitter = jitterSettings[jitterLevel];
     
     let textProcessed = "";
@@ -470,15 +490,22 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
         if (word.includes('\n')) {
             const newlines = word.split('\n').length - 1;
             lineIndex += newlines;
-            cursorX = config.leftMargin + 12;
+            cursorX = leftMargin + 12;
             if (lineIndex >= maxLines) break;
             textProcessed += word;
             continue;
         }
 
-        const wordWidth = staticCtx.measureText(word).width;
-        if (!/^\s+$/.test(word) && cursorX + wordWidth > config.rightMargin) {
-            cursorX = config.leftMargin + 12;
+        // Measure word width - adjusting for space character constraints
+        let wordWidth = 0;
+        for (let i = 0; i < word.length; i++) {
+            const ch = word[i];
+            const chW = ch === " " ? Math.max(staticCtx.measureText(ch).width, fontSize * 0.32) : staticCtx.measureText(ch).width;
+            wordWidth += chW;
+        }
+        
+        if (!/^\s+$/.test(word) && cursorX + wordWidth > rightMargin) {
+            cursorX = leftMargin + 12;
             lineIndex++;
         }
 
@@ -491,7 +518,8 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
 
         for (let c = 0; c < word.length; c++) {
             const char = word[c];
-            const charWidth = staticCtx.measureText(char).width;
+            // Fix collapsed words by enforcing a minimum space width relative to font-size
+            const charWidth = char === " " ? Math.max(staticCtx.measureText(char).width, fontSize * 0.32) : staticCtx.measureText(char).width;
             
             const seedCharStr = `${bookId}_${pageNum}_char_${textProcessed.length + c}_${char}`;
             const prngChar = getPRNG(seedCharStr);
