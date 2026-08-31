@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=1.6";
+import { getPRNG } from "./utils.js?v=1.7";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -8,10 +8,10 @@ let ctx = null;
 
 // Layout config
 const config = {
-    topMargin: 50,
+    topMargin: 30,
     bottomMargin: 50,
-    leftMargin: 55,
-    rightMargin: 745,
+    leftMargin: 30,
+    rightMargin: 770,
     lineSpacing: 22,
     inkColor: "#1d3d84", // Premium ballpoint/fountain blue
 };
@@ -310,29 +310,29 @@ function drawPage() {
 
     // 3. Draw Header Lines/Boxes (Page & Date indicators in top-right)
     ctx.fillStyle = "#fdf6e6"; // Solid paper color to mask blue lines underneath
-    ctx.fillRect(VIRTUAL_WIDTH - 210, 30, 160, 46);
+    ctx.fillRect(VIRTUAL_WIDTH - 210, 15, 180, 46);
     
     ctx.strokeStyle = "rgba(166, 196, 240, 0.55)";
     ctx.lineWidth = 1;
-    ctx.strokeRect(VIRTUAL_WIDTH - 210, 30, 160, 46);
+    ctx.strokeRect(VIRTUAL_WIDTH - 210, 15, 180, 46);
     
     ctx.font = "11px 'Inter', sans-serif";
     ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
-    ctx.fillText("PAGE:", VIRTUAL_WIDTH - 198, 48);
+    ctx.fillText("PAGE:", VIRTUAL_WIDTH - 198, 33);
     
     ctx.font = "13px 'Inter', sans-serif";
     ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
-    ctx.fillText(pageNumber.toString(), VIRTUAL_WIDTH - 150, 48);
+    ctx.fillText(pageNumber.toString(), VIRTUAL_WIDTH - 150, 33);
     
     ctx.beginPath();
-    ctx.moveTo(VIRTUAL_WIDTH - 210, 54);
-    ctx.lineTo(VIRTUAL_WIDTH - 50, 54);
+    ctx.moveTo(VIRTUAL_WIDTH - 210, 39);
+    ctx.lineTo(VIRTUAL_WIDTH - 30, 39);
     ctx.stroke();
     
     ctx.font = "11px 'Inter', sans-serif";
     ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
-    ctx.fillText("DATE:", VIRTUAL_WIDTH - 198, 68);
-    ctx.fillText("___/___/___", VIRTUAL_WIDTH - 155, 66);
+    ctx.fillText("DATE:", VIRTUAL_WIDTH - 198, 53);
+    ctx.fillText("___/___/___", VIRTUAL_WIDTH - 155, 51);
 
     // 4. Draw Handwritten Text Characters
     ctx.font = `${currentFontSize}px "${currentFont}"`;
@@ -426,29 +426,29 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
 
     // 3. Draw Header Box
     staticCtx.fillStyle = "#fdf6e6"; // Solid paper color to mask blue lines underneath
-    staticCtx.fillRect(VIRTUAL_WIDTH - 210, 30, 160, 46);
+    staticCtx.fillRect(VIRTUAL_WIDTH - 210, 15, 180, 46);
     
     staticCtx.strokeStyle = "rgba(166, 196, 240, 0.55)";
     staticCtx.lineWidth = 1;
-    staticCtx.strokeRect(VIRTUAL_WIDTH - 210, 30, 160, 46);
+    staticCtx.strokeRect(VIRTUAL_WIDTH - 210, 15, 180, 46);
     
     staticCtx.font = "11px 'Inter', sans-serif";
     staticCtx.fillStyle = "rgba(0, 0, 0, 0.4)";
-    staticCtx.fillText("PAGE:", VIRTUAL_WIDTH - 198, 48);
+    staticCtx.fillText("PAGE:", VIRTUAL_WIDTH - 198, 33);
     
     staticCtx.font = "13px 'Inter', sans-serif";
     staticCtx.fillStyle = "rgba(0, 0, 0, 0.75)";
-    staticCtx.fillText(pageNum.toString(), VIRTUAL_WIDTH - 150, 48);
+    staticCtx.fillText(pageNum.toString(), VIRTUAL_WIDTH - 150, 33);
     
     staticCtx.beginPath();
-    staticCtx.moveTo(VIRTUAL_WIDTH - 210, 54);
-    staticCtx.lineTo(VIRTUAL_WIDTH - 50, 54);
+    staticCtx.moveTo(VIRTUAL_WIDTH - 210, 39);
+    staticCtx.lineTo(VIRTUAL_WIDTH - 30, 39);
     staticCtx.stroke();
     
     staticCtx.font = "11px 'Inter', sans-serif";
     staticCtx.fillStyle = "rgba(0, 0, 0, 0.4)";
-    staticCtx.fillText("DATE:", VIRTUAL_WIDTH - 198, 68);
-    staticCtx.fillText("___/___/___", VIRTUAL_WIDTH - 155, 66);
+    staticCtx.fillText("DATE:", VIRTUAL_WIDTH - 198, 53);
+    staticCtx.fillText("___/___/___", VIRTUAL_WIDTH - 155, 51);
     
     if (!text) return;
     
