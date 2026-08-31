@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=1.4";
+import { getPRNG } from "./utils.js?v=1.5";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -9,10 +9,10 @@ let ctx = null;
 // Layout config
 const config = {
     topMargin: 110,
-    bottomMargin: 70,
+    bottomMargin: 50,
     leftMargin: 95,
     rightMargin: 740,
-    lineSpacing: 34,
+    lineSpacing: 21,
     inkColor: "#1d3d84", // Premium ballpoint/fountain blue
 };
 
@@ -291,7 +291,7 @@ function drawPage() {
     ctx.strokeStyle = "rgba(166, 196, 240, 0.45)"; // Soft ruled blue lines
     ctx.lineWidth = 1;
     
-    const maxLines = Math.floor((VIRTUAL_HEIGHT - config.topMargin - config.bottomMargin) / config.lineSpacing);
+    const maxLines = 40;
     for (let i = 0; i < maxLines; i++) {
         const y = config.topMargin + i * config.lineSpacing;
         ctx.beginPath();
@@ -404,7 +404,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     staticCtx.strokeStyle = "rgba(166, 196, 240, 0.45)";
     staticCtx.lineWidth = 1;
     
-    const maxLines = Math.floor((VIRTUAL_HEIGHT - config.topMargin - config.bottomMargin) / config.lineSpacing);
+    const maxLines = 40;
     for (let i = 0; i < maxLines; i++) {
         const y = config.topMargin + i * config.lineSpacing;
         staticCtx.beginPath();

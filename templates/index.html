@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Caveat:wght@400;700&family=Homemade+Apple&family=Reenie+Beanie&family=Architects+Daughter&display=swap" rel="stylesheet">
     <!-- Main Style -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='1.4') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='1.5') }}">
 </head>
 <body>
     <!-- Background Gradient Grids -->
@@ -114,7 +114,7 @@
                                 <span>Font Size</span>
                                 <span id="val-font-size">24px</span>
                             </div>
-                            <input type="range" id="input-font-size" min="18" max="32" value="23" step="1">
+                            <input type="range" id="input-font-size" min="12" max="24" value="15" step="1">
                         </div>
 
                         <div class="control-group">
@@ -302,6 +302,6 @@
     </script>
 
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='1.4') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='1.5') }}"></script>
 </body>
 </html>
