@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=1.3";
+import { getPRNG } from "./utils.js?v=1.4";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -309,17 +309,27 @@ function drawPage() {
     ctx.stroke();
 
     // 3. Draw Header Lines/Boxes (Page & Date indicators in top-right)
-    ctx.strokeStyle = "rgba(166, 196, 240, 0.4)";
+    ctx.strokeStyle = "rgba(166, 196, 240, 0.55)";
     ctx.lineWidth = 1;
+    ctx.strokeRect(VIRTUAL_WIDTH - 210, 30, 160, 46);
     
-    // Page index box
-    ctx.strokeRect(VIRTUAL_WIDTH - 190, 35, 140, 32);
     ctx.font = "11px 'Inter', sans-serif";
-    ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
-    ctx.fillText("PAGE:", VIRTUAL_WIDTH - 180, 55);
-    ctx.font = "14px 'Inter', sans-serif";
-    ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-    ctx.fillText(pageNumber.toString(), VIRTUAL_WIDTH - 135, 56);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+    ctx.fillText("PAGE:", VIRTUAL_WIDTH - 198, 48);
+    
+    ctx.font = "13px 'Inter', sans-serif";
+    ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+    ctx.fillText(pageNumber.toString(), VIRTUAL_WIDTH - 150, 48);
+    
+    ctx.beginPath();
+    ctx.moveTo(VIRTUAL_WIDTH - 210, 54);
+    ctx.lineTo(VIRTUAL_WIDTH - 50, 54);
+    ctx.stroke();
+    
+    ctx.font = "11px 'Inter', sans-serif";
+    ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+    ctx.fillText("DATE:", VIRTUAL_WIDTH - 198, 68);
+    ctx.fillText("___/___/___", VIRTUAL_WIDTH - 155, 66);
 
     // 4. Draw Handwritten Text Characters
     ctx.font = `${currentFontSize}px "${currentFont}"`;
@@ -412,15 +422,27 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     staticCtx.stroke();
 
     // 3. Draw Header Box
-    staticCtx.strokeStyle = "rgba(166, 196, 240, 0.4)";
+    staticCtx.strokeStyle = "rgba(166, 196, 240, 0.55)";
     staticCtx.lineWidth = 1;
-    staticCtx.strokeRect(VIRTUAL_WIDTH - 190, 35, 140, 32);
+    staticCtx.strokeRect(VIRTUAL_WIDTH - 210, 30, 160, 46);
+    
     staticCtx.font = "11px 'Inter', sans-serif";
-    staticCtx.fillStyle = "rgba(0, 0, 0, 0.35)";
-    staticCtx.fillText("PAGE:", VIRTUAL_WIDTH - 180, 55);
-    staticCtx.font = "14px 'Inter', sans-serif";
-    staticCtx.fillStyle = "rgba(0, 0, 0, 0.7)";
-    staticCtx.fillText(pageNum.toString(), VIRTUAL_WIDTH - 135, 56);
+    staticCtx.fillStyle = "rgba(0, 0, 0, 0.4)";
+    staticCtx.fillText("PAGE:", VIRTUAL_WIDTH - 198, 48);
+    
+    staticCtx.font = "13px 'Inter', sans-serif";
+    staticCtx.fillStyle = "rgba(0, 0, 0, 0.75)";
+    staticCtx.fillText(pageNum.toString(), VIRTUAL_WIDTH - 150, 48);
+    
+    staticCtx.beginPath();
+    staticCtx.moveTo(VIRTUAL_WIDTH - 210, 54);
+    staticCtx.lineTo(VIRTUAL_WIDTH - 50, 54);
+    staticCtx.stroke();
+    
+    staticCtx.font = "11px 'Inter', sans-serif";
+    staticCtx.fillStyle = "rgba(0, 0, 0, 0.4)";
+    staticCtx.fillText("DATE:", VIRTUAL_WIDTH - 198, 68);
+    staticCtx.fillText("___/___/___", VIRTUAL_WIDTH - 155, 66);
     
     if (!text) return;
     

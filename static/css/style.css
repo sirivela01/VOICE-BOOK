@@ -807,36 +807,40 @@ body {
     padding: 2rem;
     gap: 1.5rem;
     overflow: hidden;
+    background: radial-gradient(circle, #382c20 0%, #1c140d 100%);
 }
 
 .canvas-3d-wrapper {
     position: relative;
     width: 100%;
     height: 100%;
-    max-width: 1360px;
+    max-width: min(1300px, 92vw, 112vh);
     max-height: 100%;
-    aspect-ratio: 16 / 10;
+    aspect-ratio: 15 / 10;
     display: flex;
     justify-content: center;
     align-items: center;
+    transform: rotateX(8deg);
+    transform-style: preserve-3d;
+    filter: drop-shadow(0 25px 45px rgba(0,0,0,0.7));
 }
 
 /* Notebook Page Stacking Styling for Double Page */
 .notebook-stack-layer {
     position: absolute;
     background-color: var(--paper-color);
-    width: 99%;
-    height: 98%;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-    border-radius: 6px;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    width: 100.4%;
+    height: 100%;
+    box-shadow: 2px 4px 8px rgba(0,0,0,0.15);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
 }
 .stack-1 {
-    transform: rotate(-0.5deg) translate(-1px, 2px);
+    transform: rotate(-0.2deg) translate(-1px, 2px);
     z-index: 1;
 }
 .stack-2 {
-    transform: rotate(0.4deg) translate(2px, -1px);
+    transform: rotate(0.1deg) translate(2px, -1px);
     z-index: 2;
 }
 
@@ -856,21 +860,20 @@ body {
     width: 50%;
     height: 100%;
     z-index: 3;
-    background-color: var(--paper-color);
     overflow: hidden;
     transition: transform 0.6s ease, opacity 0.6s ease;
 }
 
 .notebook-page-container.page-left {
-    border-radius: 6px 0 0 6px;
+    border-radius: 8px 0 0 8px;
     border-right: none;
-    box-shadow: inset -10px 0 20px rgba(0,0,0,0.02);
+    background: linear-gradient(to right, var(--paper-color) 0%, var(--paper-color) 92%, #e5dac2 100%);
 }
 
 .notebook-page-container.page-right {
-    border-radius: 0 6px 6px 0;
+    border-radius: 0 8px 8px 0;
     border-left: none;
-    box-shadow: inset 10px 0 20px rgba(0,0,0,0.02);
+    background: linear-gradient(to left, var(--paper-color) 0%, var(--paper-color) 92%, #e5dac2 100%);
 }
 
 /* Center Binder crease/shadow */
