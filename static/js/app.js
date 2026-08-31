@@ -1,5 +1,5 @@
 import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser } from "./auth.js";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js";
 import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage } from "./db.js";
 import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js";
 import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText } from "./renderer.js";
@@ -422,6 +422,17 @@ function setupEventListeners() {
         e.preventDefault();
         formSignup.classList.add("hidden");
         formLogin.classList.remove("hidden");
+    });
+    
+    // Google Sign In
+    document.getElementById("btn-google-login").addEventListener("click", async () => {
+        try {
+            await loginWithGoogle();
+            showToast("Successfully logged in with Google!", "success");
+        } catch (err) {
+            console.error("Google Auth error:", err);
+            showToast(err.message, "error");
+        }
     });
     
     // Login Submit

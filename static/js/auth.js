@@ -2,7 +2,9 @@ import {
     signInWithEmailAndPassword, 
     createUserWithEmailAndPassword, 
     signOut, 
-    onAuthStateChanged 
+    onAuthStateChanged,
+    GoogleAuthProvider,
+    signInWithPopup
 } from "firebase/auth";
 import { getFirebaseAuth } from "./firebase-init.js";
 
@@ -58,4 +60,14 @@ export function getCurrentUser() {
     } catch (e) {
         return null;
     }
+}
+
+/**
+ * Initiates standard Google login popup flow.
+ * @returns {Promise<UserCredential>}
+ */
+export function loginWithGoogle() {
+    const auth = getFirebaseAuth();
+    const provider = new GoogleAuthProvider();
+    return signInWithPopup(auth, provider);
 }
