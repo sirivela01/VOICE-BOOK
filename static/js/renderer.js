@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=2.8";
+import { getPRNG } from "./utils.js?v=3.0";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -151,16 +151,15 @@ function recalculateLayout() {
 
     ctx.font = `${currentFontSize}px "${currentFont}"`;
     
-    // Layout per user instruction:
-    // Text starts right at left edge (15px - no wasted left space).
-    // Generous right-side space (wrap limit at 690px, leaving 110px empty space on the right).
-    const leftMargin = 15;
-    const rightMargin = 690;
+    // Borderless Layout matching reference notebook:
+    // Text starts cleanly at 30px from left edge, wraps at 730px (leaving 70px clean right buffer).
+    const leftMargin = 30;
+    const rightMargin = 730;
     
     const words = pageText.split(/(\s+)/); // Keep whitespace chunks as words
     const layout = [];
     let lineIndex = 0;
-    let cursorX = leftMargin; // 15px starting text position
+    let cursorX = leftMargin;
     
     const maxLines = Math.floor((VIRTUAL_HEIGHT - config.topMargin - config.bottomMargin) / config.lineSpacing);
     let isFull = false;
@@ -194,7 +193,7 @@ function recalculateLayout() {
             wordWidth += chW + 2.0;
         }
         
-        // Wrap line if word exceeds right margin limit (690px)
+        // Wrap line if word exceeds right margin limit (730px)
         if (!/^\s+$/.test(word) && cursorX + wordWidth > rightMargin) {
             cursorX = leftMargin;
             lineIndex++;
@@ -391,11 +390,10 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     const fontSize = options.fontSize || currentFontSize;
     const jitterLevel = options.jitterLevel !== undefined ? options.jitterLevel : currentJitterLevel;
     
-    // Layout per user instruction:
-    // Text starts right at left edge (15px - no wasted left space).
-    // Generous right-side space (wrap limit at 690px, leaving 110px empty space on the right).
-    const leftMargin = 15;
-    const rightMargin = 690;
+    // Borderless Layout matching reference notebook:
+    // Text starts cleanly at 30px from left edge, wraps at 730px (leaving 70px clean right buffer).
+    const leftMargin = 30;
+    const rightMargin = 730;
     
     // 1. Draw Ruled Lines
     staticCtx.strokeStyle = "rgba(166, 196, 240, 0.45)";
