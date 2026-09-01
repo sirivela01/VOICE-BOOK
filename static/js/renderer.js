@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=6.4";
+import { getPRNG } from "./utils.js?v=7.0";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -275,13 +275,6 @@ export function clearPage() {
     animatedCharCount = 0;
     isAnimating = false;
     drawPage();
-}
-
-/**
- * Returns the current text content of the page.
- */
-export function getPageText() {
-    return pageText;
 }
 
 /**
