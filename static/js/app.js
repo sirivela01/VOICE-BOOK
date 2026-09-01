@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=3.2";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=3.2";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=3.2";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=3.2";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, renderPageStatic } from "./renderer.js?v=3.2";
-import { showToast, hashString, debounce } from "./utils.js?v=3.2";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=4.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=4.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=4.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=4.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, renderPageStatic } from "./renderer.js?v=4.0";
+import { showToast, hashString, debounce } from "./utils.js?v=4.0";
 
 // Session App State
 let activeBookId = null;
@@ -388,8 +388,8 @@ async function openNotebook(bookId, name, pageNum) {
 async function turnPage(direction) {
     if (!activeBookId) return;
     
-    const bookSpread = document.getElementById("notebook-book-spread");
-    if (bookSpread && (bookSpread.classList.contains("flip-forward") || bookSpread.classList.contains("flip-backward"))) return;
+    const paperWrapper = document.getElementById("notebook-paper-wrapper");
+    if (paperWrapper && (paperWrapper.classList.contains("flip-forward") || paperWrapper.classList.contains("flip-backward"))) return;
     
     if (isMicActive()) {
         stopListening();
@@ -397,43 +397,39 @@ async function turnPage(direction) {
     
     await saveActivePageData();
     
-    const currentLeft = activePageNumber % 2 === 1 ? activePageNumber : activePageNumber - 1;
-    
     if (direction === "next") {
-        const targetPage = currentLeft + 2;
-        if (targetPage > 365) {
+        if (activePageNumber >= 365) {
             showToast("You have reached the end of the notebook!", "info");
             return;
         }
-        
-        if (bookSpread) bookSpread.classList.add("flip-forward");
+        const targetPage = activePageNumber + 1;
+        if (paperWrapper) paperWrapper.classList.add("flip-forward");
         setTimeout(async () => {
             activePageNumber = targetPage;
             await loadActivePage();
-        }, 300);
+        }, 250);
         setTimeout(() => {
-            if (bookSpread) bookSpread.classList.remove("flip-forward");
-        }, 600);
+            if (paperWrapper) paperWrapper.classList.remove("flip-forward");
+        }, 500);
     } else {
-        const targetPage = currentLeft - 2;
-        if (targetPage < 1) return;
-        
-        if (bookSpread) bookSpread.classList.add("flip-backward");
+        if (activePageNumber <= 1) return;
+        const targetPage = activePageNumber - 1;
+        if (paperWrapper) paperWrapper.classList.add("flip-backward");
         setTimeout(async () => {
             activePageNumber = targetPage;
             await loadActivePage();
-        }, 300);
+        }, 250);
         setTimeout(() => {
-            if (bookSpread) bookSpread.classList.remove("flip-backward");
-        }, 600);
+            if (paperWrapper) paperWrapper.classList.remove("flip-backward");
+        }, 500);
     }
 }
 
 async function goToPage(targetPage) {
     if (!activeBookId) return;
     
-    const bookSpread = document.getElementById("notebook-book-spread");
-    if (bookSpread && (bookSpread.classList.contains("flip-forward") || bookSpread.classList.contains("flip-backward"))) return;
+    const paperWrapper = document.getElementById("notebook-paper-wrapper");
+    if (paperWrapper && (paperWrapper.classList.contains("flip-forward") || paperWrapper.classList.contains("flip-backward"))) return;
     
     if (isMicActive()) {
         stopListening();
@@ -443,94 +439,39 @@ async function goToPage(targetPage) {
     
     const direction = targetPage > activePageNumber ? "forward" : "backward";
     
-    if (direction === "forward") {
-        if (bookSpread) bookSpread.classList.add("flip-forward");
-        setTimeout(async () => {
-            activePageNumber = targetPage;
-            await loadActivePage();
-        }, 300);
-        setTimeout(() => {
-            if (bookSpread) bookSpread.classList.remove("flip-forward");
-        }, 600);
-    } else {
-        if (bookSpread) bookSpread.classList.add("flip-backward");
-        setTimeout(async () => {
-            activePageNumber = targetPage;
-            await loadActivePage();
-        }, 300);
-        setTimeout(() => {
-            if (bookSpread) bookSpread.classList.remove("flip-backward");
-        }, 600);
-    }
+    if (paperWrapper) paperWrapper.classList.add(direction === "forward" ? "flip-forward" : "flip-backward");
+    setTimeout(async () => {
+        activePageNumber = targetPage;
+        await loadActivePage();
+    }, 250);
+    setTimeout(() => {
+        if (paperWrapper) paperWrapper.classList.remove("flip-forward", "flip-backward");
+    }, 500);
 }
 
 async function loadActivePage() {
-    const leftPageNum = activePageNumber % 2 === 1 ? activePageNumber : activePageNumber - 1;
-    const rightPageNum = leftPageNum + 1;
-    
-    pageDisplayCounter.innerText = `Pages ${leftPageNum}-${rightPageNum} of 365`;
-    setSaveStatus("saving", "Loading pages...");
+    pageDisplayCounter.innerText = `Page ${activePageNumber} of 365`;
+    setSaveStatus("saving", "Loading page...");
     
     try {
-        const [leftText, rightText] = await Promise.all([
-            getPageContent(activeBookId, leftPageNum),
-            getPageContent(activeBookId, rightPageNum)
-        ]);
+        const pageText = await getPageContent(activeBookId, activePageNumber);
+        const canvasEl = document.getElementById("notebook-canvas");
         
-        const canvasLeft = document.getElementById("notebook-canvas-left");
-        const canvasRight = document.getElementById("notebook-canvas-right");
-        
-        if (activePageNumber === leftPageNum) {
-            initRenderer(canvasLeft);
-            setRenderOptions({ 
-                activePageNumber: leftPageNum,
-                font: selectFont.value,
-                fontSize: parseInt(inputFontSize.value),
-                jitterLevel: parseInt(inputJitter.value),
-                activeBookId: activeBookId
-            });
-            renderText(leftText, false);
-            
-            renderPageStatic(canvasRight, rightText, rightPageNum, {
-                font: selectFont.value,
-                fontSize: parseInt(inputFontSize.value),
-                jitterLevel: parseInt(inputJitter.value)
-            });
-        } else {
-            initRenderer(canvasRight);
-            setRenderOptions({ 
-                activePageNumber: rightPageNum,
-                font: selectFont.value,
-                fontSize: parseInt(inputFontSize.value),
-                jitterLevel: parseInt(inputJitter.value),
-                activeBookId: activeBookId
-            });
-            renderText(rightText, false);
-            
-            renderPageStatic(canvasLeft, leftText, leftPageNum, {
-                font: selectFont.value,
-                fontSize: parseInt(inputFontSize.value),
-                jitterLevel: parseInt(inputJitter.value)
-            });
-        }
-        
-        const containerLeft = document.getElementById("page-container-left");
-        const containerRight = document.getElementById("page-container-right");
-        if (containerLeft && containerRight) {
-            if (activePageNumber === leftPageNum) {
-                containerLeft.classList.remove("inactive-page-mobile");
-                containerRight.classList.add("inactive-page-mobile");
-            } else {
-                containerRight.classList.remove("inactive-page-mobile");
-                containerLeft.classList.add("inactive-page-mobile");
-            }
-        }
+        initRenderer(canvasEl);
+        setRenderOptions({ 
+            activePageNumber: activePageNumber,
+            font: selectFont.value,
+            fontSize: parseInt(inputFontSize.value),
+            jitterLevel: parseInt(inputJitter.value),
+            activeBookId: activeBookId
+        });
+        renderText(pageText, false);
         
         setSaveStatus("saved", "All changes saved");
         await updateCurrentPage(activeBookId, activePageNumber);
     } catch (err) {
-        console.error("Failed to load page spread:", err);
-        setSaveStatus("error", "Failed loading pages");
+        console.error("Failed to load page:", err);
+        setSaveStatus("error", "Failed loading page");
     }
 }
 
@@ -585,7 +526,6 @@ function setupSpeechRecognition() {
 async function handlePageOverflow(remainingText) {
     console.log("Canvas full. Auto-paginating remaining words:", remainingText);
     
-    // Save current completed page text
     await saveActivePageData();
     
     if (activePageNumber >= 365) {
@@ -594,27 +534,13 @@ async function handlePageOverflow(remainingText) {
         return;
     }
     
-    const canvasLeft = document.getElementById("notebook-canvas-left");
-    const canvasRight = document.getElementById("notebook-canvas-right");
-    const containerLeft = document.getElementById("page-container-left");
-    const containerRight = document.getElementById("page-container-right");
+    activePageNumber++;
+    const wrapper = document.getElementById("notebook-paper-wrapper");
+    if (wrapper) wrapper.classList.add("flip-forward");
     
-    const isLeftPageActive = activePageNumber % 2 === 1;
-    
-    if (isLeftPageActive) {
-        // Left page was active, overflow to the right page on the same spread
-        const leftText = getPageText();
-        activePageNumber++; // Now even (right page)
-        
-        // Render left page statically
-        renderPageStatic(canvasLeft, leftText, activePageNumber - 1, {
-            font: selectFont.value,
-            fontSize: parseInt(inputFontSize.value),
-            jitterLevel: parseInt(inputJitter.value)
-        });
-        
-        // Target right page as active animating canvas
-        initRenderer(canvasRight);
+    setTimeout(async () => {
+        const canvasEl = document.getElementById("notebook-canvas");
+        initRenderer(canvasEl);
         setRenderOptions({ 
             activePageNumber: activePageNumber,
             font: selectFont.value,
@@ -623,80 +549,18 @@ async function handlePageOverflow(remainingText) {
             activeBookId: activeBookId
         });
         
-        // Fetch any existing content for right page
-        const rightText = await getPageContent(activeBookId, activePageNumber);
-        const nextText = rightText ? (rightText + " " + remainingText) : remainingText;
-        
-        // Start writing text progressively onto right page
+        const existingText = await getPageContent(activeBookId, activePageNumber);
+        const nextText = existingText ? (existingText + " " + remainingText) : remainingText;
         renderText(nextText, true, handlePageOverflow);
         
-        // Sync UI counters and mobile visibility classes
-        pageDisplayCounter.innerText = `Pages ${activePageNumber - 1}-${activePageNumber} of 365`;
-        if (containerLeft && containerRight) {
-            containerRight.classList.remove("inactive-page-mobile");
-            containerLeft.classList.add("inactive-page-mobile");
-        }
-        
+        pageDisplayCounter.innerText = `Page ${activePageNumber} of 365`;
         await saveActivePageData();
         await updateCurrentPage(activeBookId, activePageNumber);
-    } else {
-        // Right page was active, we must flip to the next double spread (left page of next spread)
-        const bookSpread = document.getElementById("notebook-book-spread");
-        if (bookSpread) {
-            bookSpread.classList.add("flip-forward");
-        }
-        
-        setTimeout(async () => {
-            activePageNumber++; // Now odd (left page of next spread)
-            const leftPageNum = activePageNumber;
-            const rightPageNum = leftPageNum + 1;
-            
-            pageDisplayCounter.innerText = `Pages ${leftPageNum}-${rightPageNum} of 365`;
-            
-            // Clear right page content and render left page canvas
-            initRenderer(canvasLeft);
-            setRenderOptions({ 
-                activePageNumber: leftPageNum,
-                font: selectFont.value,
-                fontSize: parseInt(inputFontSize.value),
-                jitterLevel: parseInt(inputJitter.value),
-                activeBookId: activeBookId
-            });
-            
-            // Fetch contents for new spread
-            const [leftText, rightText] = await Promise.all([
-                getPageContent(activeBookId, leftPageNum),
-                getPageContent(activeBookId, rightPageNum)
-            ]);
-            
-            const nextText = leftText ? (leftText + " " + remainingText) : remainingText;
-            
-            // Start animating left page
-            renderText(nextText, true, handlePageOverflow);
-            
-            // Render right page statically
-            renderPageStatic(canvasRight, rightText, rightPageNum, {
-                font: selectFont.value,
-                fontSize: parseInt(inputFontSize.value),
-                jitterLevel: parseInt(inputJitter.value)
-            });
-            
-            // Sync mobile visibility
-            if (containerLeft && containerRight) {
-                containerLeft.classList.remove("inactive-page-mobile");
-                containerRight.classList.add("inactive-page-mobile");
-            }
-            
-            await saveActivePageData();
-            await updateCurrentPage(activeBookId, activePageNumber);
-        }, 300);
-        
-        setTimeout(() => {
-            if (bookSpread) {
-                bookSpread.classList.remove("flip-forward");
-            }
-        }, 600);
-    }
+    }, 250);
+    
+    setTimeout(() => {
+        if (wrapper) wrapper.classList.remove("flip-forward");
+    }, 500);
 }
 
 /* ================= 3. CORE UI EVENT BINDINGS ================= */
@@ -836,19 +700,20 @@ function setupEventListeners() {
     });
 
     // Tap page left/right sides to turn page
-    const pageWrapper = document.querySelector(".canvas-3d-wrapper");
-    pageWrapper.addEventListener("click", (e) => {
-        const rect = pageWrapper.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const width = rect.width;
-        
-        // Left 45% = previous, Right 55% = next, middle 10% ignored
-        if (clickX < width * 0.45) {
-            turnPage("prev");
-        } else if (clickX > width * 0.55) {
-            turnPage("next");
-        }
-    });
+    const pageWrapper = document.getElementById("notebook-paper-wrapper");
+    if (pageWrapper) {
+        pageWrapper.addEventListener("click", (e) => {
+            const rect = pageWrapper.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const width = rect.width;
+            
+            if (clickX < width * 0.4) {
+                turnPage("prev");
+            } else if (clickX > width * 0.6) {
+                turnPage("next");
+            }
+        });
+    }
 
     // Rename notebook by clicking the title in the workspace header
     notebookTitle.addEventListener("click", () => {

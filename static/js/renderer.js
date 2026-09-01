@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=3.2";
+import { getPRNG } from "./utils.js?v=4.0";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -151,11 +151,11 @@ function recalculateLayout() {
 
     ctx.font = `${currentFontSize}px "${currentFont}"`;
     
-    // Layout matching exact reference photo:
-    // Red margin line at 90px. Text starts at 102px. Safe right margin wrap limit at 720px.
-    const leftMargin = 90;
+    // Layout matching single page screenshot:
+    // Red margin line at 100px. Text starts at 112px. Safe right margin wrap limit at 720px.
+    const leftMargin = 100;
     const rightMargin = 720;
-    const startX = leftMargin + 12; // 102px text starting position right of red margin line
+    const startX = leftMargin + 12; // 112px text starting position right of red margin line
     
     const words = pageText.split(/(\s+)/); // Keep whitespace chunks as words
     const layout = [];
@@ -338,7 +338,7 @@ function drawPage() {
     }
 
     // 2. Draw Left Margin Line
-    const marginX = 90;
+    const marginX = 100;
     ctx.strokeStyle = "rgba(225, 80, 80, 0.75)"; // Soft margin red line
     ctx.lineWidth = 1.2;
     ctx.beginPath();
@@ -427,9 +427,9 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     const fontSize = options.fontSize || currentFontSize;
     const jitterLevel = options.jitterLevel !== undefined ? options.jitterLevel : currentJitterLevel;
     
-    const leftMargin = 90;
+    const leftMargin = 100;
     const rightMargin = 720;
-    const startX = leftMargin + 12; // 102px text starting position right of red margin line
+    const startX = leftMargin + 12; // 112px text starting position right of red margin line
     
     // 1. Draw Ruled Lines
     staticCtx.strokeStyle = "rgba(166, 196, 240, 0.45)";

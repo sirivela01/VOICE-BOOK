@@ -825,6 +825,45 @@ body {
     filter: drop-shadow(0 25px 45px rgba(0,0,0,0.7));
 }
 
+/* Single Page Notebook Paper Wrapper */
+.notebook-paper-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: min(720px, 92vw);
+    aspect-ratio: 4 / 5;
+    background: #fffdfa;
+    border-radius: 8px;
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+    transition: transform 0.5s ease, opacity 0.5s ease;
+}
+
+.notebook-paper-wrapper canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.notebook-paper-wrapper.flip-forward {
+    animation: singlePageFlipForward 0.5s ease-in-out forwards;
+}
+
+.notebook-paper-wrapper.flip-backward {
+    animation: singlePageFlipBackward 0.5s ease-in-out forwards;
+}
+
+@keyframes singlePageFlipForward {
+    0% { transform: scale(1) rotateY(0deg); opacity: 1; }
+    50% { transform: scale(0.96) rotateY(-12deg) translateX(-40px); opacity: 0.5; }
+    100% { transform: scale(1) rotateY(0deg); opacity: 1; }
+}
+
+@keyframes singlePageFlipBackward {
+    0% { transform: scale(1) rotateY(0deg); opacity: 1; }
+    50% { transform: scale(0.96) rotateY(12deg) translateX(40px); opacity: 0.5; }
+    100% { transform: scale(1) rotateY(0deg); opacity: 1; }
+}
+
 /* Notebook Page Stacking Styling for Double Page */
 .notebook-stack-layer {
     position: absolute;

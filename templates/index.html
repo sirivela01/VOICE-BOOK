@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Caveat:wght@400;700&family=Homemade+Apple&family=Reenie+Beanie&family=Architects+Daughter&display=swap" rel="stylesheet">
     <!-- Main Style -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='3.2') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='4.0') }}">
 </head>
 <body>
     <!-- Background Gradient Grids -->
@@ -152,30 +152,10 @@
                     </div>
                 </div>
 
-                <!-- Notebook Canvas Area -->
+                <!-- Notebook Canvas Area (Single Page View) -->
                 <div class="notebook-workspace">
-                    <div class="canvas-3d-wrapper">
-                        <!-- Book Cover Undercover (Hardcover border framing the stacks) -->
-                        <div class="notebook-undercover" id="notebook-undercover"></div>
-                        
-                        <!-- Left Page Shadow stack (looks like stacked book paper) -->
-                        <div class="notebook-stack-layer stack-1"></div>
-                        <div class="notebook-stack-layer stack-2"></div>
-                        
-                        <div class="notebook-book-spread" id="notebook-book-spread">
-                            <!-- Left Page (Odd Page Number) -->
-                            <div class="notebook-page-container page-left" id="page-container-left">
-                                <canvas id="notebook-canvas-left" width="800" height="1000"></canvas>
-                            </div>
-                            
-                            <!-- Book Spine Center Crease -->
-                            <div class="notebook-center-spine"></div>
-                            
-                            <!-- Right Page (Even Page Number) -->
-                            <div class="notebook-page-container page-right" id="page-container-right">
-                                <canvas id="notebook-canvas-right" width="800" height="1000"></canvas>
-                            </div>
-                        </div>
+                    <div class="notebook-paper-wrapper" id="notebook-paper-wrapper">
+                        <canvas id="notebook-canvas" width="800" height="1000"></canvas>
                     </div>
 
                     <!-- Floating Navigation Bar -->
@@ -302,6 +282,6 @@
     </script>
 
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='3.2') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='4.0') }}"></script>
 </body>
 </html>
