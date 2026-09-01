@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=6.0";
+import { getPRNG } from "./utils.js?v=6.1";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -31,14 +31,82 @@ let pageText = "";
 let bookId = "preview";
 let pageNumber = 1;
 
-// Animation state
+let textSegments = []; // Array of { text: string, color: string }
 let charPositions = [];
 let overflowText = "";
-let lastOverflowIndex = -1;
+let pendingFittingSegments = null;
 let animatedCharCount = 0;
 let isAnimating = false;
 let onPageFullCallback = null;
 let onAnimationCompleteCallback = null;
+
+/**
+ * Parses raw text input (JSON string, color token tags, or plain text) into structured textSegments array.
+ */
+function parseInputToSegments(rawInput) {
+    if (!rawInput) return [];
+
+    if (Array.isArray(rawInput)) {
+        return rawInput.filter(s => s && typeof s.text === "string" && s.color);
+    }
+    
+    const strInput = String(rawInput);
+
+    // Check if rawInput is JSON array string
+    if (strInput.trim().startsWith("[")) {
+        try {
+            const parsed = JSON.parse(strInput);
+            if (Array.isArray(parsed)) {
+                return parsed.filter(s => s && typeof s.text === "string" && s.color);
+            }
+        } catch (e) {
+            // Fallthrough
+        }
+    }
+
+    // Fallback: parse [color:#hex] tags if present
+    if (strInput.includes("[color:")) {
+        const regex = /\[color:(#[0-9a-fA-F]{6})\]([\s\S]*?)\[\/color\]/g;
+        const segments = [];
+        let lastIndex = 0;
+        let match;
+
+        while ((match = regex.exec(strInput)) !== null) {
+            if (match.index > lastIndex) {
+                const plain = strInput.substring(lastIndex, match.index);
+                if (plain) segments.push({ text: plain, color: config.inkColor });
+            }
+            segments.push({ text: match[2], color: match[1] });
+            lastIndex = regex.lastIndex;
+        }
+
+        if (lastIndex < strInput.length) {
+            const plain = strInput.substring(lastIndex);
+            if (plain) segments.push({ text: plain, color: config.inkColor });
+        }
+
+        return segments;
+    }
+
+    // Plain text without tags: single segment with current active ink color
+    return [{ text: strInput, color: config.inkColor }];
+}
+
+/**
+ * Returns canonical serialized JSON string representation of textSegments for database storage.
+ */
+export function getPageText() {
+    if (!textSegments || textSegments.length === 0) return "";
+    return JSON.stringify(textSegments);
+}
+
+/**
+ * Returns plain text without markup/JSON formatting for keyboard editor display.
+ */
+export function getPlainText() {
+    if (!textSegments || textSegments.length === 0) return "";
+    return textSegments.map(s => s.text).join("");
+}
 
 /**
  * Initializes the renderer with the target canvas element.
@@ -69,10 +137,7 @@ export function setRenderOptions({ font, fontSize, jitterLevel, activeBookId, ac
     if (activeBookId !== undefined) bookId = activeBookId;
     if (activePageNumber !== undefined) pageNumber = activePageNumber;
     if (inkColor !== undefined) {
-        if (pageText && !pageText.includes("[color:")) {
-            pageText = `[color:${config.inkColor}]${pageText}[/color]`;
-        }
-        config.inkColor = inkColor;
+        config.inkColor = inkColor; // Active color for NEW text only! Existing textSegments stay in their original colors!
     }
     
     recalculateLayout();
@@ -81,17 +146,9 @@ export function setRenderOptions({ font, fontSize, jitterLevel, activeBookId, ac
 
 /**
  * Loads text onto the page and sets up typing animation.
- * @param {string} text The full text content to render
- * @param {boolean} animate Whether to write it progressively
- * @param {function(string): void} onPageFull Callback triggered if text overflows this page
- * @param {function(): void} onComplete Callback triggered when animation finishes
  */
-export function renderText(text, animate = false, onPageFull = null, onComplete = null) {
-    if (text && !text.includes("[color:")) {
-        pageText = `[color:${config.inkColor}]${text}[/color]`;
-    } else {
-        pageText = text || "";
-    }
+export function renderText(textOrSegments, animate = false, onPageFull = null, onComplete = null) {
+    textSegments = parseInputToSegments(textOrSegments);
     onPageFullCallback = onPageFull;
     onAnimationCompleteCallback = onComplete;
 
@@ -99,7 +156,6 @@ export function renderText(text, animate = false, onPageFull = null, onComplete 
 
     if (animate) {
         if (!isAnimating) {
-            // Start progressive drawing from current drawn char length
             isAnimating = true;
             tickAnimation();
         }
@@ -112,19 +168,96 @@ export function renderText(text, animate = false, onPageFull = null, onComplete 
 }
 
 /**
+ * Updates textSegments from plain text input (e.g. keyboard typing) while preserving colors of existing segments.
+ */
+export function updateFromPlainText(newPlainText) {
+    if (!newPlainText) {
+        textSegments = [];
+        recalculateLayout();
+        drawPage();
+        return;
+    }
+
+    const activeColor = config.inkColor;
+    const currentPlain = getPlainText();
+
+    if (newPlainText === currentPlain) return;
+
+    // Case 1: Appended text at the end
+    if (newPlainText.startsWith(currentPlain)) {
+        const added = newPlainText.substring(currentPlain.length);
+        if (textSegments.length > 0 && textSegments[textSegments.length - 1].color === activeColor) {
+            textSegments[textSegments.length - 1].text += added;
+        } else {
+            textSegments.push({ text: added, color: activeColor });
+        }
+    }
+    // Case 2: Deleted/backspaced text from the end
+    else if (currentPlain.startsWith(newPlainText)) {
+        let remaining = newPlainText;
+        const updated = [];
+        for (const seg of textSegments) {
+            if (!remaining) break;
+            if (remaining.length >= seg.text.length) {
+                updated.push(seg);
+                remaining = remaining.substring(seg.text.length);
+            } else {
+                updated.push({ text: seg.text.substring(0, remaining.length), color: seg.color });
+                remaining = "";
+            }
+        }
+        textSegments = updated;
+    }
+    // Case 3: Editing existing text or middle edits
+    else {
+        let remaining = newPlainText;
+        const updated = [];
+        for (const seg of textSegments) {
+            if (!remaining) break;
+            if (remaining.startsWith(seg.text)) {
+                updated.push(seg);
+                remaining = remaining.substring(seg.text.length);
+            } else {
+                let matchedLen = 0;
+                while (matchedLen < seg.text.length && matchedLen < remaining.length && seg.text[matchedLen] === remaining[matchedLen]) {
+                    matchedLen++;
+                }
+                if (matchedLen > 0) {
+                    updated.push({ text: seg.text.substring(0, matchedLen), color: seg.color });
+                    remaining = remaining.substring(matchedLen);
+                }
+                break;
+            }
+        }
+        if (remaining) {
+            updated.push({ text: remaining, color: activeColor });
+        }
+        textSegments = updated;
+    }
+
+    recalculateLayout();
+    drawPage();
+}
+
+/**
  * Appends new transcription words to the page text and continues animating.
  */
-export function appendText(newText, onPageFull = null) {
+export function appendText(newWords, onPageFull = null) {
     if (onPageFull) onPageFullCallback = onPageFull;
+
+    const activeColor = config.inkColor;
+    const currentPlain = getPlainText();
+    const sep = currentPlain.length > 0 && !currentPlain.endsWith(" ") ? " " : "";
     
-    // Tag newly appended text with active ink color
-    const colorTag = `[color:${config.inkColor}]${newText}[/color]`;
-    
-    const separator = pageText.length > 0 && !pageText.endsWith(" ") ? " " : "";
-    pageText = pageText + separator + colorTag;
-    
+    if (textSegments.length > 0 && textSegments[textSegments.length - 1].color === activeColor) {
+        const last = textSegments[textSegments.length - 1];
+        last.text += sep + newWords;
+    } else {
+        textSegments.push({ text: sep + newWords, color: activeColor });
+    }
+
     recalculateLayout();
-    
+
     if (!isAnimating) {
         isAnimating = true;
         tickAnimation();
@@ -135,9 +268,10 @@ export function appendText(newText, onPageFull = null) {
  * Erases the page and resets text state.
  */
 export function clearPage() {
-    pageText = "";
+    textSegments = [];
     charPositions = [];
     overflowText = "";
+    pendingFittingSegments = null;
     animatedCharCount = 0;
     isAnimating = false;
     drawPage();
@@ -205,26 +339,26 @@ function recalculateLayout() {
     let cursorX = startX;
     
     let isFull = false;
-    let overflowIndex = -1;
+    let overflowSegIndex = -1;
+    let overflowCharOffset = -1;
 
-    // Parse tokens with individual color metadata
-    const tokens = parseColorTokens(pageText);
-    
-    // Break parsed tokens into words while retaining color metadata
+    // Break textSegments down into words with individual segment color!
     const wordsWithColor = [];
-    for (const token of tokens) {
-        const parts = token.text.split(/(\s+)/);
-        let currentOffset = token.rawStartIndex;
+    for (let sIndex = 0; sIndex < textSegments.length; sIndex++) {
+        const seg = textSegments[sIndex];
+        const parts = seg.text.split(/(\s+)/);
+        let charOffset = 0;
         
         for (const part of parts) {
             if (part !== "") {
                 wordsWithColor.push({
                     word: part,
-                    color: token.color,
-                    rawIndex: currentOffset
+                    color: seg.color,
+                    segIndex: sIndex,
+                    charOffset: charOffset
                 });
             }
-            currentOffset += part.length;
+            charOffset += part.length;
         }
     }
 
@@ -244,7 +378,8 @@ function recalculateLayout() {
             
             if (lineIndex >= maxLines) {
                 isFull = true;
-                overflowIndex = item.rawIndex !== undefined ? item.rawIndex : textProcessedLength;
+                overflowSegIndex = item.segIndex;
+                overflowCharOffset = item.charOffset;
                 break;
             }
             textProcessedLength += word.length;
@@ -279,7 +414,8 @@ function recalculateLayout() {
         // Check if page vertical capacity is exceeded
         if (lineIndex >= maxLines) {
             isFull = true;
-            overflowIndex = item.rawIndex !== undefined ? item.rawIndex : textProcessedLength;
+            overflowSegIndex = item.segIndex;
+            overflowCharOffset = item.charOffset;
             break;
         }
 
@@ -305,7 +441,8 @@ function recalculateLayout() {
                 lineIndex++;
                 if (lineIndex >= maxLines) {
                     isFull = true;
-                    overflowIndex = item.rawIndex !== undefined ? (item.rawIndex + c) : (textProcessedLength + c);
+                    overflowSegIndex = item.segIndex;
+                    overflowCharOffset = item.charOffset + c;
                     break;
                 }
                 wordX = startX;
@@ -333,12 +470,26 @@ function recalculateLayout() {
 
     charPositions = layout;
 
-    if (isFull && overflowIndex !== -1) {
-        overflowText = pageText.substring(overflowIndex).trim();
-        lastOverflowIndex = overflowIndex;
+    if (isFull && overflowSegIndex !== -1) {
+        const fittingSegments = textSegments.slice(0, overflowSegIndex);
+        const targetSeg = textSegments[overflowSegIndex];
+        if (targetSeg && overflowCharOffset > 0) {
+            fittingSegments.push({ text: targetSeg.text.substring(0, overflowCharOffset), color: targetSeg.color });
+        }
+        
+        const remainingSegments = [];
+        if (targetSeg && overflowCharOffset < targetSeg.text.length) {
+            remainingSegments.push({ text: targetSeg.text.substring(overflowCharOffset), color: targetSeg.color });
+        }
+        for (let s = overflowSegIndex + 1; s < textSegments.length; s++) {
+            remainingSegments.push(textSegments[s]);
+        }
+        
+        overflowText = JSON.stringify(remainingSegments);
+        pendingFittingSegments = fittingSegments;
     } else {
         overflowText = "";
-        lastOverflowIndex = -1;
+        pendingFittingSegments = null;
     }
 }
 
@@ -374,13 +525,13 @@ function tickAnimation() {
 function checkOverflowStatus() {
     if (overflowText.length > 0 && onPageFullCallback) {
         const remaining = overflowText;
-        if (lastOverflowIndex !== -1 && lastOverflowIndex < pageText.length) {
-            pageText = pageText.substring(0, lastOverflowIndex).trim();
+        if (pendingFittingSegments) {
+            textSegments = pendingFittingSegments;
+            pendingFittingSegments = null;
             recalculateLayout();
             drawPage();
         }
         overflowText = "";
-        lastOverflowIndex = -1;
         
         setTimeout(() => {
             onPageFullCallback(remaining);
@@ -544,20 +695,22 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     staticCtx.fillStyle = config.inkColor;
     staticCtx.textBaseline = "alphabetic";
     
-    const tokens = parseColorTokens(text);
+    const segments = parseInputToSegments(text);
     const wordsWithColor = [];
-    for (const token of tokens) {
-        const parts = token.text.split(/(\s+)/);
-        let currentOffset = token.rawStartIndex;
+    for (let sIndex = 0; sIndex < segments.length; sIndex++) {
+        const seg = segments[sIndex];
+        const parts = seg.text.split(/(\s+)/);
+        let charOffset = 0;
         for (const part of parts) {
             if (part !== "") {
                 wordsWithColor.push({
                     word: part,
-                    color: token.color,
-                    rawIndex: currentOffset
+                    color: seg.color,
+                    segIndex: sIndex,
+                    charOffset: charOffset
                 });
             }
-            currentOffset += part.length;
+            charOffset += part.length;
         }
     }
 

@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=6.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=6.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=6.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=6.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, renderPageStatic } from "./renderer.js?v=6.0";
-import { showToast, hashString, debounce } from "./utils.js?v=6.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=6.1";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=6.1";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=6.1";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=6.1";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic } from "./renderer.js?v=6.1";
+import { showToast, hashString, debounce } from "./utils.js?v=6.1";
 
 // Session App State
 let activeBookId = null;
@@ -497,7 +497,7 @@ async function loadActivePage() {
             inkColor: currentInkColor
         });
         renderText(pageText, false);
-        if (inputPageText) inputPageText.value = stripColorTags(pageText);
+        if (inputPageText) inputPageText.value = getPlainText();
         
         setSaveStatus("saved", "All changes saved");
         await updateCurrentPage(activeBookId, activePageNumber);
@@ -520,7 +520,7 @@ function setupSpeechRecognition() {
                 // Append text inside the canvas renderer
                 appendText(newWords, handlePageOverflow);
                 // Keep keyboard text editor in sync
-                if (inputPageText) inputPageText.value = stripColorTags(getPageText());
+                if (inputPageText) inputPageText.value = getPlainText();
                 // Trigger auto-save
                 triggerAutosave();
             };
@@ -786,7 +786,7 @@ function setupEventListeners() {
     if (inputPageText) {
         inputPageText.addEventListener("input", () => {
             const typedText = inputPageText.value;
-            renderText(typedText, false);
+            updateFromPlainText(typedText);
             triggerAutosave();
         });
     }
