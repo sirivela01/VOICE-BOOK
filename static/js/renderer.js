@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=4.1";
+import { getPRNG } from "./utils.js?v=4.2";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;

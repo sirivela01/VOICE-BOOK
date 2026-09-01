@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Caveat:wght@400;700&family=Homemade+Apple&family=Reenie+Beanie&family=Architects+Daughter&display=swap" rel="stylesheet">
     <!-- Main Style -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='4.1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='4.2') }}">
 </head>
 <body>
     <!-- Background Gradient Grids -->
@@ -152,10 +152,17 @@
                     </div>
                 </div>
 
-                <!-- Notebook Canvas Area (Single Page View) -->
+                <!-- Notebook Canvas Area (Single Page View with Rolled Page Frame) -->
                 <div class="notebook-workspace">
                     <div class="notebook-paper-wrapper" id="notebook-paper-wrapper">
+                        <!-- Top Perforation / Binding Crease -->
+                        <div class="pad-top-binding"></div>
+                        
+                        <!-- Main Ruled Notebook Canvas -->
                         <canvas id="notebook-canvas" width="800" height="1000"></canvas>
+                        
+                        <!-- 3D Rolled Folded Page Cylinder at Bottom Edge -->
+                        <div class="pad-bottom-roll"></div>
                     </div>
 
                     <!-- Floating Navigation Bar -->
@@ -282,6 +289,6 @@
     </script>
 
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='4.1') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='4.2') }}"></script>
 </body>
 </html>
