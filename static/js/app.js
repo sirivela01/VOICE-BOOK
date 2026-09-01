@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=6.3";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=6.3";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=6.3";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=6.3";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic } from "./renderer.js?v=6.3";
-import { showToast, hashString, debounce } from "./utils.js?v=6.3";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=6.4";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=6.4";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=6.4";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=6.4";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic } from "./renderer.js?v=6.4";
+import { showToast, hashString, debounce } from "./utils.js?v=6.4";
 
 // Session App State
 let activeBookId = null;
@@ -35,22 +35,27 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Cache DOM Elements
     cacheElements();
     
+    // Bind event handlers IMMEDIATELY at startup
+    setupEventListeners();
+
     // Check Speech Recognition capability
     if (!isSpeechSupported()) {
         showToast("Speech recognition is not supported in this browser. Handwriting by voice will not function.", "error");
     }
 
     // Try to auto-initialize Firebase
-    const config = await fetchFirebaseConfig();
-    if (config) {
-        initFirebase(config);
-        setupAuthListener();
-    } else {
+    try {
+        const config = await fetchFirebaseConfig();
+        if (config) {
+            initFirebase(config);
+            setupAuthListener();
+        } else {
+            showView("view-auth");
+        }
+    } catch (e) {
+        console.error("Firebase init error:", e);
         showView("view-auth");
     }
-
-    // Bind event handlers
-    setupEventListeners();
 });
 
 function cacheElements() {
