@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=5.1";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=5.1";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=5.1";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=5.1";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, renderPageStatic } from "./renderer.js?v=5.1";
-import { showToast, hashString, debounce } from "./utils.js?v=5.1";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=5.2";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=5.2";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=5.2";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=5.2";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, renderPageStatic } from "./renderer.js?v=5.2";
+import { showToast, hashString, debounce } from "./utils.js?v=5.2";
 
 // Session App State
 let activeBookId = null;
@@ -119,10 +119,21 @@ const triggerAutosave = debounce(async () => {
 async function saveActivePageData() {
     if (!activeBookId) return;
     
+    // Capture snapshot of target book, target page, and text RIGHT NOW synchronously!
+    const targetBookId = activeBookId;
+    const targetPageNum = activePageNumber;
+    const text = getPageText();
+    
+    // Save to local backup synchronously
+    if (text) {
+        localStorage.setItem(`backup_${targetBookId}_${targetPageNum}`, text);
+    }
+    
     setSaveStatus("saving", "Saving progress...");
     try {
-        const text = getPageText();
-        await savePageContent(activeBookId, activePageNumber, text);
+        await savePageContent(targetBookId, targetPageNum, text);
+        // Clear local backup once successfully persisted to Firestore
+        localStorage.removeItem(`backup_${targetBookId}_${targetPageNum}`);
         setSaveStatus("saved", "All changes saved");
     } catch (err) {
         console.error("Autosave error:", err);
@@ -454,7 +465,17 @@ async function loadActivePage() {
     setSaveStatus("saving", "Loading page...");
     
     try {
-        const pageText = await getPageContent(activeBookId, activePageNumber);
+        let pageText = await getPageContent(activeBookId, activePageNumber);
+        
+        // Restore local emergency backup if un-synced text exists
+        const backupKey = `backup_${activeBookId}_${activePageNumber}`;
+        const backupText = localStorage.getItem(backupKey);
+        if (backupText && backupText.length > pageText.length) {
+            pageText = backupText;
+            await savePageContent(activeBookId, activePageNumber, pageText);
+            localStorage.removeItem(backupKey);
+        }
+
         const canvasEl = document.getElementById("notebook-canvas");
         
         const activeInkBtn = document.querySelector(".ink-btn.active");
@@ -827,3 +848,14 @@ function escapeHTML(str) {
         }[tag] || tag)
     );
 }
+
+// Emergency backup handler if tab/browser is closed abruptly
+window.addEventListener("beforeunload", () => {
+    if (activeBookId && activePageNumber) {
+        const text = getPageText();
+        if (text) {
+            localStorage.setItem(`backup_${activeBookId}_${activePageNumber}`, text);
+            savePageContent(activeBookId, activePageNumber, text);
+        }
+    }
+});

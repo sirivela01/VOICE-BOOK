@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=5.1";
+import { getPRNG } from "./utils.js?v=5.2";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -34,6 +34,7 @@ let pageNumber = 1;
 // Animation state
 let charPositions = [];
 let overflowText = "";
+let lastOverflowIndex = -1;
 let animatedCharCount = 0;
 let isAnimating = false;
 let onPageFullCallback = null;
@@ -334,9 +335,10 @@ function recalculateLayout() {
 
     if (isFull && overflowIndex !== -1) {
         overflowText = pageText.substring(overflowIndex).trim();
-        pageText = pageText.substring(0, overflowIndex);
+        lastOverflowIndex = overflowIndex;
     } else {
         overflowText = "";
+        lastOverflowIndex = -1;
     }
 }
 
@@ -372,7 +374,13 @@ function tickAnimation() {
 function checkOverflowStatus() {
     if (overflowText.length > 0 && onPageFullCallback) {
         const remaining = overflowText;
-        overflowText = ""; // Clear so it doesn't trigger repeatedly
+        if (lastOverflowIndex !== -1 && lastOverflowIndex < pageText.length) {
+            pageText = pageText.substring(0, lastOverflowIndex).trim();
+            recalculateLayout();
+            drawPage();
+        }
+        overflowText = "";
+        lastOverflowIndex = -1;
         
         setTimeout(() => {
             onPageFullCallback(remaining);
