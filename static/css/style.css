@@ -864,26 +864,27 @@ body {
     pointer-events: none;
 }
 
-/* 3D Rolled Folded Page Cylinder at Bottom Edge (Matching Photo) */
-.pad-bottom-roll {
+/* 3D Rolled Folded Page Cylinder on LEFT SIDE (Matching Photo) */
+.pad-left-roll {
     position: absolute;
-    bottom: -16px;
-    left: -2px;
-    right: -2px;
-    height: 32px;
+    top: -2px;
+    bottom: -2px;
+    left: -16px;
+    width: 32px;
+    height: calc(100% + 4px);
     border-radius: 16px;
     background: linear-gradient(
-        to bottom,
-        #ffffff 0%,
-        #f5f0e6 30%,
-        #e5dcd0 65%,
-        #cbbdae 90%,
-        #a89988 100%
+        to right,
+        #a89988 0%,
+        #cbbdae 10%,
+        #e5dcd0 35%,
+        #f5f0e6 70%,
+        #ffffff 100%
     );
     box-shadow: 
-        0 10px 20px rgba(0, 0, 0, 0.4),
-        inset 0 2px 4px rgba(255, 255, 255, 0.8),
-        inset 0 -3px 6px rgba(0, 0, 0, 0.25);
+        -10px 0 20px rgba(0, 0, 0, 0.4),
+        inset -2px 0 4px rgba(255, 255, 255, 0.8),
+        inset 3px 0 6px rgba(0, 0, 0, 0.25);
     z-index: 15;
     pointer-events: none;
 }
