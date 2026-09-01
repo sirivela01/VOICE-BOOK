@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=6.2";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=6.2";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=6.2";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=6.2";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic } from "./renderer.js?v=6.2";
-import { showToast, hashString, debounce } from "./utils.js?v=6.2";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=6.3";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=6.3";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=6.3";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=6.3";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic } from "./renderer.js?v=6.3";
+import { showToast, hashString, debounce } from "./utils.js?v=6.3";
 
 // Session App State
 let activeBookId = null;
@@ -46,10 +46,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         initFirebase(config);
         setupAuthListener();
     } else {
-        // Auto-enable Guest Mode for instant access without setup!
-        enableGuestMode();
-        showView("view-shelf");
-        loadBookshelf();
+        showView("view-auth");
     }
 
     // Bind event handlers
@@ -603,25 +600,28 @@ async function handlePageOverflow(remainingText) {
 function setupEventListeners() {
     // Google Sign In
     document.getElementById("btn-google-login").addEventListener("click", async () => {
+        if (!isFirebaseInitialized()) {
+            showToast("Firebase is not configured yet. Opening configuration panel...", "error");
+            showModal(modalConfig);
+            return;
+        }
+
         try {
             await loginWithGoogle();
             showToast("Successfully logged in with Google!", "success");
         } catch (err) {
             console.error("Google Auth error:", err);
-            showToast(err.message, "error");
+            if (err && err.code === "auth/unauthorized-domain") {
+                alert("Firebase Error: Authorized Domain missing!\n\nPlease go to Firebase Console -> Authentication -> Settings -> Authorized Domains and add:\nvoice-book-llh4.onrender.com");
+            } else if (err && err.code === "auth/popup-blocked") {
+                alert("Google Sign-In popup was blocked by your browser. Please allow popups for this website and try again.");
+            } else if (err && err.code === "auth/popup-closed-by-user") {
+                showToast("Google Sign-In was cancelled.", "info");
+            } else {
+                showToast(err.message || "Google Sign-In failed. Check Firebase console configuration.", "error");
+            }
         }
     });
-
-    // Guest Instant Access
-    const btnGuest = document.getElementById("btn-guest-login");
-    if (btnGuest) {
-        btnGuest.addEventListener("click", () => {
-            enableGuestMode();
-            showToast("Welcome! Guest Mode active.", "success");
-            showView("view-shelf");
-            loadBookshelf();
-        });
-    }
     
     // Logout
     btnLogout.addEventListener("click", async () => {
