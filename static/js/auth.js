@@ -6,7 +6,7 @@ import {
     GoogleAuthProvider,
     signInWithPopup
 } from "firebase/auth";
-import { getFirebaseAuth } from "./firebase-init.js?v=5.2";
+import { getFirebaseAuth } from "./firebase-init.js?v=6.0";
 
 /**
  * Signs in an existing user using email/password.

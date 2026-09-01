@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=5.2";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=5.2";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=5.2";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=5.2";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, renderPageStatic } from "./renderer.js?v=5.2";
-import { showToast, hashString, debounce } from "./utils.js?v=5.2";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=6.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=6.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=6.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=6.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, renderPageStatic } from "./renderer.js?v=6.0";
+import { showToast, hashString, debounce } from "./utils.js?v=6.0";
 
 // Session App State
 let activeBookId = null;
@@ -21,7 +21,12 @@ let activeRenameBookId = null;
 let selectFont, inputFontSize, inputJitter, valFontSize, valJitter;
 let btnToggleMic, micStatusIndicator, speechStatusText, liveTranscriptBox;
 let btnPrevPage, btnNextPage, btnClearPage, pageDisplayCounter, notebookTitle;
-let modalConfig, modalCreateBook, formCreateBook;
+let modalConfig, modalCreateBook, formCreateBook, inputPageText;
+
+function stripColorTags(text) {
+    if (!text) return "";
+    return text.replace(/\[color:#[0-9a-fA-F]{6}\]/g, "").replace(/\[\/color\]/g, "");
+}
 
 /**
  * Main initialization entrypoint
@@ -79,6 +84,7 @@ function cacheElements() {
     modalConfig = document.getElementById("modal-config");
     modalCreateBook = document.getElementById("modal-create-book");
     formCreateBook = document.getElementById("form-create-book");
+    inputPageText = document.getElementById("input-page-text");
 }
 
 function setupAuthListener() {
@@ -491,6 +497,7 @@ async function loadActivePage() {
             inkColor: currentInkColor
         });
         renderText(pageText, false);
+        if (inputPageText) inputPageText.value = stripColorTags(pageText);
         
         setSaveStatus("saved", "All changes saved");
         await updateCurrentPage(activeBookId, activePageNumber);
@@ -512,6 +519,8 @@ function setupSpeechRecognition() {
             const onWordsAdded = (newWords) => {
                 // Append text inside the canvas renderer
                 appendText(newWords, handlePageOverflow);
+                // Keep keyboard text editor in sync
+                if (inputPageText) inputPageText.value = stripColorTags(getPageText());
                 // Trigger auto-save
                 triggerAutosave();
             };
@@ -773,10 +782,28 @@ function setupEventListeners() {
         showModal(modalCreateBook);
     });
     
+    // Keyboard Text Editor typing & backspace listener
+    if (inputPageText) {
+        inputPageText.addEventListener("input", () => {
+            const typedText = inputPageText.value;
+            renderText(typedText, false);
+            triggerAutosave();
+        });
+    }
+
+    // Clicking canvas focuses keyboard editor for typing
+    const canvasEl = document.getElementById("notebook-canvas");
+    if (canvasEl) {
+        canvasEl.addEventListener("click", () => {
+            if (inputPageText) inputPageText.focus();
+        });
+    }
+
     // Erase page
     btnClearPage.addEventListener("click", () => {
         if (confirm("Are you sure you want to erase all handwriting on this page? This cannot be undone.")) {
             clearPage();
+            if (inputPageText) inputPageText.value = "";
             saveActivePageData();
             showToast("Page erased.", "info");
         }
