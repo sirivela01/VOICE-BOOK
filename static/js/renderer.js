@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=3.1";
+import { getPRNG } from "./utils.js?v=3.2";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -151,14 +151,16 @@ function recalculateLayout() {
 
     ctx.font = `${currentFontSize}px "${currentFont}"`;
     
-    // Strict Right Margin with 100px safety buffer (700px on 800px virtual canvas)
-    const leftMargin = 30;
-    const rightMargin = 700;
+    // Layout matching exact reference photo:
+    // Red margin line at 90px. Text starts at 102px. Safe right margin wrap limit at 720px.
+    const leftMargin = 90;
+    const rightMargin = 720;
+    const startX = leftMargin + 12; // 102px text starting position right of red margin line
     
     const words = pageText.split(/(\s+)/); // Keep whitespace chunks as words
     const layout = [];
     let lineIndex = 0;
-    let cursorX = leftMargin;
+    let cursorX = startX;
     
     const maxLines = Math.floor((VIRTUAL_HEIGHT - config.topMargin - config.bottomMargin) / config.lineSpacing);
     let isFull = false;
@@ -173,7 +175,7 @@ function recalculateLayout() {
         if (word.includes('\n')) {
             const newlines = word.split('\n').length - 1;
             lineIndex += newlines;
-            cursorX = leftMargin;
+            cursorX = startX;
             
             if (lineIndex >= maxLines) {
                 isFull = true;
@@ -196,14 +198,14 @@ function recalculateLayout() {
         const safetyPadding = isWhitespace ? 0 : (word.length * 2.5 + 4.0);
         const totalWordWidth = wordWidth + safetyPadding;
 
-        // Measure before drawing: Check if word overflows right margin (700px)
+        // Measure before drawing: Check if word overflows right margin (720px)
         if (!isWhitespace && (cursorX + totalWordWidth > rightMargin)) {
-            if (cursorX > leftMargin) {
-                cursorX = leftMargin;
+            if (cursorX > startX) {
+                cursorX = startX;
                 lineIndex++;
             }
         } else if (isWhitespace && (cursorX + wordWidth > rightMargin)) {
-            cursorX = leftMargin;
+            cursorX = startX;
             lineIndex++;
             textProcessed += word;
             continue;
@@ -217,7 +219,7 @@ function recalculateLayout() {
         }
 
         // Ignore leading whitespace at the start of a line
-        if (isWhitespace && cursorX === leftMargin) {
+        if (isWhitespace && cursorX === startX) {
             textProcessed += word;
             continue;
         }
@@ -234,14 +236,14 @@ function recalculateLayout() {
             const charWidth = char === " " ? Math.max(ctx.measureText(char).width, currentFontSize * 0.32) : ctx.measureText(char).width;
             
             // Character-level safety fallback: if single character exceeds right margin, wrap line
-            if (wordX + charWidth > rightMargin && wordX > leftMargin) {
+            if (wordX + charWidth > rightMargin && wordX > startX) {
                 lineIndex++;
                 if (lineIndex >= maxLines) {
                     isFull = true;
                     overflowIndex = pageText.indexOf(word, textProcessed.length) + c;
                     break;
                 }
-                wordX = leftMargin;
+                wordX = startX;
             }
 
             layout.push({
@@ -335,7 +337,14 @@ function drawPage() {
         ctx.stroke();
     }
 
-    // 2. Left Margin Line Removed (Clean borderless paper)
+    // 2. Draw Left Margin Line
+    const marginX = 90;
+    ctx.strokeStyle = "rgba(225, 80, 80, 0.75)"; // Soft margin red line
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(marginX, 0);
+    ctx.lineTo(marginX, VIRTUAL_HEIGHT);
+    ctx.stroke();
 
     // 3. Draw Header Lines/Boxes (Page & Date indicators in top-right header space)
     ctx.fillStyle = "#fdf6e6"; // Solid paper color mask
@@ -418,8 +427,9 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     const fontSize = options.fontSize || currentFontSize;
     const jitterLevel = options.jitterLevel !== undefined ? options.jitterLevel : currentJitterLevel;
     
-    const leftMargin = 30;
-    const rightMargin = 700;
+    const leftMargin = 90;
+    const rightMargin = 720;
+    const startX = leftMargin + 12; // 102px text starting position right of red margin line
     
     // 1. Draw Ruled Lines
     staticCtx.strokeStyle = "rgba(166, 196, 240, 0.45)";
@@ -434,7 +444,13 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
         staticCtx.stroke();
     }
 
-    // 2. Left Margin Line Removed (Clean borderless paper)
+    // 2. Draw Left Margin Line
+    staticCtx.strokeStyle = "rgba(225, 80, 80, 0.75)"; // Soft margin red line
+    staticCtx.lineWidth = 1.2;
+    staticCtx.beginPath();
+    staticCtx.moveTo(leftMargin, 0);
+    staticCtx.lineTo(leftMargin, VIRTUAL_HEIGHT);
+    staticCtx.stroke();
 
     // 3. Draw Header Box (in top header space above ruled lines)
     staticCtx.fillStyle = "#fdf6e6"; // Solid paper color mask
@@ -456,7 +472,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     
     const words = text.split(/(\s+)/);
     let lineIndex = 0;
-    let cursorX = leftMargin;
+    let cursorX = startX;
     const jitter = jitterSettings[jitterLevel];
     
     let textProcessed = "";
@@ -468,7 +484,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
         if (word.includes('\n')) {
             const newlines = word.split('\n').length - 1;
             lineIndex += newlines;
-            cursorX = leftMargin;
+            cursorX = startX;
             if (lineIndex >= maxLines) break;
             textProcessed += word;
             continue;
@@ -486,12 +502,12 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
         const totalWordWidth = wordWidth + safetyPadding;
 
         if (!isWhitespace && (cursorX + totalWordWidth > rightMargin)) {
-            if (cursorX > leftMargin) {
-                cursorX = leftMargin;
+            if (cursorX > startX) {
+                cursorX = startX;
                 lineIndex++;
             }
         } else if (isWhitespace && (cursorX + wordWidth > rightMargin)) {
-            cursorX = leftMargin;
+            cursorX = startX;
             lineIndex++;
             textProcessed += word;
             continue;
@@ -499,7 +515,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
 
         if (lineIndex >= maxLines) break;
 
-        if (isWhitespace && cursorX === leftMargin) {
+        if (isWhitespace && cursorX === startX) {
             textProcessed += word;
             continue;
         }
@@ -512,10 +528,10 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
             const char = word[c];
             const charWidth = char === " " ? Math.max(staticCtx.measureText(char).width, fontSize * 0.32) : staticCtx.measureText(char).width;
             
-            if (wordX + charWidth > rightMargin && wordX > leftMargin) {
+            if (wordX + charWidth > rightMargin && wordX > startX) {
                 lineIndex++;
                 if (lineIndex >= maxLines) break;
-                wordX = leftMargin;
+                wordX = startX;
             }
 
             const lineY = config.topMargin + lineIndex * config.lineSpacing + (config.lineSpacing * 0.72);

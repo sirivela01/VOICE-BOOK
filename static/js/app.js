@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=3.1";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=3.1";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=3.1";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=3.1";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, renderPageStatic } from "./renderer.js?v=3.1";
-import { showToast, hashString, debounce } from "./utils.js?v=3.1";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=3.2";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=3.2";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=3.2";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=3.2";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, renderPageStatic } from "./renderer.js?v=3.2";
+import { showToast, hashString, debounce } from "./utils.js?v=3.2";
 
 // Session App State
 let activeBookId = null;
