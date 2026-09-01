@@ -8,52 +8,84 @@ import {
 } from "firebase/auth";
 import { getFirebaseAuth } from "./firebase-init.js?v=6.1";
 
+let authObserverCallback = null;
+let isGuestActive = localStorage.getItem("guest_mode_active") === "true";
+
+export function enableGuestMode() {
+    isGuestActive = true;
+    localStorage.setItem("guest_mode_active", "true");
+    if (authObserverCallback) {
+        authObserverCallback({ uid: "guest_user", email: "Guest User" });
+    }
+}
+
+export function isGuestMode() {
+    return isGuestActive;
+}
+
+export function disableGuestMode() {
+    isGuestActive = false;
+    localStorage.removeItem("guest_mode_active");
+}
+
 /**
  * Signs in an existing user using email/password.
- * @param {string} email 
- * @param {string} password 
- * @returns {Promise<UserCredential>}
  */
 export function loginUser(email, password) {
+    disableGuestMode();
     const auth = getFirebaseAuth();
     return signInWithEmailAndPassword(auth, email, password);
 }
 
 /**
  * Registers a new user with email and password.
- * @param {string} email 
- * @param {string} password 
- * @returns {Promise<UserCredential>}
  */
 export function registerUser(email, password) {
+    disableGuestMode();
     const auth = getFirebaseAuth();
     return createUserWithEmailAndPassword(auth, email, password);
 }
 
 /**
  * Logs out the currently signed-in user.
- * @returns {Promise<void>}
  */
 export function logoutUser() {
-    const auth = getFirebaseAuth();
-    return signOut(auth);
+    disableGuestMode();
+    try {
+        const auth = getFirebaseAuth();
+        return signOut(auth);
+    } catch (e) {
+        if (authObserverCallback) authObserverCallback(null);
+        return Promise.resolve();
+    }
 }
 
 /**
  * Registers a listener that fires whenever user auth state changes.
- * @param {function(any): void} callback Function to invoke with user details or null
- * @returns {import("firebase/auth").Unsubscribe} Unsubscribe function
  */
 export function observeAuthState(callback) {
-    const auth = getFirebaseAuth();
-    return onAuthStateChanged(auth, callback);
+    authObserverCallback = callback;
+    if (isGuestActive) {
+        callback({ uid: "guest_user", email: "Guest User" });
+        return () => {};
+    }
+    try {
+        const auth = getFirebaseAuth();
+        return onAuthStateChanged(auth, callback);
+    } catch (e) {
+        // Fallback if Firebase auth is not initialized
+        callback(null);
+        return () => {};
+    }
 }
 
 /**
  * Gets currently logged in user info.
- * @returns {Object|null} User object
  */
 export function getCurrentUser() {
+    if (isGuestActive) {
+        return { uid: "guest_user", email: "Guest User" };
+    }
     try {
         const auth = getFirebaseAuth();
         return auth.currentUser;
@@ -64,9 +96,9 @@ export function getCurrentUser() {
 
 /**
  * Initiates standard Google login popup flow.
- * @returns {Promise<UserCredential>}
  */
 export function loginWithGoogle() {
+    disableGuestMode();
     const auth = getFirebaseAuth();
     const provider = new GoogleAuthProvider();
     return signInWithPopup(auth, provider);

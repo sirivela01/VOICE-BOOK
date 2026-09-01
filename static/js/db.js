@@ -15,13 +15,53 @@ import {
 import { getFirebaseDb } from "./firebase-init.js?v=6.1";
 import { getCurrentUser } from "./auth.js?v=6.1";
 
+import { isGuestMode } from "./auth.js?v=6.2";
+import { isFirebaseInitialized } from "./firebase-init.js?v=6.1";
+
+// Helper for local guest storage
+function getLocalGuestBooks() {
+    try {
+        const data = localStorage.getItem("guest_books");
+        if (data) return JSON.parse(data);
+    } catch (e) {}
+    // Default initial guest book
+    const defaultBooks = [{
+        id: "book_physics_default",
+        userId: "guest_user",
+        name: "physics",
+        createdAt: { seconds: Date.now() / 1000 },
+        currentPage: 1,
+        maxPages: 365,
+        slotIndex: 0
+    }];
+    localStorage.setItem("guest_books", JSON.stringify(defaultBooks));
+    return defaultBooks;
+}
+
+function saveLocalGuestBooks(books) {
+    localStorage.setItem("guest_books", JSON.stringify(books));
+}
+
 /**
- * Creates a new notebook document in Firestore.
- * Each book starts on Page 1 and has a maximum of 365 pages.
- * @param {string} name Title of the notebook
- * @returns {Promise<string>} The new document ID (bookId)
+ * Creates a new notebook document in Firestore or LocalStorage.
  */
 export async function createBook(name, slotIndex = 0) {
+    if (isGuestMode() || !isFirebaseInitialized()) {
+        const books = getLocalGuestBooks();
+        const newBook = {
+            id: "guest_book_" + Date.now(),
+            userId: "guest_user",
+            name: name,
+            createdAt: { seconds: Date.now() / 1000 },
+            currentPage: 1,
+            maxPages: 365,
+            slotIndex: slotIndex
+        };
+        books.unshift(newBook);
+        saveLocalGuestBooks(books);
+        return newBook.id;
+    }
+
     const db = getFirebaseDb();
     const user = getCurrentUser();
     if (!user) throw new Error("User must be authenticated to create a notebook.");
@@ -40,10 +80,13 @@ export async function createBook(name, slotIndex = 0) {
 }
 
 /**
- * Fetches all notebooks belonging to the currently logged in user.
- * @returns {Promise<Array>} Array of book objects containing id and fields
+ * Fetches all notebooks belonging to the current user.
  */
 export async function getUserBooks() {
+    if (isGuestMode() || !isFirebaseInitialized()) {
+        return getLocalGuestBooks();
+    }
+
     const db = getFirebaseDb();
     const user = getCurrentUser();
     if (!user) throw new Error("User must be authenticated to fetch notebooks.");
@@ -62,7 +105,6 @@ export async function getUserBooks() {
         });
     });
 
-    // Sort by creation date descending on the client-side to bypass database index requirements
     books.sort((a, b) => {
         const timeA = a.createdAt ? (a.createdAt.seconds || 0) : 0;
         const timeB = b.createdAt ? (b.createdAt.seconds || 0) : 0;
@@ -73,20 +115,19 @@ export async function getUserBooks() {
 }
 
 /**
- * Deletes a notebook and its subcollection contents from Firestore.
- * @param {string} bookId Document ID of the notebook
- * @returns {Promise<void>}
+ * Deletes a notebook.
  */
 export async function deleteBook(bookId) {
+    if (isGuestMode() || !isFirebaseInitialized()) {
+        let books = getLocalGuestBooks();
+        books = books.filter(b => b.id !== bookId);
+        saveLocalGuestBooks(books);
+        return;
+    }
+
     const db = getFirebaseDb();
-    
-    // Delete main notebook document
     await deleteDoc(doc(db, "books", bookId));
 
-    // Note: Deleting a collection/subcollection in Firestore client SDK doesn't automatically 
-    // delete all nested subcollection documents (you normally delete them individually).
-    // We will clean up the pages subcollection as well when listing or simply delete the pages 
-    // we query. Since user only deletes, we can delete the pages document keys.
     const pagesCol = collection(db, "books", bookId, "pages");
     const pagesSnapshot = await getDocs(pagesCol);
     const deletePromises = [];
@@ -98,11 +139,12 @@ export async function deleteBook(bookId) {
 
 /**
  * Gets the text content of a specific page inside a book.
- * @param {string} bookId 
- * @param {number} pageNumber 
- * @returns {Promise<string>} Text content of the page, or empty string if it doesn't exist
  */
 export async function getPageContent(bookId, pageNumber) {
+    if (isGuestMode() || !isFirebaseInitialized()) {
+        return localStorage.getItem(`guest_page_${bookId}_${pageNumber}`) || "";
+    }
+
     const db = getFirebaseDb();
     const pageDocRef = doc(db, "books", bookId, "pages", pageNumber.toString());
     const pageSnapshot = await getDoc(pageDocRef);
@@ -115,22 +157,26 @@ export async function getPageContent(bookId, pageNumber) {
 
 /**
  * Saves/Autosaves text content for a specific page.
- * @param {string} bookId 
- * @param {number} pageNumber 
- * @param {string} textContent 
- * @returns {Promise<void>}
  */
 export async function savePageContent(bookId, pageNumber, textContent) {
+    if (isGuestMode() || !isFirebaseInitialized()) {
+        localStorage.setItem(`guest_page_${bookId}_${pageNumber}`, textContent);
+        const books = getLocalGuestBooks();
+        const book = books.find(b => b.id === bookId);
+        if (book) {
+            book.currentPage = pageNumber;
+            saveLocalGuestBooks(books);
+        }
+        return;
+    }
+
     const db = getFirebaseDb();
-    
-    // Save to the pages subcollection
     const pageDocRef = doc(db, "books", bookId, "pages", pageNumber.toString());
     await setDoc(pageDocRef, {
         textContent: textContent,
         updatedAt: serverTimestamp()
     }, { merge: true });
 
-    // Update current page progress on the main book document
     const bookDocRef = doc(db, "books", bookId);
     await updateDoc(bookDocRef, {
         currentPage: pageNumber,
@@ -139,11 +185,19 @@ export async function savePageContent(bookId, pageNumber, textContent) {
 }
 
 /**
- * Updates the last opened page reference in the database.
- * @param {string} bookId 
- * @param {number} pageNumber 
+ * Updates the last opened page reference.
  */
 export async function updateCurrentPage(bookId, pageNumber) {
+    if (isGuestMode() || !isFirebaseInitialized()) {
+        const books = getLocalGuestBooks();
+        const book = books.find(b => b.id === bookId);
+        if (book) {
+            book.currentPage = pageNumber;
+            saveLocalGuestBooks(books);
+        }
+        return;
+    }
+
     const db = getFirebaseDb();
     const bookDocRef = doc(db, "books", bookId);
     await updateDoc(bookDocRef, {
@@ -152,12 +206,19 @@ export async function updateCurrentPage(bookId, pageNumber) {
 }
 
 /**
- * Renames an existing notebook document in Firestore.
- * @param {string} bookId 
- * @param {string} newName 
- * @returns {Promise<void>}
+ * Renames an existing notebook document.
  */
 export async function renameBook(bookId, newName) {
+    if (isGuestMode() || !isFirebaseInitialized()) {
+        const books = getLocalGuestBooks();
+        const book = books.find(b => b.id === bookId);
+        if (book) {
+            book.name = newName;
+            saveLocalGuestBooks(books);
+        }
+        return;
+    }
+
     const db = getFirebaseDb();
     const bookDocRef = doc(db, "books", bookId);
     await updateDoc(bookDocRef, {
