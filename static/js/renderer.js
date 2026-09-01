@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=3.0";
+import { getPRNG } from "./utils.js?v=3.1";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -151,10 +151,9 @@ function recalculateLayout() {
 
     ctx.font = `${currentFontSize}px "${currentFont}"`;
     
-    // Borderless Layout matching reference notebook:
-    // Text starts cleanly at 30px from left edge, wraps at 730px (leaving 70px clean right buffer).
+    // Strict Right Margin with 100px safety buffer (700px on 800px virtual canvas)
     const leftMargin = 30;
-    const rightMargin = 730;
+    const rightMargin = 700;
     
     const words = pageText.split(/(\s+)/); // Keep whitespace chunks as words
     const layout = [];
@@ -170,7 +169,7 @@ function recalculateLayout() {
         const word = words[w];
         if (word === "") continue;
 
-        // Check if word is newline
+        // Check if word contains explicit newline
         if (word.includes('\n')) {
             const newlines = word.split('\n').length - 1;
             lineIndex += newlines;
@@ -185,30 +184,46 @@ function recalculateLayout() {
             continue;
         }
 
-        // Measure word width - adding 2.0px safety buffer per char for glyph overhangs & jitter
+        const isWhitespace = /^\s+$/.test(word);
+
+        // Measure word width including glyph overhang and character jitter safety padding
         let wordWidth = 0;
         for (let i = 0; i < word.length; i++) {
             const ch = word[i];
             const chW = ch === " " ? Math.max(ctx.measureText(ch).width, currentFontSize * 0.32) : ctx.measureText(ch).width;
-            wordWidth += chW + 2.0;
+            wordWidth += chW;
         }
-        
-        // Wrap line if word exceeds right margin limit (730px)
-        if (!/^\s+$/.test(word) && cursorX + wordWidth > rightMargin) {
+        const safetyPadding = isWhitespace ? 0 : (word.length * 2.5 + 4.0);
+        const totalWordWidth = wordWidth + safetyPadding;
+
+        // Measure before drawing: Check if word overflows right margin (700px)
+        if (!isWhitespace && (cursorX + totalWordWidth > rightMargin)) {
+            if (cursorX > leftMargin) {
+                cursorX = leftMargin;
+                lineIndex++;
+            }
+        } else if (isWhitespace && (cursorX + wordWidth > rightMargin)) {
             cursorX = leftMargin;
             lineIndex++;
+            textProcessed += word;
+            continue;
         }
 
-        // Check if page capacity is exceeded
+        // Check if page vertical capacity is exceeded
         if (lineIndex >= maxLines) {
             isFull = true;
             overflowIndex = pageText.indexOf(word, textProcessed.length);
             break;
         }
 
-        // Calculate positions for each character in this word segment
+        // Ignore leading whitespace at the start of a line
+        if (isWhitespace && cursorX === leftMargin) {
+            textProcessed += word;
+            continue;
+        }
+
+        // Calculate positions for characters in this word
         let wordX = cursorX;
-        const lineY = config.topMargin + lineIndex * config.lineSpacing + (config.lineSpacing * 0.72); // baseline
 
         const seedStr = `${bookId}_${pageNumber}_word_${w}`;
         const prng = getPRNG(seedStr);
@@ -218,10 +233,21 @@ function recalculateLayout() {
             const char = word[c];
             const charWidth = char === " " ? Math.max(ctx.measureText(char).width, currentFontSize * 0.32) : ctx.measureText(char).width;
             
+            // Character-level safety fallback: if single character exceeds right margin, wrap line
+            if (wordX + charWidth > rightMargin && wordX > leftMargin) {
+                lineIndex++;
+                if (lineIndex >= maxLines) {
+                    isFull = true;
+                    overflowIndex = pageText.indexOf(word, textProcessed.length) + c;
+                    break;
+                }
+                wordX = leftMargin;
+            }
+
             layout.push({
                 char: char,
                 x: wordX,
-                y: lineY,
+                y: config.topMargin + lineIndex * config.lineSpacing + (config.lineSpacing * 0.72),
                 lineIndex: lineIndex,
                 wordIndex: w,
                 charIndex: c
@@ -230,6 +256,8 @@ function recalculateLayout() {
             const spacingJitter = (prng() - 0.5) * jitter.spacing;
             wordX += charWidth + spacingJitter;
         }
+
+        if (isFull) break;
 
         cursorX = wordX;
         textProcessed += word;
@@ -390,10 +418,8 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     const fontSize = options.fontSize || currentFontSize;
     const jitterLevel = options.jitterLevel !== undefined ? options.jitterLevel : currentJitterLevel;
     
-    // Borderless Layout matching reference notebook:
-    // Text starts cleanly at 30px from left edge, wraps at 730px (leaving 70px clean right buffer).
     const leftMargin = 30;
-    const rightMargin = 730;
+    const rightMargin = 700;
     
     // 1. Draw Ruled Lines
     staticCtx.strokeStyle = "rgba(166, 196, 240, 0.45)";
@@ -448,32 +474,51 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
             continue;
         }
 
-        const currentRightMargin = rightMargin;
+        const isWhitespace = /^\s+$/.test(word);
 
-        // Measure word width - adding 2.0px safety buffer per char for glyph overhangs & jitter
         let wordWidth = 0;
         for (let i = 0; i < word.length; i++) {
             const ch = word[i];
             const chW = ch === " " ? Math.max(staticCtx.measureText(ch).width, fontSize * 0.32) : staticCtx.measureText(ch).width;
-            wordWidth += chW + 2.0;
+            wordWidth += chW;
         }
-        
-        if (!/^\s+$/.test(word) && cursorX + wordWidth > currentRightMargin) {
+        const safetyPadding = isWhitespace ? 0 : (word.length * 2.5 + 4.0);
+        const totalWordWidth = wordWidth + safetyPadding;
+
+        if (!isWhitespace && (cursorX + totalWordWidth > rightMargin)) {
+            if (cursorX > leftMargin) {
+                cursorX = leftMargin;
+                lineIndex++;
+            }
+        } else if (isWhitespace && (cursorX + wordWidth > rightMargin)) {
             cursorX = leftMargin;
             lineIndex++;
+            textProcessed += word;
+            continue;
         }
 
         if (lineIndex >= maxLines) break;
 
+        if (isWhitespace && cursorX === leftMargin) {
+            textProcessed += word;
+            continue;
+        }
+
         let wordX = cursorX;
-        const lineY = config.topMargin + lineIndex * config.lineSpacing + (config.lineSpacing * 0.72);
         const seedStr = `${bookId}_${pageNum}_word_${w}`;
         const prng = getPRNG(seedStr);
 
         for (let c = 0; c < word.length; c++) {
             const char = word[c];
-            // Fix collapsed words by enforcing a minimum space width relative to font-size
             const charWidth = char === " " ? Math.max(staticCtx.measureText(char).width, fontSize * 0.32) : staticCtx.measureText(char).width;
+            
+            if (wordX + charWidth > rightMargin && wordX > leftMargin) {
+                lineIndex++;
+                if (lineIndex >= maxLines) break;
+                wordX = leftMargin;
+            }
+
+            const lineY = config.topMargin + lineIndex * config.lineSpacing + (config.lineSpacing * 0.72);
             
             const seedCharStr = `${bookId}_${pageNum}_char_${textProcessed.length + c}_${char}`;
             const prngChar = getPRNG(seedCharStr);
