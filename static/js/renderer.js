@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=5.0";
+import { getPRNG } from "./utils.js?v=5.1";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -67,7 +67,12 @@ export function setRenderOptions({ font, fontSize, jitterLevel, activeBookId, ac
     if (jitterLevel !== undefined) currentJitterLevel = jitterLevel;
     if (activeBookId !== undefined) bookId = activeBookId;
     if (activePageNumber !== undefined) pageNumber = activePageNumber;
-    if (inkColor !== undefined) config.inkColor = inkColor;
+    if (inkColor !== undefined) {
+        if (pageText && !pageText.includes("[color:")) {
+            pageText = `[color:${config.inkColor}]${pageText}[/color]`;
+        }
+        config.inkColor = inkColor;
+    }
     
     recalculateLayout();
     drawPage();
@@ -81,7 +86,11 @@ export function setRenderOptions({ font, fontSize, jitterLevel, activeBookId, ac
  * @param {function(): void} onComplete Callback triggered when animation finishes
  */
 export function renderText(text, animate = false, onPageFull = null, onComplete = null) {
-    pageText = text;
+    if (text && !text.includes("[color:")) {
+        pageText = `[color:${config.inkColor}]${text}[/color]`;
+    } else {
+        pageText = text || "";
+    }
     onPageFullCallback = onPageFull;
     onAnimationCompleteCallback = onComplete;
 
@@ -107,8 +116,11 @@ export function renderText(text, animate = false, onPageFull = null, onComplete 
 export function appendText(newText, onPageFull = null) {
     if (onPageFull) onPageFullCallback = onPageFull;
     
+    // Tag newly appended text with active ink color
+    const colorTag = `[color:${config.inkColor}]${newText}[/color]`;
+    
     const separator = pageText.length > 0 && !pageText.endsWith(" ") ? " " : "";
-    pageText = pageText + separator + newText;
+    pageText = pageText + separator + colorTag;
     
     recalculateLayout();
     
@@ -145,6 +157,34 @@ export function getOverflowText() {
 }
 
 /**
+ * Parses color tags formatted as [color:#hex]text[/color] into structured segments.
+ */
+function parseColorTokens(rawText) {
+    if (!rawText) return [];
+    
+    const regex = /\[color:(#[0-9a-fA-F]{6})\]([\s\S]*?)\[\/color\]/g;
+    const tokens = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(rawText)) !== null) {
+        if (match.index > lastIndex) {
+            const plain = rawText.substring(lastIndex, match.index);
+            if (plain) tokens.push({ text: plain, color: config.inkColor, rawStartIndex: lastIndex });
+        }
+        tokens.push({ text: match[2], color: match[1], rawStartIndex: match.index });
+        lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < rawText.length) {
+        const plain = rawText.substring(lastIndex);
+        if (plain) tokens.push({ text: plain, color: config.inkColor, rawStartIndex: lastIndex });
+    }
+
+    return tokens;
+}
+
+/**
  * Recalculates exact character placements on the page based on text-wrapping.
  */
 function recalculateLayout() {
@@ -158,18 +198,41 @@ function recalculateLayout() {
     const rightMargin = 720;
     const startX = leftMargin + 12; // 112px text starting position right of red margin line
     
-    const words = pageText.split(/(\s+)/); // Keep whitespace chunks as words
+    const maxLines = Math.floor((VIRTUAL_HEIGHT - config.topMargin - config.bottomMargin) / config.lineSpacing);
     const layout = [];
     let lineIndex = 0;
     let cursorX = startX;
     
-    const maxLines = Math.floor((VIRTUAL_HEIGHT - config.topMargin - config.bottomMargin) / config.lineSpacing);
     let isFull = false;
     let overflowIndex = -1;
-    let textProcessed = "";
 
-    for (let w = 0; w < words.length; w++) {
-        const word = words[w];
+    // Parse tokens with individual color metadata
+    const tokens = parseColorTokens(pageText);
+    
+    // Break parsed tokens into words while retaining color metadata
+    const wordsWithColor = [];
+    for (const token of tokens) {
+        const parts = token.text.split(/(\s+)/);
+        let currentOffset = token.rawStartIndex;
+        
+        for (const part of parts) {
+            if (part !== "") {
+                wordsWithColor.push({
+                    word: part,
+                    color: token.color,
+                    rawIndex: currentOffset
+                });
+            }
+            currentOffset += part.length;
+        }
+    }
+
+    let textProcessedLength = 0;
+
+    for (let w = 0; w < wordsWithColor.length; w++) {
+        const item = wordsWithColor[w];
+        const word = item.word;
+        const color = item.color;
         if (word === "") continue;
 
         // Check if word contains explicit newline
@@ -180,10 +243,10 @@ function recalculateLayout() {
             
             if (lineIndex >= maxLines) {
                 isFull = true;
-                overflowIndex = pageText.indexOf(word, textProcessed.length);
+                overflowIndex = item.rawIndex !== undefined ? item.rawIndex : textProcessedLength;
                 break;
             }
-            textProcessed += word;
+            textProcessedLength += word.length;
             continue;
         }
 
@@ -208,20 +271,20 @@ function recalculateLayout() {
         } else if (isWhitespace && (cursorX + wordWidth > rightMargin)) {
             cursorX = startX;
             lineIndex++;
-            textProcessed += word;
+            textProcessedLength += word.length;
             continue;
         }
 
         // Check if page vertical capacity is exceeded
         if (lineIndex >= maxLines) {
             isFull = true;
-            overflowIndex = pageText.indexOf(word, textProcessed.length);
+            overflowIndex = item.rawIndex !== undefined ? item.rawIndex : textProcessedLength;
             break;
         }
 
         // Ignore leading whitespace at the start of a line
         if (isWhitespace && cursorX === startX) {
-            textProcessed += word;
+            textProcessedLength += word.length;
             continue;
         }
 
@@ -241,7 +304,7 @@ function recalculateLayout() {
                 lineIndex++;
                 if (lineIndex >= maxLines) {
                     isFull = true;
-                    overflowIndex = pageText.indexOf(word, textProcessed.length) + c;
+                    overflowIndex = item.rawIndex !== undefined ? (item.rawIndex + c) : (textProcessedLength + c);
                     break;
                 }
                 wordX = startX;
@@ -253,7 +316,8 @@ function recalculateLayout() {
                 y: config.topMargin + lineIndex * config.lineSpacing + (config.lineSpacing * 0.72),
                 lineIndex: lineIndex,
                 wordIndex: w,
-                charIndex: c
+                charIndex: c,
+                color: color
             });
 
             const spacingJitter = (prng() - 0.5) * jitter.spacing;
@@ -263,7 +327,7 @@ function recalculateLayout() {
         if (isFull) break;
 
         cursorX = wordX;
-        textProcessed += word;
+        textProcessedLength += word.length;
     }
 
     charPositions = layout;
@@ -382,6 +446,7 @@ function drawPage() {
         const scaleJitter = 1.0 + (prng() - 0.5) * jitter.scale;
 
         ctx.save();
+        ctx.fillStyle = cp.color || config.inkColor;
         
         // Translate to letter position + wobble
         ctx.translate(cp.x + wobbleX, cp.y + wobbleY);
@@ -471,15 +536,32 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     staticCtx.fillStyle = config.inkColor;
     staticCtx.textBaseline = "alphabetic";
     
-    const words = text.split(/(\s+)/);
+    const tokens = parseColorTokens(text);
+    const wordsWithColor = [];
+    for (const token of tokens) {
+        const parts = token.text.split(/(\s+)/);
+        let currentOffset = token.rawStartIndex;
+        for (const part of parts) {
+            if (part !== "") {
+                wordsWithColor.push({
+                    word: part,
+                    color: token.color,
+                    rawIndex: currentOffset
+                });
+            }
+            currentOffset += part.length;
+        }
+    }
+
     let lineIndex = 0;
     let cursorX = startX;
     const jitter = jitterSettings[jitterLevel];
-    
-    let textProcessed = "";
-    
-    for (let w = 0; w < words.length; w++) {
-        const word = words[w];
+    let textProcessedLength = 0;
+
+    for (let w = 0; w < wordsWithColor.length; w++) {
+        const item = wordsWithColor[w];
+        const word = item.word;
+        const color = item.color;
         if (word === "") continue;
 
         if (word.includes('\n')) {
@@ -487,7 +569,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
             lineIndex += newlines;
             cursorX = startX;
             if (lineIndex >= maxLines) break;
-            textProcessed += word;
+            textProcessedLength += word.length;
             continue;
         }
 
@@ -510,14 +592,14 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
         } else if (isWhitespace && (cursorX + wordWidth > rightMargin)) {
             cursorX = startX;
             lineIndex++;
-            textProcessed += word;
+            textProcessedLength += word.length;
             continue;
         }
 
         if (lineIndex >= maxLines) break;
 
         if (isWhitespace && cursorX === startX) {
-            textProcessed += word;
+            textProcessedLength += word.length;
             continue;
         }
 
@@ -537,7 +619,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
 
             const lineY = config.topMargin + lineIndex * config.lineSpacing + (config.lineSpacing * 0.72);
             
-            const seedCharStr = `${bookId}_${pageNum}_char_${textProcessed.length + c}_${char}`;
+            const seedCharStr = `${bookId}_${pageNum}_char_${textProcessedLength + c}_${char}`;
             const prngChar = getPRNG(seedCharStr);
             
             const rotJitter = (prngChar() - 0.5) * jitter.rotation * (Math.PI / 180);
@@ -546,6 +628,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
             const scaleJitter = 1.0 + (prngChar() - 0.5) * jitter.scale;
             
             staticCtx.save();
+            staticCtx.fillStyle = color || config.inkColor;
             staticCtx.translate(wordX + wobbleX, lineY + wobbleY);
             staticCtx.rotate(rotJitter);
             staticCtx.scale(scaleJitter, scaleJitter);
@@ -556,6 +639,6 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
             wordX += charWidth + spacingJitter;
         }
         cursorX = wordX;
-        textProcessed += word;
+        textProcessedLength += word.length;
     }
 }
