@@ -12,8 +12,8 @@ import {
     serverTimestamp,
     updateDoc
 } from "firebase/firestore";
-import { getFirebaseDb } from "./firebase-init.js?v=4.4";
-import { getCurrentUser } from "./auth.js?v=4.4";
+import { getFirebaseDb } from "./firebase-init.js?v=5.0";
+import { getCurrentUser } from "./auth.js?v=5.0";
 
 /**
  * Creates a new notebook document in Firestore.

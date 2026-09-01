@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=4.4";
+import { getPRNG } from "./utils.js?v=5.0";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -61,12 +61,13 @@ export function initRenderer(canvasElement) {
 /**
  * Sets current styling options and redraws immediately.
  */
-export function setRenderOptions({ font, fontSize, jitterLevel, activeBookId, activePageNumber }) {
+export function setRenderOptions({ font, fontSize, jitterLevel, activeBookId, activePageNumber, inkColor }) {
     if (font !== undefined) currentFont = font;
     if (fontSize !== undefined) currentFontSize = fontSize;
     if (jitterLevel !== undefined) currentJitterLevel = jitterLevel;
     if (activeBookId !== undefined) bookId = activeBookId;
     if (activePageNumber !== undefined) pageNumber = activePageNumber;
+    if (inkColor !== undefined) config.inkColor = inkColor;
     
     recalculateLayout();
     drawPage();

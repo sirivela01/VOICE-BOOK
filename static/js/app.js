@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=4.4";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=4.4";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=4.4";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=4.4";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, renderPageStatic } from "./renderer.js?v=4.4";
-import { showToast, hashString, debounce } from "./utils.js?v=4.4";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=5.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=5.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=5.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=5.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, renderPageStatic } from "./renderer.js?v=5.0";
+import { showToast, hashString, debounce } from "./utils.js?v=5.0";
 
 // Session App State
 let activeBookId = null;
@@ -457,13 +457,17 @@ async function loadActivePage() {
         const pageText = await getPageContent(activeBookId, activePageNumber);
         const canvasEl = document.getElementById("notebook-canvas");
         
+        const activeInkBtn = document.querySelector(".ink-btn.active");
+        const currentInkColor = activeInkBtn ? activeInkBtn.getAttribute("data-color") : "#1d3d84";
+        
         initRenderer(canvasEl);
         setRenderOptions({ 
             activePageNumber: activePageNumber,
             font: selectFont.value,
             fontSize: parseInt(inputFontSize.value),
             jitterLevel: parseInt(inputJitter.value),
-            activeBookId: activeBookId
+            activeBookId: activeBookId,
+            inkColor: currentInkColor
         });
         renderText(pageText, false);
         
@@ -680,6 +684,29 @@ function setupEventListeners() {
         valJitter.innerText = mapping[value] || "Medium";
         setRenderOptions({ jitterLevel: value });
     });
+
+    // Ink Color Picker listener
+    const inkButtons = document.querySelectorAll(".ink-btn");
+    inkButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+            inkButtons.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            const color = btn.getAttribute("data-color");
+            localStorage.setItem("voice_book_ink_color", color);
+            setRenderOptions({ inkColor: color });
+        });
+    });
+
+    // Restore saved ink color on load
+    const savedInkColor = localStorage.getItem("voice_book_ink_color");
+    if (savedInkColor) {
+        const targetBtn = document.querySelector(`.ink-btn[data-color="${savedInkColor}"]`);
+        if (targetBtn) {
+            inkButtons.forEach(b => b.classList.remove("active"));
+            targetBtn.classList.add("active");
+            setRenderOptions({ inkColor: savedInkColor });
+        }
+    }
 
     // Navigation buttons
     btnPrevPage.addEventListener("click", () => turnPage("prev"));

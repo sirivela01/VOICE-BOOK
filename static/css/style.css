@@ -705,6 +705,45 @@ body {
     gap: 6px;
 }
 
+/* Ink Color Swatches */
+.ink-color-picker {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.ink-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    outline: none;
+}
+
+.ink-btn:hover {
+    transform: scale(1.15);
+}
+
+.ink-btn.active {
+    border-color: #ffffff;
+    box-shadow: 0 0 0 2px var(--accent), 0 4px 10px rgba(0, 0, 0, 0.4);
+    transform: scale(1.18);
+}
+
+.ink-btn.ink-blue {
+    background-color: #1d3d84;
+}
+
+.ink-btn.ink-black {
+    background-color: #1a1a1a;
+}
+
+.ink-btn.ink-red {
+    background-color: #c02626;
+}
+
 .slider-label {
     display: flex;
     justify-content: space-between;
