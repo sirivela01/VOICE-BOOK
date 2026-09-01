@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=4.0";
+import { getPRNG } from "./utils.js?v=4.1";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -8,7 +8,7 @@ let ctx = null;
 
 // Layout config
 const config = {
-    topMargin: 30,
+    topMargin: 75, // 2cm top margin gap
     bottomMargin: 50,
     leftMargin: 30,
     rightMargin: 770,
@@ -348,15 +348,15 @@ function drawPage() {
 
     // 3. Draw Header Lines/Boxes (Page & Date indicators in top-right header space)
     ctx.fillStyle = "#fdf6e6"; // Solid paper color mask
-    ctx.fillRect(VIRTUAL_WIDTH - 200, 5, 185, 22);
+    ctx.fillRect(VIRTUAL_WIDTH - 200, 20, 185, 24);
     
     ctx.strokeStyle = "rgba(166, 196, 240, 0.55)";
     ctx.lineWidth = 1;
-    ctx.strokeRect(VIRTUAL_WIDTH - 200, 5, 185, 22);
+    ctx.strokeRect(VIRTUAL_WIDTH - 200, 20, 185, 24);
     
     ctx.font = "10px 'Inter', sans-serif";
     ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-    ctx.fillText(`PAGE: ${pageNumber}   DATE: ___/___/___`, VIRTUAL_WIDTH - 192, 19);
+    ctx.fillText(`PAGE: ${pageNumber}   DATE: ___/___/___`, VIRTUAL_WIDTH - 192, 36);
 
     // 4. Draw Handwritten Text Characters
     ctx.font = `${currentFontSize}px "${currentFont}"`;
@@ -454,15 +454,15 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
 
     // 3. Draw Header Box (in top header space above ruled lines)
     staticCtx.fillStyle = "#fdf6e6"; // Solid paper color mask
-    staticCtx.fillRect(VIRTUAL_WIDTH - 200, 5, 185, 22);
+    staticCtx.fillRect(VIRTUAL_WIDTH - 200, 20, 185, 24);
     
     staticCtx.strokeStyle = "rgba(166, 196, 240, 0.55)";
     staticCtx.lineWidth = 1;
-    staticCtx.strokeRect(VIRTUAL_WIDTH - 200, 5, 185, 22);
+    staticCtx.strokeRect(VIRTUAL_WIDTH - 200, 20, 185, 24);
     
     staticCtx.font = "10px 'Inter', sans-serif";
     staticCtx.fillStyle = "rgba(0, 0, 0, 0.5)";
-    staticCtx.fillText(`PAGE: ${pageNum}   DATE: ___/___/___`, VIRTUAL_WIDTH - 192, 19);
+    staticCtx.fillText(`PAGE: ${pageNum}   DATE: ___/___/___`, VIRTUAL_WIDTH - 192, 36);
     
     if (!text) return;
     
