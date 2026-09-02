@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=8.0";
+import { getPRNG } from "./utils.js?v=9.0";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -153,6 +153,10 @@ export function setRenderOptions({ font, fontSize, jitterLevel, activeBookId, ac
  * Loads text onto the page and sets up typing animation.
  */
 export function renderText(textOrSegments, animate = false, onPageFull = null, onComplete = null) {
+    if (!canvas || !ctx) {
+        const el = document.getElementById("notebook-canvas");
+        if (el) initRenderer(el);
+    }
     textSegments = parseInputToSegments(textOrSegments);
     onPageFullCallback = onPageFull;
     onAnimationCompleteCallback = onComplete;
@@ -176,6 +180,10 @@ export function renderText(textOrSegments, animate = false, onPageFull = null, o
  * Updates textSegments from plain text input (e.g. keyboard typing) while preserving colors of existing segments.
  */
 export function updateFromPlainText(newPlainText) {
+    if (!canvas || !ctx) {
+        const el = document.getElementById("notebook-canvas");
+        if (el) initRenderer(el);
+    }
     if (!newPlainText) {
         textSegments = [];
         recalculateLayout();
@@ -248,6 +256,11 @@ export function updateFromPlainText(newPlainText) {
  * Appends new transcription words to the page text and continues animating.
  */
 export function appendText(newWords, onPageFull = null) {
+    if (!newWords) return;
+    if (!canvas || !ctx) {
+        const el = document.getElementById("notebook-canvas");
+        if (el) initRenderer(el);
+    }
     if (onPageFull) onPageFullCallback = onPageFull;
 
     const activeColor = config.inkColor;

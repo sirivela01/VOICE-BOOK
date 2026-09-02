@@ -12,11 +12,11 @@ import {
     serverTimestamp,
     updateDoc
 } from "firebase/firestore";
-import { getFirebaseDb } from "./firebase-init.js?v=8.0";
-import { getCurrentUser } from "./auth.js?v=8.0";
+import { getFirebaseDb } from "./firebase-init.js?v=9.0";
+import { getCurrentUser } from "./auth.js?v=9.0";
 
-import { isGuestMode } from "./auth.js?v=8.0";
-import { isFirebaseInitialized } from "./firebase-init.js?v=8.0";
+import { isGuestMode } from "./auth.js?v=9.0";
+import { isFirebaseInitialized } from "./firebase-init.js?v=9.0";
 
 // Helper for local guest storage
 function getLocalGuestBooks() {
@@ -141,26 +141,35 @@ export async function deleteBook(bookId) {
  * Gets the text content of a specific page inside a book.
  */
 export async function getPageContent(bookId, pageNumber) {
+    const localFallback = localStorage.getItem(`guest_page_${bookId}_${pageNumber}`) || "";
     if (isGuestMode() || !isFirebaseInitialized()) {
-        return localStorage.getItem(`guest_page_${bookId}_${pageNumber}`) || "";
+        return localFallback;
     }
 
-    const db = getFirebaseDb();
-    const pageDocRef = doc(db, "books", bookId, "pages", pageNumber.toString());
-    const pageSnapshot = await getDoc(pageDocRef);
-    
-    if (pageSnapshot.exists()) {
-        return pageSnapshot.data().textContent || "";
+    try {
+        const db = getFirebaseDb();
+        const pageDocRef = doc(db, "books", bookId, "pages", pageNumber.toString());
+        const pageSnapshot = await getDoc(pageDocRef);
+        
+        if (pageSnapshot.exists()) {
+            const cloudText = pageSnapshot.data().textContent || "";
+            if (cloudText) return cloudText;
+        }
+        return localFallback;
+    } catch (e) {
+        console.warn("Firestore page read error, using local fallback:", e);
+        return localFallback;
     }
-    return "";
 }
 
 /**
  * Saves/Autosaves text content for a specific page.
  */
 export async function savePageContent(bookId, pageNumber, textContent) {
+    // ALWAYS save to local backup first so user text is never lost!
+    localStorage.setItem(`guest_page_${bookId}_${pageNumber}`, textContent);
+
     if (isGuestMode() || !isFirebaseInitialized()) {
-        localStorage.setItem(`guest_page_${bookId}_${pageNumber}`, textContent);
         const books = getLocalGuestBooks();
         const book = books.find(b => b.id === bookId);
         if (book) {
@@ -170,39 +179,46 @@ export async function savePageContent(bookId, pageNumber, textContent) {
         return;
     }
 
-    const db = getFirebaseDb();
-    const pageDocRef = doc(db, "books", bookId, "pages", pageNumber.toString());
-    await setDoc(pageDocRef, {
-        textContent: textContent,
-        updatedAt: serverTimestamp()
-    }, { merge: true });
+    try {
+        const db = getFirebaseDb();
+        const pageDocRef = doc(db, "books", bookId, "pages", pageNumber.toString());
+        await setDoc(pageDocRef, {
+            textContent: textContent,
+            updatedAt: serverTimestamp()
+        }, { merge: true });
 
-    const bookDocRef = doc(db, "books", bookId);
-    await updateDoc(bookDocRef, {
-        currentPage: pageNumber,
-        lastWriteAt: serverTimestamp()
-    });
+        const bookDocRef = doc(db, "books", bookId);
+        await updateDoc(bookDocRef, {
+            currentPage: pageNumber,
+            lastWriteAt: serverTimestamp()
+        });
+    } catch (e) {
+        console.warn("Firestore save failed, local copy preserved:", e);
+    }
 }
 
 /**
  * Updates the last opened page reference.
  */
 export async function updateCurrentPage(bookId, pageNumber) {
-    if (isGuestMode() || !isFirebaseInitialized()) {
-        const books = getLocalGuestBooks();
-        const book = books.find(b => b.id === bookId);
-        if (book) {
-            book.currentPage = pageNumber;
-            saveLocalGuestBooks(books);
-        }
-        return;
+    const books = getLocalGuestBooks();
+    const book = books.find(b => b.id === bookId);
+    if (book) {
+        book.currentPage = pageNumber;
+        saveLocalGuestBooks(books);
     }
 
-    const db = getFirebaseDb();
-    const bookDocRef = doc(db, "books", bookId);
-    await updateDoc(bookDocRef, {
-        currentPage: pageNumber
-    });
+    if (isGuestMode() || !isFirebaseInitialized()) return;
+
+    try {
+        const db = getFirebaseDb();
+        const bookDocRef = doc(db, "books", bookId);
+        await updateDoc(bookDocRef, {
+            currentPage: pageNumber
+        });
+    } catch (e) {
+        console.warn("Firestore updateCurrentPage error:", e);
+    }
 }
 
 /**

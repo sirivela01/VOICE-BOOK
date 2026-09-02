@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=8.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=8.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=8.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported, setMicSensitivityMode } from "./speech.js?v=8.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus } from "./renderer.js?v=8.0";
-import { showToast, hashString, debounce } from "./utils.js?v=8.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=9.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=9.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=9.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported, setMicSensitivityMode } from "./speech.js?v=9.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus } from "./renderer.js?v=9.0";
+import { showToast, hashString, debounce } from "./utils.js?v=9.0";
 
 // Session App State
 let activeBookId = null;
@@ -474,20 +474,25 @@ async function loadActivePage() {
     pageDisplayCounter.innerText = `Page ${activePageNumber} of 365`;
     setSaveStatus("saving", "Loading page...");
     
+    let pageText = "";
     try {
-        let pageText = await getPageContent(activeBookId, activePageNumber);
-        
+        pageText = (await getPageContent(activeBookId, activePageNumber)) || "";
+    } catch (err) {
+        console.warn("getPageContent failed, using local fallback:", err);
+        pageText = localStorage.getItem(`guest_page_${activeBookId}_${activePageNumber}`) || "";
+    }
+    
+    try {
         // Restore local emergency backup if un-synced text exists
         const backupKey = `backup_${activeBookId}_${activePageNumber}`;
         const backupText = localStorage.getItem(backupKey);
-        if (backupText && backupText.length > pageText.length) {
+        if (backupText && backupText.length > (pageText ? pageText.length : 0)) {
             pageText = backupText;
             await savePageContent(activeBookId, activePageNumber, pageText);
             localStorage.removeItem(backupKey);
         }
 
         const canvasEl = document.getElementById("notebook-canvas");
-        
         const activeInkBtn = document.querySelector(".ink-btn.active");
         const currentInkColor = activeInkBtn ? activeInkBtn.getAttribute("data-color") : "#1d3d84";
         
@@ -504,10 +509,10 @@ async function loadActivePage() {
         if (directCanvasEditor) directCanvasEditor.value = getPlainText();
         
         setSaveStatus("saved", "All changes saved");
-        await updateCurrentPage(activeBookId, activePageNumber);
+        updateCurrentPage(activeBookId, activePageNumber);
     } catch (err) {
-        console.error("Failed to load page:", err);
-        setSaveStatus("error", "Failed loading page");
+        console.error("Critical page initialization error:", err);
+        setSaveStatus("error", "Offline mode active");
     }
 }
 
