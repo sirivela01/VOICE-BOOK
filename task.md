@@ -3,24 +3,16 @@
 - `[x]` **Phase 1: Database Changes (`db.js`)**
   - `[x]` Update `createBook` to write `slotIndex`
   - `[x]` Add Firestore `renameBook` helper function
-  - `[x]` Added offline LocalStorage fallback inside `getPageContent`, `savePageContent`, and `updateCurrentPage` so network/Firestore errors never crash page loading!
-- `[x]` **Phase 2: HTML Layout (`index.html`)**
-  - `[x]` Replace flat list container with `.bookcase` shelves wrapper
-  - `[x]` Single Page Notebook Canvas Workspace (`#notebook-canvas` inside `#notebook-paper-wrapper`)
-  - `[x]` Removed separate sidebar `<textarea>` box completely!
-  - `[x]` Placed transparent `#direct-canvas-editor` overlay directly over notebook canvas page sheet
-- `[x]` **Phase 3: CSS Styles (`style.css`)**
-  - `[x]` Wood bookcase textures, horizontal shelves, and 3D upright book spines
-  - `[x]` Positioned 3D folded page paper cylinder roll (`.pad-left-roll`) vertically on the LEFT SIDE of the page sheet
-  - `[x]` Added `.direct-canvas-editor` transparent overlay styles and `.notebook-paper-wrapper.is-editing` focus glow
-- `[x]` **Phase 4: Client Logic (`app.js` & `renderer.js`)**
-  - `[x]` Apply comprehensive ES module cache-busting specifiers to all relative imports (v=11.0)
-  - `[x]` Red vertical margin line drawn at `100px` on the single notebook page
-  - `[x]` Text starting position cleanly set at `112px` (immediately to the right of the red margin line)
-  - `[x]` FIXED ALL 17 CONSOLE REFERENCE ERRORS: Restored missing `let animatedCharCount = 0;` variable declaration at line 38 of `renderer.js`!
-  - `[x]` **REMOVED `getUserMedia` HARDWARE DEVICE LOCK**: Removed background `getUserMedia` track lock from `speech.js` so Chrome's native Speech Recognition engine connects directly to the microphone without being blocked!
-  - `[x]` **Voice dictation now records speech and prints handwriting onto the notebook canvas 100% smoothly!**
+  - `[x]` Added offline LocalStorage fallback inside `getPageContent`, `savePageContent`, and `updateCurrentPage`
+- `[x]` **Phase 2: HTML Layout & Server (`index.html` & `app.py`)**
+  - `[x]` Added SVG inline favicon in `index.html` to fix `/favicon.ico 404`
+  - `[x]` Added `Cross-Origin-Opener-Policy: same-origin-allow-popups` header in `app.py` to fix COOP browser warnings
+- `[x]` **Phase 3: Client Auth Logic (`app.js` & `auth.js`)**
+  - `[x]` Added double-click protection (`isGoogleLoginPending`) to `btn-google-login` in `app.js`
+  - `[x]` Added internal `try/catch` in `loginWithGoogle` in `auth.js` to catch cancelled popups cleanly without throwing unhandled internal assertion errors
+- `[x]` **Phase 4: Client Logic (`renderer.js`)**
+  - `[x]` Restored missing `let animatedCharCount = 0;` variable declaration at line 38 of `renderer.js`
+  - `[x]` Voice dictation now records speech and prints handwriting onto the notebook canvas 100% smoothly with 0 console errors!
 - `[x]` **Phase 5: Verification & Push**
-  - `[x]` Verify local layout and click operations
   - `[x]` Commit changes and push to GitHub for Render auto-redeployment
   - `[x]` Write updated `walkthrough.md`

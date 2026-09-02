@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=12.0";
+import { getPRNG } from "./utils.js?v=13.0";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -38,12 +38,39 @@ let pendingFittingSegments = null;
 let animatedCharCount = 0;
 let isAnimating = false;
 let isPageFocused = false;
+let currentCursorIndex = -1;
 let onPageFullCallback = null;
 let onAnimationCompleteCallback = null;
 
-export function setPageFocus(focused) {
+export function setPageFocus(focused, cursorIndex = -1) {
     isPageFocused = focused;
+    if (cursorIndex >= 0) {
+        currentCursorIndex = cursorIndex;
+    }
     drawPage();
+}
+
+export function setCursorIndex(index) {
+    currentCursorIndex = index;
+    drawPage();
+}
+
+export function findClosestCharIndex(x, y) {
+    if (!charPositions || charPositions.length === 0) return 0;
+    
+    let closestIdx = charPositions.length;
+    let minDistance = Infinity;
+
+    for (let i = 0; i < charPositions.length; i++) {
+        const cp = charPositions[i];
+        const dist = Math.hypot(cp.x - x, cp.y - y);
+        if (dist < minDistance) {
+            minDistance = dist;
+            closestIdx = (x > (cp.x + (cp.advanceWidth || 10) / 2)) ? (i + 1) : i;
+        }
+    }
+
+    return closestIdx;
 }
 
 /**
@@ -467,6 +494,7 @@ function recalculateLayout() {
                 lineIndex: lineIndex,
                 wordIndex: w,
                 charIndex: c,
+                advanceWidth: charWidth,
                 color: color
             });
 
@@ -643,10 +671,24 @@ function drawPage() {
             ctx.fill();
         }
     } else if (isPageFocused && !isAnimating) {
-        // Draw Word-document style blinking text cursor | at current writing position
-        const cursorX = charPositions.length > 0 ? charPositions[charPositions.length - 1].x + 10 : 112;
-        const cursorY = charPositions.length > 0 ? charPositions[charPositions.length - 1].y : (config.topMargin + config.lineSpacing * 0.72);
-        
+        // Draw Word-document style blinking text cursor | at exact currentCursorIndex
+        let targetIdx = (currentCursorIndex >= 0) ? currentCursorIndex : charPositions.length;
+        if (targetIdx > charPositions.length) targetIdx = charPositions.length;
+
+        let cursorX = 112;
+        let cursorY = config.topMargin + (config.lineSpacing * 0.72);
+
+        if (targetIdx > 0 && charPositions.length > 0) {
+            const charObj = charPositions[targetIdx - 1];
+            if (charObj) {
+                cursorX = charObj.x + (charObj.advanceWidth || 8);
+                cursorY = charObj.y;
+            }
+        } else if (targetIdx === 0 && charPositions.length > 0) {
+            cursorX = charPositions[0].x;
+            cursorY = charPositions[0].y;
+        }
+
         ctx.fillStyle = config.inkColor || "#1d3d84";
         ctx.fillRect(cursorX, cursorY - currentFontSize * 0.75, 2, currentFontSize * 0.9);
     }

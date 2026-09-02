@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=12.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=12.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=12.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=12.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus } from "./renderer.js?v=12.0";
-import { showToast, hashString, debounce } from "./utils.js?v=12.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=13.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=13.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=13.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=13.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex } from "./renderer.js?v=13.0";
+import { showToast, hashString, debounce } from "./utils.js?v=13.0";
 
 // Session App State
 let activeBookId = null;
@@ -818,18 +818,29 @@ function setupEventListeners() {
         showModal(modalCreateBook);
     });
     
-    // Direct On-Page Keyboard Editor typing, focus & blur listeners
+    // Direct On-Page Keyboard Editor typing, cursor tracking & click-to-position listeners
     if (directCanvasEditor) {
+        const syncCursor = () => {
+            const cPos = directCanvasEditor.selectionStart;
+            setCursorIndex(cPos);
+        };
+
         directCanvasEditor.addEventListener("input", () => {
             const typedText = directCanvasEditor.value;
             updateFromPlainText(typedText);
+            syncCursor();
             triggerAutosave();
         });
+
+        directCanvasEditor.addEventListener("keyup", syncCursor);
+        directCanvasEditor.addEventListener("mouseup", syncCursor);
+        directCanvasEditor.addEventListener("selectionchange", syncCursor);
 
         directCanvasEditor.addEventListener("focus", () => {
             const wrapper = document.getElementById("notebook-paper-wrapper");
             if (wrapper) wrapper.classList.add("is-editing");
-            setPageFocus(true);
+            syncCursor();
+            setPageFocus(true, directCanvasEditor.selectionStart);
         });
 
         directCanvasEditor.addEventListener("blur", () => {
@@ -839,11 +850,27 @@ function setupEventListeners() {
         });
     }
 
-    // Clicking paper wrapper focuses direct canvas editor for on-page typing
+    // Clicking paper wrapper or canvas calculates exact click position and sets caret
     const canvasWrapper = document.getElementById("notebook-paper-wrapper");
     if (canvasWrapper) {
-        canvasWrapper.addEventListener("click", () => {
-            if (directCanvasEditor) directCanvasEditor.focus();
+        canvasWrapper.addEventListener("click", (e) => {
+            if (!directCanvasEditor) return;
+            directCanvasEditor.focus();
+
+            const canvasEl = document.getElementById("notebook-canvas");
+            if (canvasEl) {
+                const rect = canvasEl.getBoundingClientRect();
+                const scaleX = 800 / rect.width;
+                const scaleY = 1000 / rect.height;
+                const clickX = (e.clientX - rect.left) * scaleX;
+                const clickY = (e.clientY - rect.top) * scaleY;
+
+                const closestIdx = findClosestCharIndex(clickX, clickY);
+                if (closestIdx >= 0) {
+                    directCanvasEditor.setSelectionRange(closestIdx, closestIdx);
+                    setCursorIndex(closestIdx);
+                }
+            }
         });
     }
 
