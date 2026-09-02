@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Caveat:wght@400;700&family=Homemade+Apple&family=Reenie+Beanie&family=Architects+Daughter&display=swap" rel="stylesheet">
     <!-- Main Style -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='7.1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='8.0') }}">
 </head>
 <body>
     <!-- Background Gradient Grids -->
@@ -164,15 +164,6 @@
                         </div>
                     </div>
 
-                    <!-- Keyboard Typing & Edit Section -->
-                    <div class="control-section">
-                        <h4>Keyboard Typing & Edit</h4>
-                        <div class="control-group">
-                            <textarea id="input-page-text" class="form-control text-editor-area" rows="4" placeholder="Type here using your keyboard to edit or correct words on the notebook page..."></textarea>
-                            <span class="editor-hint">✏️ Type or backspace here to correct any word. Canvas updates live in real-time!</span>
-                        </div>
-                    </div>
-
                     <!-- Utility actions -->
                     <div class="sidebar-utilities">
                         <button id="btn-clear-page" class="btn btn-outline btn-block icon-btn text-danger">
@@ -191,6 +182,9 @@
                         <!-- Main Ruled Notebook Canvas -->
                         <canvas id="notebook-canvas" width="800" height="1000"></canvas>
                         
+                        <!-- Transparent Direct On-Page Keyboard Editor -->
+                        <textarea id="direct-canvas-editor" class="direct-canvas-editor" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+
                         <!-- 3D Rolled Folded Page Cylinder at Left Edge -->
                         <div class="pad-left-roll"></div>
                     </div>
@@ -319,6 +313,6 @@
     </script>
 
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='7.1') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='8.0') }}"></script>
 </body>
 </html>

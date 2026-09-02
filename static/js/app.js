@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=7.1";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=7.1";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=7.1";
-import { startListening, stopListening, isMicActive, isSpeechSupported, setMicSensitivityMode } from "./speech.js?v=7.1";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic } from "./renderer.js?v=7.1";
-import { showToast, hashString, debounce } from "./utils.js?v=7.1";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=8.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=8.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=8.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported, setMicSensitivityMode } from "./speech.js?v=8.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus } from "./renderer.js?v=8.0";
+import { showToast, hashString, debounce } from "./utils.js?v=8.0";
 
 // Session App State
 let activeBookId = null;
@@ -21,7 +21,7 @@ let activeRenameBookId = null;
 let selectFont, inputFontSize, inputJitter, valFontSize, valJitter;
 let btnToggleMic, micStatusIndicator, speechStatusText, liveTranscriptBox;
 let btnPrevPage, btnNextPage, btnClearPage, pageDisplayCounter, notebookTitle;
-let modalConfig, modalCreateBook, formCreateBook, inputPageText;
+let modalConfig, modalCreateBook, formCreateBook, directCanvasEditor;
 
 function stripColorTags(text) {
     if (!text) return "";
@@ -88,7 +88,7 @@ function cacheElements() {
     modalConfig = document.getElementById("modal-config");
     modalCreateBook = document.getElementById("modal-create-book");
     formCreateBook = document.getElementById("form-create-book");
-    inputPageText = document.getElementById("input-page-text");
+    directCanvasEditor = document.getElementById("direct-canvas-editor");
 }
 
 function setupAuthListener() {
@@ -501,7 +501,7 @@ async function loadActivePage() {
             inkColor: currentInkColor
         });
         renderText(pageText, false);
-        if (inputPageText) inputPageText.value = getPlainText();
+        if (directCanvasEditor) directCanvasEditor.value = getPlainText();
         
         setSaveStatus("saved", "All changes saved");
         await updateCurrentPage(activeBookId, activePageNumber);
@@ -523,8 +523,8 @@ function setupSpeechRecognition() {
             const onWordsAdded = (newWords) => {
                 // Append text inside the canvas renderer
                 appendText(newWords, handlePageOverflow);
-                // Keep keyboard text editor in sync
-                if (inputPageText) inputPageText.value = getPlainText();
+                // Keep direct canvas editor in sync
+                if (directCanvasEditor) directCanvasEditor.value = getPlainText();
                 // Trigger auto-save
                 triggerAutosave();
             };
@@ -808,20 +808,32 @@ function setupEventListeners() {
         showModal(modalCreateBook);
     });
     
-    // Keyboard Text Editor typing & backspace listener
-    if (inputPageText) {
-        inputPageText.addEventListener("input", () => {
-            const typedText = inputPageText.value;
+    // Direct On-Page Keyboard Editor typing, focus & blur listeners
+    if (directCanvasEditor) {
+        directCanvasEditor.addEventListener("input", () => {
+            const typedText = directCanvasEditor.value;
             updateFromPlainText(typedText);
             triggerAutosave();
         });
+
+        directCanvasEditor.addEventListener("focus", () => {
+            const wrapper = document.getElementById("notebook-paper-wrapper");
+            if (wrapper) wrapper.classList.add("is-editing");
+            setPageFocus(true);
+        });
+
+        directCanvasEditor.addEventListener("blur", () => {
+            const wrapper = document.getElementById("notebook-paper-wrapper");
+            if (wrapper) wrapper.classList.remove("is-editing");
+            setPageFocus(false);
+        });
     }
 
-    // Clicking canvas focuses keyboard editor for typing
-    const canvasEl = document.getElementById("notebook-canvas");
-    if (canvasEl) {
-        canvasEl.addEventListener("click", () => {
-            if (inputPageText) inputPageText.focus();
+    // Clicking paper wrapper focuses direct canvas editor for on-page typing
+    const canvasWrapper = document.getElementById("notebook-paper-wrapper");
+    if (canvasWrapper) {
+        canvasWrapper.addEventListener("click", () => {
+            if (directCanvasEditor) directCanvasEditor.focus();
         });
     }
 
@@ -829,7 +841,7 @@ function setupEventListeners() {
     btnClearPage.addEventListener("click", () => {
         if (confirm("Are you sure you want to erase all handwriting on this page? This cannot be undone.")) {
             clearPage();
-            if (inputPageText) inputPageText.value = "";
+            if (directCanvasEditor) directCanvasEditor.value = "";
             saveActivePageData();
             showToast("Page erased.", "info");
         }

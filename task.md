@@ -1,0 +1,43 @@
+# Task Progress - 3D Bookshelf Redesign & Refinements
+
+- `[x]` **Phase 1: Database Changes (`db.js`)**
+  - `[x]` Update `createBook` to write `slotIndex`
+  - `[x]` Add Firestore `renameBook` helper function
+- `[x]` **Phase 2: HTML Layout (`index.html`)**
+  - `[x]` Replace flat list container with `.bookcase` shelves wrapper
+  - `[x]` Add the "Add Row" button at the bottom of the shelf view
+  - `[x]` Add title tooltip to `#notebook-title` workspace header
+  - `[x]` Single Page Notebook Canvas Workspace (`#notebook-canvas` inside `#notebook-paper-wrapper`)
+  - `[x]` Added `.pad-top-binding` and `.pad-left-roll` HTML structures
+  - `[x]` Added Ink Color Picker Swatches (`.ink-color-picker`) under Handwriting Style in sidebar
+  - `[x]` Added Keyboard Typing & Edit Textarea (`#input-page-text`) in workspace sidebar
+  - `[x]` **Added Mic Distance & Gain Boost Selector** (`#select-mic-sensitivity`) in workspace sidebar
+- `[x]` **Phase 3: CSS Styles (`style.css`)**
+  - `[x]` Add wood bookcase textures, horizontal shelves, and divider columns
+  - `[x]` Style 3D upright standing book spines with creases and borders
+  - `[x]` Implement vertical text writing modes for spine titles
+  - `[x]` Add smooth tilt hover animations
+  - `[x]` Add workspace title edit styling, cursor changes, and page counters
+  - `[x]` Add style rules for `.disabled-locked` button state
+  - `[x]` Set single notebook page canvas sheet to strict Vertical Portrait format (`max-width: min(560px, 90vw)` with `4 / 5.2` aspect ratio)
+  - `[x]` Positioned 3D folded page paper cylinder roll (`.pad-left-roll`) vertically on the LEFT SIDE of the page sheet
+  - `[x]` Styled circular Ink Color Swatch buttons (`.ink-btn`) for Fountain Blue (`#1d3d84`), Midnight Black (`#1a1a1a`), and Crimson Red (`#c02626`)
+  - `[x]` Styled `.text-editor-area` for real-time keyboard typing
+- `[x]` **Phase 4: Client Logic (`app.js` & `renderer.js`)**
+  - `[x]` Implement dynamic 5-column grid mapping
+  - `[x]` Link empty spine clicks to createBook modals with a slot index
+  - `[x]` Add book rename click listeners (on book spine and workspace title) using custom HTML modals
+  - `[x]` Apply comprehensive ES module cache-busting specifiers to all relative imports (v=7.1)
+  - `[x]` Red vertical margin line drawn at `100px` on the single notebook page
+  - `[x]` Text starting position cleanly set at `112px` (immediately to the right of the red margin line)
+  - `[x]` Enforced strict `rightMargin = 720px` with measure-before-draw algorithm and glyph safety buffer (`word.length * 2.5 + 4.0px`)
+  - `[x]` 2cm top margin gap (`topMargin = 75px`) above the first ruled line and handwriting text
+  - `[x]` Fixed Text Deletion Bug: Removed premature in-memory `pageText` mutation in `recalculateLayout()` and added `beforeunload` emergency local backup handlers
+  - `[x]` Implemented Live Keyboard Typing & Backspace Editing
+  - `[x]` Implemented `textSegments` Multi-Color Architecture: Each sentence/segment stores its own color (`{ text: "...", color: "#hex" }`) in Firestore. Selecting Black, Red, or Blue NEVER recolors existing sentences!
+  - `[x]` **Added Software Far-Field Audio Optimization & Automatic Gain Control (AGC)**: Disables aggressive noise suppression so distant speech across the room isn't filtered out as background noise.
+  - `[x]` Simple single page pagination (`Page 1 of 365`) with smooth forward/backward flip animation
+- `[x]` **Phase 5: Verification & Push**
+  - `[x]` Verify local layout and click operations
+  - `[x]` Commit changes and push to GitHub for Render auto-redeployment
+  - `[x]` Write updated `walkthrough.md`

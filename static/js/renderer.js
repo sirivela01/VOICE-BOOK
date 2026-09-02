@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=7.1";
+import { getPRNG } from "./utils.js?v=8.0";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -35,10 +35,15 @@ let textSegments = []; // Array of { text: string, color: string }
 let charPositions = [];
 let overflowText = "";
 let pendingFittingSegments = null;
-let animatedCharCount = 0;
 let isAnimating = false;
+let isPageFocused = false;
 let onPageFullCallback = null;
 let onAnimationCompleteCallback = null;
+
+export function setPageFocus(focused) {
+    isPageFocused = focused;
+    drawPage();
+}
 
 /**
  * Parses raw text input (JSON string, color token tags, or plain text) into structured textSegments array.
@@ -623,6 +628,13 @@ function drawPage() {
             ctx.arc(lastChar.x + 8, lastChar.y - 2, 1.8, 0, Math.PI * 2);
             ctx.fill();
         }
+    } else if (isPageFocused && !isAnimating) {
+        // Draw Word-document style blinking text cursor | at current writing position
+        const cursorX = charPositions.length > 0 ? charPositions[charPositions.length - 1].x + 10 : 112;
+        const cursorY = charPositions.length > 0 ? charPositions[charPositions.length - 1].y : (config.topMargin + config.lineSpacing * 0.72);
+        
+        ctx.fillStyle = config.inkColor || "#1d3d84";
+        ctx.fillRect(cursorX, cursorY - currentFontSize * 0.75, 2, currentFontSize * 0.9);
     }
 }
 
