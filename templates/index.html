@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Caveat:wght@400;700&family=Homemade+Apple&family=Reenie+Beanie&family=Architects+Daughter&display=swap" rel="stylesheet">
     <!-- Main Style -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='7.0') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='7.1') }}">
 </head>
 <body>
     <!-- Background Gradient Grids -->
@@ -151,6 +151,16 @@
                         </button>
                         <div id="live-transcript-box" class="transcript-preview">
                             <span class="placeholder-text">Live speech transcript preview will appear here...</span>
+                        </div>
+
+                        <!-- Microphone Sensitivity & Distance Boost -->
+                        <div class="control-group" style="margin-top: 12px;">
+                            <label for="select-mic-sensitivity">Mic Distance & Gain Boost</label>
+                            <select id="select-mic-sensitivity" class="form-control">
+                                <option value="far" selected>🎙️ Far-Field Boost (Captures voice from distance / across room)</option>
+                                <option value="normal">🎙️ Normal Distance (Close range speech)</option>
+                            </select>
+                            <span class="editor-hint">💡 Far-Field Boost auto-amplifies faint voices from a distance across the room!</span>
                         </div>
                     </div>
 
@@ -309,6 +319,6 @@
     </script>
 
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='7.0') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='7.1') }}"></script>
 </body>
 </html>

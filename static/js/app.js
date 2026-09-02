@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=7.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=7.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=7.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=7.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic } from "./renderer.js?v=7.0";
-import { showToast, hashString, debounce } from "./utils.js?v=7.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=7.1";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=7.1";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=7.1";
+import { startListening, stopListening, isMicActive, isSpeechSupported, setMicSensitivityMode } from "./speech.js?v=7.1";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic } from "./renderer.js?v=7.1";
+import { showToast, hashString, debounce } from "./utils.js?v=7.1";
 
 // Session App State
 let activeBookId = null;
@@ -716,6 +716,14 @@ function setupEventListeners() {
     });
 
     // Canvas Settings adjustments
+    const selectMicSensitivity = document.getElementById("select-mic-sensitivity");
+    if (selectMicSensitivity) {
+        selectMicSensitivity.addEventListener("change", () => {
+            setMicSensitivityMode(selectMicSensitivity.value);
+            showToast(`Microphone mode: ${selectMicSensitivity.value === "far" ? "Far-Field Long Distance Boost" : "Normal Distance"}.`, "info");
+        });
+    }
+
     selectFont.addEventListener("change", () => {
         setRenderOptions({ font: selectFont.value });
     });

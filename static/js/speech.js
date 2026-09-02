@@ -4,6 +4,41 @@ const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecogni
 let recognition = null;
 let isRecording = false;
 let lastProcessedIndex = -1;
+let mediaStream = null;
+let currentMicMode = "far"; // "far" (long distance) or "normal"
+
+export function setMicSensitivityMode(mode) {
+    currentMicMode = mode;
+}
+
+/**
+ * Configures browser audio stream for far-field / long-distance voice capture.
+ */
+export async function requestFarFieldAudioStream(mode = "far") {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        try {
+            const constraints = {
+                audio: {
+                    echoCancellation: true,
+                    // Far-field mode disables aggressive noise suppression so distant speech isn't muted as background noise
+                    noiseSuppression: mode === "far" ? false : true,
+                    // Maximize automatic gain control to amplify faint/far-away voice signals
+                    autoGainControl: true,
+                    channelCount: 1
+                }
+            };
+            
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+            }
+
+            mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+            console.log(`Microphone far-field stream initialized in '${mode}' mode.`);
+        } catch (e) {
+            console.warn("Custom mediaStream constraints failed, falling back to default mic:", e);
+        }
+    }
+}
 
 /**
  * Checks if Speech Recognition is supported by the user's browser.
@@ -15,17 +50,17 @@ export function isSpeechSupported() {
 
 /**
  * Initializes and starts the Speech Recognition engine.
- * @param {function(string): void} onWordsAdded Callback when new final words are transcribed
- * @param {function(string): void} onInterimResult Callback for live temporary feedback (interim text)
- * @param {function(boolean, string): void} onStatusChange Callback for status changes (active state, status text)
  */
-export function startListening(onWordsAdded, onInterimResult, onStatusChange) {
+export async function startListening(onWordsAdded, onInterimResult, onStatusChange) {
     if (!isSpeechSupported()) {
         onStatusChange(false, "Speech recognition not supported in this browser. Please use Google Chrome, Safari, or Microsoft Edge.");
         return;
     }
 
     if (isRecording) return;
+
+    // Request far-field optimized audio stream
+    await requestFarFieldAudioStream(currentMicMode);
 
     try {
         recognition = new SpeechRecognition();
@@ -110,6 +145,10 @@ export function startListening(onWordsAdded, onInterimResult, onStatusChange) {
  */
 export function stopListening() {
     isRecording = false;
+    if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+        mediaStream = null;
+    }
     if (recognition) {
         try {
             recognition.stop();
