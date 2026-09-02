@@ -4,41 +4,6 @@ const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecogni
 let recognition = null;
 let isRecording = false;
 let lastProcessedIndex = -1;
-let mediaStream = null;
-let currentMicMode = "far"; // "far" (long distance) or "normal"
-
-export function setMicSensitivityMode(mode) {
-    currentMicMode = mode;
-}
-
-/**
- * Configures browser audio stream for far-field / long-distance voice capture.
- */
-export async function requestFarFieldAudioStream(mode = "far") {
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        try {
-            const constraints = {
-                audio: {
-                    echoCancellation: true,
-                    // Far-field mode disables aggressive noise suppression so distant speech isn't muted as background noise
-                    noiseSuppression: mode === "far" ? false : true,
-                    // Maximize automatic gain control to amplify faint/far-away voice signals
-                    autoGainControl: true,
-                    channelCount: 1
-                }
-            };
-            
-            if (mediaStream) {
-                mediaStream.getTracks().forEach(track => track.stop());
-            }
-
-            mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-            console.log(`Microphone far-field stream initialized in '${mode}' mode.`);
-        } catch (e) {
-            console.warn("Custom mediaStream constraints failed, falling back to default mic:", e);
-        }
-    }
-}
 
 /**
  * Checks if Speech Recognition is supported by the user's browser.
@@ -50,8 +15,11 @@ export function isSpeechSupported() {
 
 /**
  * Initializes and starts the Speech Recognition engine.
+ * @param {function(string): void} onWordsAdded Callback when new final words are transcribed
+ * @param {function(string): void} onInterimResult Callback for live temporary feedback (interim text)
+ * @param {function(boolean, string): void} onStatusChange Callback for status changes (active state, status text)
  */
-export async function startListening(onWordsAdded, onInterimResult, onStatusChange) {
+export function startListening(onWordsAdded, onInterimResult, onStatusChange) {
     if (!isSpeechSupported()) {
         onStatusChange(false, "Speech recognition not supported in this browser. Please use Google Chrome, Safari, or Microsoft Edge.");
         return;
@@ -59,14 +27,16 @@ export async function startListening(onWordsAdded, onInterimResult, onStatusChan
 
     if (isRecording) return;
 
-    // Request far-field optimized audio stream
-    await requestFarFieldAudioStream(currentMicMode);
-
     try {
+        if (recognition) {
+            try { recognition.abort(); } catch(e) {}
+        }
+
         recognition = new SpeechRecognition();
         recognition.continuous = true;
         recognition.interimResults = true;
-        recognition.lang = 'en-US';
+        recognition.lang = navigator.language || 'en-US';
+        recognition.maxAlternatives = 1;
 
         lastProcessedIndex = -1;
         isRecording = true;
@@ -77,24 +47,23 @@ export async function startListening(onWordsAdded, onInterimResult, onStatusChan
 
         recognition.onerror = (event) => {
             console.error("Speech recognition error:", event.error);
-            if (event.error === 'not-allowed') {
-                onStatusChange(false, "Permission Denied: Allow mic access in your browser settings.");
+            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                onStatusChange(false, "Permission Denied: Allow mic access in your browser address bar.");
                 isRecording = false;
             } else if (event.error === 'no-speech') {
-                // Silently ignore or show passive status; onend will trigger restart
-                onStatusChange(true, "Listening (No speech detected)...");
+                onStatusChange(true, "Listening (Waiting for speech...)...");
+            } else if (event.error === 'audio-capture') {
+                onStatusChange(false, "Microphone error: Ensure your microphone is plugged in.");
+                isRecording = false;
             } else {
                 onStatusChange(true, `Mic Status: ${event.error}`);
             }
         };
 
         recognition.onend = () => {
-            // SpeechRecognition often auto-stops after silence or a few minutes.
-            // If the user hasn't explicitly clicked stop, auto-restart it.
             if (isRecording) {
-                console.log("Speech recognition stopped automatically. Restarting...");
+                console.log("Speech recognition ended automatically. Restarting...");
                 try {
-                    // Reset processed index because the transcript index starts over on restart
                     lastProcessedIndex = -1;
                     recognition.start();
                 } catch (e) {
@@ -127,7 +96,6 @@ export async function startListening(onWordsAdded, onInterimResult, onStatusChan
                 }
             }
 
-            // Pass interim results for real-time visualization in the sidebar
             onInterimResult(interimTranscript);
         };
 
@@ -145,10 +113,6 @@ export async function startListening(onWordsAdded, onInterimResult, onStatusChan
  */
 export function stopListening() {
     isRecording = false;
-    if (mediaStream) {
-        mediaStream.getTracks().forEach(track => track.stop());
-        mediaStream = null;
-    }
     if (recognition) {
         try {
             recognition.stop();
