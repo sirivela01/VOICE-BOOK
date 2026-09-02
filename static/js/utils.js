@@ -91,3 +91,19 @@ export function hashString(str) {
     }
     return Math.abs(hash);
 }
+
+export function safeLocalStorageGet(key, fallback = "") {
+    try {
+        return localStorage.getItem(key) || fallback;
+    } catch (e) {
+        return fallback;
+    }
+}
+
+export function safeLocalStorageSet(key, value) {
+    try {
+        localStorage.setItem(key, value);
+    } catch (e) {
+        console.warn("LocalStorage write skipped:", e);
+    }
+}

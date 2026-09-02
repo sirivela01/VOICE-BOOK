@@ -1,42 +1,23 @@
-# Explanation & Fixes for All Console Errors (v=12.0)
+# Walkthrough - True Word-Processor On-Page Caret & Insertion Engine (v=13.0)
 
-Here is a clear, step-by-step breakdown explaining **which errors appeared in your screenshot**, **why they appeared**, and **how we fixed every single one of them**:
+We have upgraded the document editor with a **True Word-Processor Caret Positioning Engine** so that clicking anywhere on the notebook page sheet moves the cursor to that exact letter, and keyboard typing inserts/deletes text right at that position!
 
----
+## ✏️ How Exact Caret Insertion & Positioning Works (v=13.0)
 
-## 📋 1. Detailed Breakdown of Every Error in Your Screenshot
+1. **Click Anywhere on the Paper Sheet:**
+   * When you click anywhere on a sentence, word, or line, the system calculates the distance to the nearest character using `findClosestCharIndex(x, y)`.
+   * The **blinking text cursor `|`** moves **EXACTLY TO WHERE YOU CLICKED**!
 
-### ❌ Error 1: `Failed to load resource: /favicon.ico 404`
-* **Why it came:** The browser requested a tab icon file (`favicon.ico`) which wasn't defined.
-* **How we fixed it:** Added a route in `app.py` and an inline SVG icon tag `<link rel="icon">` in `index.html`.
+2. **Insert Text Right at the Cursor:**
+   * Type any letter or word on your keyboard ➔ The text is inserted **RIGHT AT THAT BLINKING CURSOR POSITION** (instead of appending to the end of the page)!
+   * Arrow keys (`←`, `→`, `Home`, `End`) move the cursor letter-by-letter on the handwritten sheet!
 
----
-
-### ❌ Error 2: `Google Auth error: auth/cancelled-popup-request`
-* **Why it came:** Clicking the **"Sign In with Google"** button twice quickly caused Firebase Auth to cancel the first pending popup request while opening a second one.
-* **How we fixed it:** Added double-click protection (`isGoogleLoginPending`) to disable the button while sign-in is in progress.
-
----
-
-### ❌ Error 3: `Google Auth error: auth/popup-blocked`
-* **Why it came:** Your web browser (Chrome/Edge) blocked the Google sign-in popup window automatically.
-* **How we fixed it:** Added browser popup alert guidance instructing the user to click *"Always allow popups"* in the address bar.
-
----
-
-### ❌ Error 4: `Cross-Origin-Opener-Policy policy would block the window.closed call`
-* **Why it came:** Chrome security checked cross-origin policy when closing Google's login popup window (`accounts.google.com`).
-* **How we fixed it:** Added the standard header `Cross-Origin-Opener-Policy: same-origin-allow-popups` in `app.py`.
-
----
-
-### ❌ Error 5: `INTERNAL ASSERTION FAILED: Pending promise was never set`
-* **Why it came:** When a popup request was cancelled or blocked mid-flight, Firebase SDK's internal promise tracker threw an unhandled assertion error.
-* **How we fixed it:** Wrapped `loginWithGoogle()` in a clean `try/catch` block inside `auth.js` to catch popup cancellations gracefully.
+3. **Backspace Right at the Cursor:**
+   * Press `Backspace` ➔ The system erases the character **RIGHT BEFORE THE CURSOR**!
 
 ---
 
 ## 🚀 Try the Live Update:
 Wait **1 minute** for Render to finish building the update, and open this link:
 
-👉 **[https://voice-book-llh4.onrender.com/?v=12.0](https://voice-book-llh4.onrender.com/?v=12.0)**
+👉 **[https://voice-book-llh4.onrender.com/?v=13.0](https://voice-book-llh4.onrender.com/?v=13.0)**

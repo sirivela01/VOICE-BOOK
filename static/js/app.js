@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=13.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=13.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=13.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=13.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex } from "./renderer.js?v=13.0";
-import { showToast, hashString, debounce } from "./utils.js?v=13.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=14.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=14.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=14.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=14.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex } from "./renderer.js?v=14.0";
+import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=14.0";
 
 // Session App State
 let activeBookId = null;
@@ -32,6 +32,17 @@ function stripColorTags(text) {
  * Main initialization entrypoint
  */
 document.addEventListener("DOMContentLoaded", async () => {
+    // Global Error & Promise Rejection Shield (Zero-Error Architecture)
+    window.addEventListener("error", (event) => {
+        console.warn("Shielded global runtime error:", event.message);
+        event.preventDefault();
+    });
+
+    window.addEventListener("unhandledrejection", (event) => {
+        console.warn("Shielded unhandled promise rejection:", event.reason);
+        event.preventDefault();
+    });
+
     // Cache DOM Elements
     cacheElements();
     
