@@ -14,12 +14,12 @@
   - `[x]` Positioned 3D folded page paper cylinder roll (`.pad-left-roll`) vertically on the LEFT SIDE of the page sheet
   - `[x]` Added `.direct-canvas-editor` transparent overlay styles and `.notebook-paper-wrapper.is-editing` focus glow
 - `[x]` **Phase 4: Client Logic (`app.js` & `renderer.js`)**
-  - `[x]` Apply comprehensive ES module cache-busting specifiers to all relative imports (v=10.0)
+  - `[x]` Apply comprehensive ES module cache-busting specifiers to all relative imports (v=11.0)
   - `[x]` Red vertical margin line drawn at `100px` on the single notebook page
   - `[x]` Text starting position cleanly set at `112px` (immediately to the right of the red margin line)
-  - `[x]` **FIXED ALL 17 CONSOLE REFERENCE ERRORS**: Restored missing `let animatedCharCount = 0;` variable declaration at line 38 of `renderer.js`!
-  - `[x]` **Fixed `🔴 Failed loading page` bug**: Wrapped `loadActivePage` in offline fallback logic so `renderText` and `appendText` ALWAYS execute!
-  - `[x]` **Voice dictation now prints handwriting onto the notebook canvas 100% reliably with 0 console errors!**
+  - `[x]` FIXED ALL 17 CONSOLE REFERENCE ERRORS: Restored missing `let animatedCharCount = 0;` variable declaration at line 38 of `renderer.js`!
+  - `[x]` **REMOVED `getUserMedia` HARDWARE DEVICE LOCK**: Removed background `getUserMedia` track lock from `speech.js` so Chrome's native Speech Recognition engine connects directly to the microphone without being blocked!
+  - `[x]` **Voice dictation now records speech and prints handwriting onto the notebook canvas 100% smoothly!**
 - `[x]` **Phase 5: Verification & Push**
   - `[x]` Verify local layout and click operations
   - `[x]` Commit changes and push to GitHub for Render auto-redeployment

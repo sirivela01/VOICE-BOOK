@@ -6,7 +6,7 @@ import {
     GoogleAuthProvider,
     signInWithPopup
 } from "firebase/auth";
-import { getFirebaseAuth } from "./firebase-init.js?v=11.0";
+import { getFirebaseAuth } from "./firebase-init.js?v=12.0";
 
 let authObserverCallback = null;
 let isGuestActive = localStorage.getItem("guest_mode_active") === "true";
@@ -94,12 +94,18 @@ export function getCurrentUser() {
     }
 }
 
-/**
- * Initiates standard Google login popup flow.
- */
-export function loginWithGoogle() {
+export async function loginWithGoogle() {
     disableGuestMode();
     const auth = getFirebaseAuth();
+    if (!auth) throw new Error("Firebase Auth is not initialized.");
     const provider = new GoogleAuthProvider();
-    return signInWithPopup(auth, provider);
+    provider.setCustomParameters({ prompt: 'select_account' });
+    try {
+        return await signInWithPopup(auth, provider);
+    } catch (error) {
+        if (error && (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user')) {
+            return null;
+        }
+        throw error;
+    }
 }

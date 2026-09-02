@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=11.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=11.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=11.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=11.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus } from "./renderer.js?v=11.0";
-import { showToast, hashString, debounce } from "./utils.js?v=11.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=12.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=12.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=12.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=12.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus } from "./renderer.js?v=12.0";
+import { showToast, hashString, debounce } from "./utils.js?v=12.0";
 
 // Session App State
 let activeBookId = null;
@@ -609,29 +609,42 @@ async function handlePageOverflow(remainingText) {
 /* ================= 3. CORE UI EVENT BINDINGS ================= */
 function setupEventListeners() {
     // Google Sign In
-    document.getElementById("btn-google-login").addEventListener("click", async () => {
-        if (!isFirebaseInitialized()) {
-            showToast("Firebase is not configured yet. Opening configuration panel...", "error");
-            showModal(modalConfig);
-            return;
-        }
+    let isGoogleLoginPending = false;
+    const btnGoogleLogin = document.getElementById("btn-google-login");
+    if (btnGoogleLogin) {
+        btnGoogleLogin.addEventListener("click", async () => {
+            if (isGoogleLoginPending) return;
 
-        try {
-            await loginWithGoogle();
-            showToast("Successfully logged in with Google!", "success");
-        } catch (err) {
-            console.error("Google Auth error:", err);
-            if (err && err.code === "auth/unauthorized-domain") {
-                alert("Firebase Error: Authorized Domain missing!\n\nPlease go to Firebase Console -> Authentication -> Settings -> Authorized Domains and add:\nvoice-book-llh4.onrender.com");
-            } else if (err && err.code === "auth/popup-blocked") {
-                alert("Google Sign-In popup was blocked by your browser. Please allow popups for this website and try again.");
-            } else if (err && err.code === "auth/popup-closed-by-user") {
-                showToast("Google Sign-In was cancelled.", "info");
-            } else {
-                showToast(err.message || "Google Sign-In failed. Check Firebase console configuration.", "error");
+            if (!isFirebaseInitialized()) {
+                showToast("Firebase is not configured yet. Opening configuration panel...", "error");
+                showModal(modalConfig);
+                return;
             }
-        }
-    });
+
+            try {
+                isGoogleLoginPending = true;
+                btnGoogleLogin.disabled = true;
+                const result = await loginWithGoogle();
+                if (result) {
+                    showToast("Successfully logged in with Google!", "success");
+                }
+            } catch (err) {
+                console.warn("Google Auth notice:", err);
+                if (err && err.code === "auth/unauthorized-domain") {
+                    alert("Firebase Error: Authorized Domain missing!\n\nPlease go to Firebase Console -> Authentication -> Settings -> Authorized Domains and add:\nvoice-book-llh4.onrender.com");
+                } else if (err && err.code === "auth/popup-blocked") {
+                    alert("Google Sign-In popup was blocked by your browser.\n\nPlease click the popup icon in your browser address bar and select 'Always allow popups for this site'.");
+                } else if (err && (err.code === "auth/cancelled-popup-request" || err.code === "auth/popup-closed-by-user")) {
+                    showToast("Google Sign-In popup closed.", "info");
+                } else {
+                    showToast(err ? (err.message || "Google Sign-In failed.") : "Sign-in cancelled.", "error");
+                }
+            } finally {
+                isGoogleLoginPending = false;
+                btnGoogleLogin.disabled = false;
+            }
+        });
+    }
     
     // Logout
     btnLogout.addEventListener("click", async () => {
