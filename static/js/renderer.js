@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=9.0";
+import { getPRNG } from "./utils.js?v=10.0";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -35,6 +35,7 @@ let textSegments = []; // Array of { text: string, color: string }
 let charPositions = [];
 let overflowText = "";
 let pendingFittingSegments = null;
+let animatedCharCount = 0;
 let isAnimating = false;
 let isPageFocused = false;
 let onPageFullCallback = null;
