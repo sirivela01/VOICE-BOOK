@@ -11,10 +11,12 @@
 - `[x]` **Phase 3: Client Auth Logic (`app.js` & `auth.js`)**
   - `[x]` Added double-click protection (`isGoogleLoginPending`) to `btn-google-login` in `app.js`
   - `[x]` Added internal `try/catch` in `loginWithGoogle` in `auth.js`
-- `[x]` **Phase 4: Shiny Orange & White Brand Title Colors (`static/css/style.css`)**
-  - `[x]` **Voice**: Rendered in vibrant **Shiny Orange Gradient** (`#ffaa00` ➔ `#ff5500`) with orange neon drop-shadow glow!
-  - `[x]` **Book**: Rendered in **Shiny Crisp White** (`#ffffff`) with bright white text-shadow glow!
-  - `[x]` **Soundwave Bars**: Updated to matching shiny orange soundwave equalizer bars!
+- `[x]` **Phase 4: Clean Matte Minimal Splash Screen (`templates/index.html`, `static/css/style.css`, `static/js/app.js`)**
+  - `[x]` **Removed progress bar, "Opening in 8s...", and "Enter Now" button** completely per user request!
+  - `[x]` **Removed shiny glows and drop-shadow filters** for a clean, matte dark design
+  - `[x]` **Voice**: Clean solid orange (`#ff6600`)
+  - `[x]` **Book**: Clean solid white (`#ffffff`)
+  - `[x]` **9-second silent auto-dismiss**: Screen auto fades out after 9 seconds (or click anywhere to enter)
 - `[x]` **Phase 5: Verification & Push**
   - `[x]` Commit changes and push to GitHub for Render auto-redeployment
   - `[x]` Write updated `walkthrough.md`

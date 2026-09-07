@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Caveat:wght@400;700&family=Homemade+Apple&family=Reenie+Beanie&family=Architects+Daughter&family=Indie+Flower&family=Dancing+Script:wght@400;700&family=Shadows+Into+Light&family=Kalam:wght@300;400;700&family=Sacramento&display=swap" rel="stylesheet">
     <!-- Main Style -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='21.0') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='22.0') }}">
 </head>
 <body>
     <!-- ================= 9-SECOND PROFESSIONAL TITLE SPLASH SCREEN ================= -->
@@ -76,8 +76,15 @@
         <section id="view-shelf" class="view-panel">
             <header class="shelf-header">
                 <div class="header-logo">
-                    <span class="logo-emoji">✍️</span>
-                    <h2>My Bookshelf</h2>
+                    <div class="soundwave-logo" style="height: 28px; margin-bottom: 0;">
+                        <span class="bar bar-1" style="height: 16px;"></span>
+                        <span class="bar bar-2" style="height: 28px;"></span>
+                        <span class="bar bar-3" style="height: 20px;"></span>
+                    </div>
+                    <h2 class="splash-brand-title" style="font-size: 1.8rem; margin: 0; display: flex; align-items: center;">
+                        <span class="brand-voice">Voice</span><span class="brand-book">Book</span>
+                    </h2>
+                    <span class="shelf-title-badge">My Bookshelf</span>
                 </div>
                 <div class="header-user">
                     <span id="user-display-email" class="user-email">user@example.com</span>
@@ -331,6 +338,6 @@
     </script>
 
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='21.0') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='22.0') }}"></script>
 </body>
 </html>
