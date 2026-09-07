@@ -11,9 +11,10 @@
 - `[x]` **Phase 3: Client Auth Logic (`app.js` & `auth.js`)**
   - `[x]` Added double-click protection (`isGoogleLoginPending`) to `btn-google-login` in `app.js`
   - `[x]` Added internal `try/catch` in `loginWithGoogle` in `auth.js`
-- `[x]` **Phase 4: Minimal Ultra-Shiny VoiceBook Splash Screen (`templates/index.html`, `static/css/style.css`)**
-  - `[x]` Removed extra subtitle text and feature pills for an ultra-clean, elegant design
-  - `[x]` Kept ONLY the ultra-shiny **VoiceBook Soundwave Logo** + **9-Second Progress Timer** + **Enter Now ➔** button
+- `[x]` **Phase 4: Shiny Orange & White Brand Title Colors (`static/css/style.css`)**
+  - `[x]` **Voice**: Rendered in vibrant **Shiny Orange Gradient** (`#ffaa00` ➔ `#ff5500`) with orange neon drop-shadow glow!
+  - `[x]` **Book**: Rendered in **Shiny Crisp White** (`#ffffff`) with bright white text-shadow glow!
+  - `[x]` **Soundwave Bars**: Updated to matching shiny orange soundwave equalizer bars!
 - `[x]` **Phase 5: Verification & Push**
   - `[x]` Commit changes and push to GitHub for Render auto-redeployment
   - `[x]` Write updated `walkthrough.md`

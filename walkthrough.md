@@ -1,22 +1,21 @@
-# Walkthrough - Ultra-Minimal Shiny VoiceBook Splash Screen (v=19.0)
+# Walkthrough - Shiny Orange & White VoiceBook Brand Colors (v=20.0)
 
-We have updated the opening splash screen card to be **ultra-clean, minimal, and focused exclusively on the shiny VoiceBook logo** and the **9-second progress timer**!
+We have updated the title colors as requested: **"Voice" is now vibrant shiny orange** and **"Book" is now crisp shiny white**!
 
-## ✨ Minimal & Shiny Design Elements (v=19.0)
+## 🍊 Shiny Color Palette Details (v=20.0)
 
-1. **Ultra-Clean Card:**
-   * Removed the extra subtitle text and feature pills.
-   * Focuses 100% on the **shiny 3D glowing VoiceBook soundwave logo**.
+1. **"Voice" — Shiny Orange Gradient:**
+   * Styled with a vibrant neon orange gradient (`#ffaa00` ➔ `#ff5500`) and glowing orange drop-shadow (`rgba(255, 119, 0, 0.85)`).
 
-2. **Enhanced Neon Glow:**
-   * Increased the neon backlight shadow behind **VoiceBook** (`#c084fc` to `#8b5cf6`) for a sleek, premium intro experience.
+2. **"Book" — Shiny Crisp White:**
+   * Styled in bright pure white (`#ffffff`) with intense white text-shadow glow (`rgba(255, 255, 255, 0.9)`).
 
-3. **9-Second Countdown Progress Bar:**
-   * Smoothly fills over 9 seconds with the **"Opening in 9s..."** countdown and **"Enter Now ➔"** fast skip button.
+3. **Matching Orange Soundwave Equalizer Bars:**
+   * The 3 soundwave bars above the logo now pulse in matching shiny orange and amber tones!
 
 ---
 
 ## 🚀 Try the Live Update:
 Wait **1 minute** for Render to finish building the update, and open this link:
 
-👉 **[https://voice-book-llh4.onrender.com/?v=19.0](https://voice-book-llh4.onrender.com/?v=19.0)**
+👉 **[https://voice-book-llh4.onrender.com/?v=20.0](https://voice-book-llh4.onrender.com/?v=20.0)**

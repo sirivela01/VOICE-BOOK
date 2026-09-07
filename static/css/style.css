@@ -43,16 +43,16 @@
 }
 
 .splash-content-card.minimal-card {
-    background: rgba(17, 24, 39, 0.85);
-    border: 1px solid rgba(167, 139, 250, 0.22);
+    background: rgba(17, 24, 39, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     width: 100%;
-    max-width: 480px;
-    padding: 3.5rem 3rem 2.8rem;
-    border-radius: 28px;
+    max-width: 420px;
+    padding: 3rem 2.5rem;
+    border-radius: 24px;
     text-align: center;
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7), 0 0 100px rgba(167, 139, 250, 0.25);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
     transform: translateY(0);
     animation: splashFloat 6s ease-in-out infinite;
 }
@@ -67,67 +67,73 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    margin-bottom: 2.2rem;
+    margin: 0;
 }
 
 .soundwave-logo {
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    gap: 7px;
-    height: 42px;
+    gap: 6px;
+    height: 38px;
     margin-bottom: 0.8rem;
 }
 
 .soundwave-logo .bar {
-    width: 7px;
-    border-radius: 5px;
-    background: linear-gradient(180deg, #ffaa00 0%, #ff5500 100%);
-    box-shadow: 0 0 16px rgba(255, 119, 0, 0.9), 0 0 30px rgba(255, 85, 0, 0.7);
+    width: 6px;
+    border-radius: 4px;
+    background: #ff6600;
+    box-shadow: none;
     animation: soundwavePulse 1.4s ease-in-out infinite alternate;
 }
 
 .soundwave-logo .bar-1 {
-    height: 22px;
+    height: 20px;
     animation-delay: 0s;
 }
 
 .soundwave-logo .bar-2 {
-    height: 42px;
+    height: 38px;
     animation-delay: 0.25s;
 }
 
 .soundwave-logo .bar-3 {
-    height: 30px;
+    height: 28px;
     animation-delay: 0.5s;
 }
 
 @keyframes soundwavePulse {
-    0% { transform: scaleY(0.7); opacity: 0.7; }
-    100% { transform: scaleY(1.18); opacity: 1; filter: drop-shadow(0 0 12px #ff7700); }
+    0% { transform: scaleY(0.7); opacity: 0.75; }
+    100% { transform: scaleY(1.15); opacity: 1; filter: none; }
 }
 
 .splash-brand-title {
     font-family: 'Inter', 'Outfit', system-ui, -apple-system, sans-serif;
-    font-size: 3.8rem;
+    font-size: 3.6rem;
     font-weight: 800;
     letter-spacing: -0.04em;
     margin: 0;
-    line-height: 1.1;
+    line-height: 1;
     display: inline-flex;
     align-items: center;
 }
 
 .splash-brand-title .brand-voice {
-    background: linear-gradient(135deg, #ffaa00 0%, #ff5500 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 0 28px rgba(255, 119, 0, 0.85));
+    color: #ff6600;
+    background: none;
+    -webkit-background-clip: unset;
+    -webkit-text-fill-color: initial;
+    filter: none;
+    text-shadow: none;
 }
 
 .splash-brand-title .brand-book {
     color: #ffffff;
-    text-shadow: 0 0 30px rgba(255, 255, 255, 0.9), 0 0 50px rgba(255, 255, 255, 0.5);
+    background: none;
+    -webkit-background-clip: unset;
+    -webkit-text-fill-color: initial;
+    filter: none;
+    text-shadow: none;
 }
 
 .splash-subtitle {

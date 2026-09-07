@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=20.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=20.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=20.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=20.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex } from "./renderer.js?v=20.0";
-import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=20.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=21.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=21.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=21.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=21.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex } from "./renderer.js?v=21.0";
+import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=21.0";
 
 // Session App State
 let activeBookId = null;
@@ -992,21 +992,14 @@ window.addEventListener("beforeunload", () => {
 /* ================= 9-SECOND PROFESSIONAL TITLE SPLASH SCREEN TIMER ================= */
 function initSplashScreen() {
     const splashOverlay = document.getElementById("splash-screen-overlay");
-    const progressBar = document.getElementById("splash-progress-bar");
-    const timerText = document.getElementById("splash-timer-text");
-    const btnSkip = document.getElementById("btn-skip-splash");
-
     if (!splashOverlay) return;
 
     const DURATION_MS = 9000; // 9 Seconds
-    const startTime = Date.now();
-    let timerInterval = null;
     let isDismissed = false;
 
     const dismissSplash = () => {
         if (isDismissed) return;
         isDismissed = true;
-        clearInterval(timerInterval);
         splashOverlay.classList.add("fade-out");
         setTimeout(() => {
             if (splashOverlay && splashOverlay.parentNode) {
@@ -1015,32 +1008,9 @@ function initSplashScreen() {
         }, 800);
     };
 
-    if (btnSkip) {
-        btnSkip.addEventListener("click", dismissSplash);
-    }
+    // Click anywhere on splash screen to enter immediately
+    splashOverlay.addEventListener("click", dismissSplash);
 
-    splashOverlay.addEventListener("click", (e) => {
-        if (e.target === splashOverlay) {
-            dismissSplash();
-        }
-    });
-
-    timerInterval = setInterval(() => {
-        const elapsed = Date.now() - startTime;
-        const remainingMs = Math.max(0, DURATION_MS - elapsed);
-        const remainingSec = Math.ceil(remainingMs / 1000);
-
-        const progressPercent = Math.min(100, (elapsed / DURATION_MS) * 100);
-        if (progressBar) {
-            progressBar.style.width = `${progressPercent}%`;
-        }
-
-        if (timerText) {
-            timerText.innerText = remainingSec > 0 ? `Opening in ${remainingSec}s...` : "Welcome to Voice Book!";
-        }
-
-        if (elapsed >= DURATION_MS) {
-            dismissSplash();
-        }
-    }, 100);
+    // Auto fade-out after 9 seconds
+    setTimeout(dismissSplash, DURATION_MS);
 }
