@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=27.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=27.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=27.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=27.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection } from "./renderer.js?v=27.0";
-import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=27.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=28.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=28.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=28.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=28.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection } from "./renderer.js?v=28.0";
+import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=28.0";
 
 // Session App State
 let activeBookId = null;

@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=27.0";
+import { getPRNG } from "./utils.js?v=28.0";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -693,6 +693,79 @@ function checkOverflowStatus() {
 }
 
 /**
+ * Draws leaf branch ornament on left or right side of footer text.
+ */
+function drawLeafBranch(targetCtx, x, y, flip) {
+    targetCtx.save();
+    targetCtx.translate(x, y);
+    if (flip) {
+        targetCtx.scale(-1, 1);
+    }
+    
+    targetCtx.strokeStyle = "rgba(105, 117, 130, 0.65)";
+    targetCtx.fillStyle = "rgba(105, 117, 130, 0.65)";
+    targetCtx.lineWidth = 1.2;
+
+    // Stem
+    targetCtx.beginPath();
+    targetCtx.moveTo(0, 1);
+    targetCtx.quadraticCurveTo(-14, -2, -30, -5);
+    targetCtx.stroke();
+
+    // Helper for drawing individual leaf
+    function drawLeaf(lx, ly, rotDeg, scaleX = 1, scaleY = 1) {
+        targetCtx.save();
+        targetCtx.translate(lx, ly);
+        targetCtx.rotate(rotDeg * Math.PI / 180);
+        targetCtx.scale(scaleX, scaleY);
+        targetCtx.beginPath();
+        targetCtx.moveTo(0, 0);
+        targetCtx.quadraticCurveTo(-4, -6, -10, -2);
+        targetCtx.quadraticCurveTo(-5, 4, 0, 0);
+        targetCtx.fill();
+        targetCtx.restore();
+    }
+
+    // Terminal leaf tip & side leaves
+    drawLeaf(-30, -5, -15, 1.1, 0.9);
+    drawLeaf(-20, -3, 25, 1.0, 0.85);
+    drawLeaf(-10, -1, 30, 0.9, 0.8);
+    drawLeaf(-24, -4, -45, 0.95, 0.8);
+    drawLeaf(-14, -2, -50, 0.85, 0.75);
+
+    targetCtx.restore();
+}
+
+/**
+ * Draws watermark footer name "SIRIVELA YASHWANTH ROYAL" with leaf ornaments at the bottom of every page.
+ */
+function drawNotebookFooter(targetCtx) {
+    if (!targetCtx) return;
+
+    targetCtx.save();
+
+    const centerX = VIRTUAL_WIDTH / 2;
+    const footerY = VIRTUAL_HEIGHT - 36;
+    const textStr = "SIRIVELA YASHWANTH ROYAL";
+
+    targetCtx.font = "600 12px 'Georgia', 'Times New Roman', serif";
+    targetCtx.fillStyle = "rgba(100, 112, 125, 0.75)";
+    targetCtx.textAlign = "center";
+    targetCtx.textBaseline = "middle";
+
+    targetCtx.fillText(textStr, centerX, footerY);
+
+    // Position leaf branches around the text
+    const textWidth = targetCtx.measureText(textStr).width;
+    const offset = Math.max(textWidth / 2 + 18, 140);
+
+    drawLeafBranch(targetCtx, centerX - offset, footerY, false);
+    drawLeafBranch(targetCtx, centerX + offset, footerY, true);
+
+    targetCtx.restore();
+}
+
+/**
  * Draws the entire notebook background, ruled lines, margins, and text characters.
  */
 function drawPage() {
@@ -734,6 +807,9 @@ function drawPage() {
     ctx.font = "10px 'Inter', sans-serif";
     ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
     ctx.fillText(`PAGE: ${pageNumber}   DATE: ___/___/___`, VIRTUAL_WIDTH - 192, 36);
+
+    // 4. Draw Footer "SIRIVELA YASHWANTH ROYAL" on every page
+    drawNotebookFooter(ctx);
 
     // 4. Draw Handwritten Text Characters
     ctx.textBaseline = "alphabetic";
@@ -862,6 +938,9 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     staticCtx.fillStyle = "rgba(0, 0, 0, 0.5)";
     staticCtx.fillText(`PAGE: ${pageNum}   DATE: ___/___/___`, VIRTUAL_WIDTH - 192, 36);
     
+    // 4. Draw Footer "SIRIVELA YASHWANTH ROYAL" on every page
+    drawNotebookFooter(staticCtx);
+
     if (!text) return;
     
     staticCtx.font = `${fontSize}px "${font}"`;
