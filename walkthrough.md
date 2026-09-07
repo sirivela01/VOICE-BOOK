@@ -1,28 +1,21 @@
-# Walkthrough - 5 New Realistic Handwriting Styles & Fixed Persistent Memory (v=15.0)
+# Walkthrough - Dark Theme Dropdown Menu CSS Styling (v=16.0)
 
-We have expanded the **Handwriting Style** dropdown menu with **5 top-quality Google Fonts handwriting styles** (bringing the total to **9 realistic handwriting fonts**) and implemented **Persistent Font Memory** so your chosen style stays fixed for each notebook!
+We have updated `static/css/style.css` with custom styling for the **Handwriting Style** `<select>` dropdown menu options to ensure **100% crisp, vibrant readability**!
 
-## ✍️ 9 Realistic Handwriting Styles Available (v=15.0)
+## 🎨 What Was Fixed in the Dropdown Menu (v=16.0)
 
-1. 🍎 **Homemade Apple** — Realistic Fountain Script (Default)
-2. ✍️ **Caveat** — Clean Modern Cursive
-3. 🌸 **Indie Flower** — Casual Hand-Printed Pen *(NEW)*
-4. 💃 **Dancing Script** — Elegant Calligraphy Script *(NEW)*
-5. ✨ **Shadows Into Light** — Neat Personal Handwriting *(NEW)*
-6. 📝 **Kalam** — Realistic Student Ink Notes *(NEW)*
-7. ✒️ **Sacramento** — Fluent Flowing Calligraphy Pen *(NEW)*
-8. 🎨 **Reenie Beanie** — Quick Casual Sketch Pen
-9. 📐 **Architects Daughter** — Neat Architect Block Print
+1. **Dark Slate Option Background (`#0f172a`):**
+   * Replaced the default browser white background with a dark slate background matching the app's dark theme.
 
----
+2. **Crisp High-Contrast White Text (`#f8fafc`):**
+   * All 9 handwriting style font names are written in crisp white text, making every single handwriting font option clear and easy to read.
 
-## 🔒 Fixed Persistent Font Memory
-* Whenever you select a handwriting style for a notebook, **it is automatically saved** to memory.
-* Opening that notebook later or switching pages keeps your chosen handwriting style **FIXED** permanently!
+3. **Vibrant Blue Active Highlight (`#2563eb`):**
+   * Hovering or selecting any handwriting style highlights the option in vibrant blue.
 
 ---
 
 ## 🚀 Try the Live Update:
 Wait **1 minute** for Render to finish building the update, and open this link:
 
-👉 **[https://voice-book-llh4.onrender.com/?v=15.0](https://voice-book-llh4.onrender.com/?v=15.0)**
+👉 **[https://voice-book-llh4.onrender.com/?v=16.0](https://voice-book-llh4.onrender.com/?v=16.0)**
