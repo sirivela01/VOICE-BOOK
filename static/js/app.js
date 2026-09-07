@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=22.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=22.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=22.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=22.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex } from "./renderer.js?v=22.0";
-import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=22.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=23.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=23.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=23.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=23.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex } from "./renderer.js?v=23.0";
+import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=23.0";
 
 // Session App State
 let activeBookId = null;
@@ -625,7 +625,7 @@ async function handlePageOverflow(remainingText) {
 
 /* ================= 3. CORE UI EVENT BINDINGS ================= */
 function setupEventListeners() {
-    // Google Sign In & Instant Demo Access
+    // Google Sign In
     let isGoogleLoginPending = false;
     const btnGoogleLogin = document.getElementById("btn-google-login");
     if (btnGoogleLogin) {
@@ -633,7 +633,6 @@ function setupEventListeners() {
             if (isGoogleLoginPending) return;
 
             if (!isFirebaseInitialized()) {
-                showToast("Firebase not configured. Entering Instant Demo Mode...", "info");
                 enableGuestMode();
                 return;
             }
@@ -660,14 +659,6 @@ function setupEventListeners() {
                 isGoogleLoginPending = false;
                 btnGoogleLogin.disabled = false;
             }
-        });
-    }
-
-    const btnGuestLogin = document.getElementById("btn-guest-login");
-    if (btnGuestLogin) {
-        btnGuestLogin.addEventListener("click", () => {
-            enableGuestMode();
-            showToast("Entered Instant Demo Mode!", "success");
         });
     }
     
