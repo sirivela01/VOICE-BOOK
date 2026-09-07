@@ -11,11 +11,10 @@
 - `[x]` **Phase 3: Client Auth Logic (`app.js` & `auth.js`)**
   - `[x]` Added double-click protection (`isGoogleLoginPending`) to `btn-google-login` in `app.js`
   - `[x]` Added internal `try/catch` in `loginWithGoogle` in `auth.js`
-- `[x]` **Phase 4: 9-Second Title Intro Splash Screen (`index.html`, `style.css`, `app.js`)**
-  - `[x]` Designed professional **"Voice Book"** opening splash screen card
-  - `[x]` Added 3D animated glowing logo ring & floating card effect
-  - `[x]` Implemented **9-second real-time countdown timer & progress bar**
-  - `[x]` Added **"Enter Now ➔"** fast skip button
+- `[x]` **Phase 4: Shiny VoiceBook Brand Logo Design (`templates/index.html`, `static/css/style.css`)**
+  - `[x]` Replaced older emoji logo icon with glowing purple 3D **Soundwave Equalizer Bars**
+  - `[x]` Styled **VoiceBook** title text with two-tone white and gradient violet-indigo glow matching picture 2
+  - `[x]` Applied matching brand hero logo across the splash screen and login cards
 - `[x]` **Phase 5: Verification & Push**
   - `[x]` Commit changes and push to GitHub for Render auto-redeployment
   - `[x]` Write updated `walkthrough.md`

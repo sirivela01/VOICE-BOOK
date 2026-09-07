@@ -1,23 +1,22 @@
-# Walkthrough - 9-Second Professional Title Splash Screen (v=17.0)
+# Walkthrough - Shiny VoiceBook Soundwave Brand Logo (v=18.0)
 
-We have created a **stunning, professional opening Title Screen** for **"Voice Book"** that displays automatically for **9 seconds** when anyone opens your web application!
+We have updated the title and splash header logo to match the modern, shiny **VoiceBook** branding shown in your second picture!
 
-## 🌟 Splash Screen Features (v=17.0)
+## 💎 Brand Design Elements (v=18.0)
 
-1. **Title Branding:**
-   * Features the bold title **"Voice Book"** with a rich cyan-blue glowing gradient and 3D spinning logo ring.
-   * Tagline: *"AI-Powered Voice-to-Handwriting Digital Notebook"*
+1. **3D Glowing Soundwave Bars:**
+   * Features 3 animated vertical voice equalizer bars (`bar-1`, `bar-2`, `bar-3`) with a purple/violet gradient (`#c084fc` to `#8b5cf6`) and neon outer glow.
 
-2. **9-Second Smooth Countdown:**
-   * A vibrant gradient progress bar fills smoothly over **9 seconds**.
-   * Countdown badge displays: *"Opening in 9s...", "Opening in 8s...", etc.*
+2. **Two-Tone Modern Typography:**
+   * **Voice** is rendered in crisp bright white (`#ffffff`) with subtle drop shadow.
+   * **Book** is rendered in a soft lavender-purple gradient (`#a78bfa` to `#60a5fa`) with intense violet ambient glow.
 
-3. **Fast Enter Button:**
-   * Includes a sleek **"Enter Now ➔"** button so you can jump straight into the application without waiting the full 9 seconds.
+3. **Consistent Brand Presence:**
+   * Applied this brand logo across both the **9-second Splash Screen** and the **Login Screen**.
 
 ---
 
 ## 🚀 Try the Live Update:
 Wait **1 minute** for Render to finish building the update, and open this link:
 
-👉 **[https://voice-book-llh4.onrender.com/?v=17.0](https://voice-book-llh4.onrender.com/?v=17.0)**
+👉 **[https://voice-book-llh4.onrender.com/?v=18.0](https://voice-book-llh4.onrender.com/?v=18.0)**
