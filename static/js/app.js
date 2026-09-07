@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=24.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=24.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=24.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=24.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex } from "./renderer.js?v=24.0";
-import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=24.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=25.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=25.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=25.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=25.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex } from "./renderer.js?v=25.0";
+import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=25.0";
 
 // Session App State
 let activeBookId = null;
@@ -633,7 +633,8 @@ function setupEventListeners() {
             if (isGoogleLoginPending) return;
 
             if (!isFirebaseInitialized()) {
-                enableGuestMode();
+                showToast("Firebase credentials required for Google Sign-In. Opening setup...", "warning");
+                showModal(modalConfig);
                 return;
             }
 
@@ -659,6 +660,14 @@ function setupEventListeners() {
                 isGoogleLoginPending = false;
                 btnGoogleLogin.disabled = false;
             }
+        });
+    }
+
+    const btnGuestContinue = document.getElementById("btn-guest-continue");
+    if (btnGuestContinue) {
+        btnGuestContinue.addEventListener("click", () => {
+            enableGuestMode();
+            showToast("Entered Guest Mode", "info");
         });
     }
     

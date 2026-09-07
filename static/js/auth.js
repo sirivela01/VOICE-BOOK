@@ -106,8 +106,7 @@ export function getCurrentUser() {
 export async function loginWithGoogle() {
     const auth = getFirebaseAuth();
     if (!auth) {
-        enableGuestMode();
-        return null;
+        throw new Error("Firebase is not initialized. Please configure Firebase credentials.");
     }
     disableGuestMode();
     const provider = new GoogleAuthProvider();

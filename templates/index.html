@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Caveat:wght@400;700&family=Homemade+Apple&family=Reenie+Beanie&family=Architects+Daughter&family=Indie+Flower&family=Dancing+Script:wght@400;700&family=Shadows+Into+Light&family=Kalam:wght@300;400;700&family=Sacramento&display=swap" rel="stylesheet">
     <!-- Main Style -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='24.0') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='25.0') }}">
 </head>
 <body>
     <!-- ================= 9-SECOND PROFESSIONAL TITLE SPLASH SCREEN ================= -->
@@ -53,7 +53,7 @@
                     <p class="tagline" style="margin-top: 0.5rem;">Your spoken words, written in realistic handwriting.</p>
                 </div>
                 
-                <!-- Google Login Only -->
+                <!-- Google Login & Guest Option -->
                 <div class="social-login-container" style="margin-top: 2rem;">
                     <button type="button" id="btn-google-login" class="btn btn-primary btn-block icon-btn" style="background-color: #4285F4; border-color: #4285F4; box-shadow: 0 4px 14px rgba(66, 133, 244, 0.4);">
                         <svg class="icon" viewBox="0 0 24 24" style="width: 20px; height: 20px;">
@@ -64,6 +64,9 @@
                         </svg>
                         Sign In with Google
                     </button>
+                    <div style="text-align: center; margin-top: 1rem;">
+                        <button type="button" id="btn-guest-continue" class="btn btn-link btn-xs" style="color: #94a3b8; text-decoration: underline; font-size: 0.85rem;">Continue as Guest User</button>
+                    </div>
                 </div>
 
                 <div class="auth-footer">
@@ -338,6 +341,6 @@
     </script>
 
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='24.0') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='25.0') }}"></script>
 </body>
 </html>
