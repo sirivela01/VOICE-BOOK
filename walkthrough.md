@@ -1,22 +1,22 @@
-# Walkthrough - Shiny VoiceBook Soundwave Brand Logo (v=18.0)
+# Walkthrough - Ultra-Minimal Shiny VoiceBook Splash Screen (v=19.0)
 
-We have updated the title and splash header logo to match the modern, shiny **VoiceBook** branding shown in your second picture!
+We have updated the opening splash screen card to be **ultra-clean, minimal, and focused exclusively on the shiny VoiceBook logo** and the **9-second progress timer**!
 
-## 💎 Brand Design Elements (v=18.0)
+## ✨ Minimal & Shiny Design Elements (v=19.0)
 
-1. **3D Glowing Soundwave Bars:**
-   * Features 3 animated vertical voice equalizer bars (`bar-1`, `bar-2`, `bar-3`) with a purple/violet gradient (`#c084fc` to `#8b5cf6`) and neon outer glow.
+1. **Ultra-Clean Card:**
+   * Removed the extra subtitle text and feature pills.
+   * Focuses 100% on the **shiny 3D glowing VoiceBook soundwave logo**.
 
-2. **Two-Tone Modern Typography:**
-   * **Voice** is rendered in crisp bright white (`#ffffff`) with subtle drop shadow.
-   * **Book** is rendered in a soft lavender-purple gradient (`#a78bfa` to `#60a5fa`) with intense violet ambient glow.
+2. **Enhanced Neon Glow:**
+   * Increased the neon backlight shadow behind **VoiceBook** (`#c084fc` to `#8b5cf6`) for a sleek, premium intro experience.
 
-3. **Consistent Brand Presence:**
-   * Applied this brand logo across both the **9-second Splash Screen** and the **Login Screen**.
+3. **9-Second Countdown Progress Bar:**
+   * Smoothly fills over 9 seconds with the **"Opening in 9s..."** countdown and **"Enter Now ➔"** fast skip button.
 
 ---
 
 ## 🚀 Try the Live Update:
 Wait **1 minute** for Render to finish building the update, and open this link:
 
-👉 **[https://voice-book-llh4.onrender.com/?v=18.0](https://voice-book-llh4.onrender.com/?v=18.0)**
+👉 **[https://voice-book-llh4.onrender.com/?v=19.0](https://voice-book-llh4.onrender.com/?v=19.0)**
