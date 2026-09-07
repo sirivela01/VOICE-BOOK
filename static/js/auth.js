@@ -6,7 +6,7 @@ import {
     GoogleAuthProvider,
     signInWithPopup
 } from "firebase/auth";
-import { getFirebaseAuth } from "./firebase-init.js?v=21.0";
+import { getFirebaseAuth } from "./firebase-init.js?v=22.0";
 
 let authObserverCallback = null;
 let isGuestActive = localStorage.getItem("guest_mode_active") === "true";
@@ -34,6 +34,7 @@ export function disableGuestMode() {
 export function loginUser(email, password) {
     disableGuestMode();
     const auth = getFirebaseAuth();
+    if (!auth) throw new Error("Firebase Auth is not configured.");
     return signInWithEmailAndPassword(auth, email, password);
 }
 
@@ -43,6 +44,7 @@ export function loginUser(email, password) {
 export function registerUser(email, password) {
     disableGuestMode();
     const auth = getFirebaseAuth();
+    if (!auth) throw new Error("Firebase Auth is not configured.");
     return createUserWithEmailAndPassword(auth, email, password);
 }
 
@@ -53,7 +55,9 @@ export function logoutUser() {
     disableGuestMode();
     try {
         const auth = getFirebaseAuth();
-        return signOut(auth);
+        if (auth) return signOut(auth);
+        if (authObserverCallback) authObserverCallback(null);
+        return Promise.resolve();
     } catch (e) {
         if (authObserverCallback) authObserverCallback(null);
         return Promise.resolve();
@@ -71,7 +75,12 @@ export function observeAuthState(callback) {
     }
     try {
         const auth = getFirebaseAuth();
-        return onAuthStateChanged(auth, callback);
+        if (auth) {
+            return onAuthStateChanged(auth, callback);
+        } else {
+            callback(null);
+            return () => {};
+        }
     } catch (e) {
         // Fallback if Firebase auth is not initialized
         callback(null);
@@ -88,16 +97,19 @@ export function getCurrentUser() {
     }
     try {
         const auth = getFirebaseAuth();
-        return auth.currentUser;
+        return auth ? auth.currentUser : null;
     } catch (e) {
         return null;
     }
 }
 
 export async function loginWithGoogle() {
-    disableGuestMode();
     const auth = getFirebaseAuth();
-    if (!auth) throw new Error("Firebase Auth is not initialized.");
+    if (!auth) {
+        enableGuestMode();
+        return null;
+    }
+    disableGuestMode();
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     try {

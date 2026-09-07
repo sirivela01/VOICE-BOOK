@@ -57,22 +57,16 @@ export function initFirebase(config) {
 }
 
 /**
- * Getter for Firebase Auth instance. Throws error if not initialized.
+ * Getter for Firebase Auth instance. Returns null if uninitialized.
  */
 export function getFirebaseAuth() {
-    if (!authInstance) {
-        throw new Error("Firebase Auth is not initialized yet. Configure Firebase first.");
-    }
     return authInstance;
 }
 
 /**
- * Getter for Firestore database instance. Throws error if not initialized.
+ * Getter for Firestore database instance. Returns null if uninitialized.
  */
 export function getFirebaseDb() {
-    if (!dbInstance) {
-        throw new Error("Firebase Firestore is not initialized yet. Configure Firebase first.");
-    }
     return dbInstance;
 }
 

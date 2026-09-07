@@ -62,13 +62,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         const config = await fetchFirebaseConfig();
         if (config) {
             initFirebase(config);
-            setupAuthListener();
-        } else {
-            showView("view-auth");
         }
+        setupAuthListener();
     } catch (e) {
-        console.error("Firebase init error:", e);
-        showView("view-auth");
+        console.warn("Firebase init notice:", e);
+        setupAuthListener();
     }
 });
 
@@ -180,8 +178,6 @@ function setSaveStatus(type, message) {
 
 /* ================= 1. BOOKSHELF HANDLERS ================= */
 async function loadBookshelf() {
-    if (!isFirebaseInitialized()) return;
-    
     bookcaseContainer.innerHTML = `<div class="loading-text" style="color: white; padding: 2rem; text-align: center;">Loading your 3D bookshelf...</div>`;
     try {
         const books = await getUserBooks();
@@ -629,7 +625,7 @@ async function handlePageOverflow(remainingText) {
 
 /* ================= 3. CORE UI EVENT BINDINGS ================= */
 function setupEventListeners() {
-    // Google Sign In
+    // Google Sign In & Instant Demo Access
     let isGoogleLoginPending = false;
     const btnGoogleLogin = document.getElementById("btn-google-login");
     if (btnGoogleLogin) {
@@ -637,8 +633,8 @@ function setupEventListeners() {
             if (isGoogleLoginPending) return;
 
             if (!isFirebaseInitialized()) {
-                showToast("Firebase is not configured yet. Opening configuration panel...", "error");
-                showModal(modalConfig);
+                showToast("Firebase not configured. Entering Instant Demo Mode...", "info");
+                enableGuestMode();
                 return;
             }
 
@@ -664,6 +660,14 @@ function setupEventListeners() {
                 isGoogleLoginPending = false;
                 btnGoogleLogin.disabled = false;
             }
+        });
+    }
+
+    const btnGuestLogin = document.getElementById("btn-guest-login");
+    if (btnGuestLogin) {
+        btnGuestLogin.addEventListener("click", () => {
+            enableGuestMode();
+            showToast("Entered Instant Demo Mode!", "success");
         });
     }
     
