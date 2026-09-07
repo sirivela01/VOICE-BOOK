@@ -12,9 +12,9 @@ import {
     serverTimestamp,
     updateDoc
 } from "firebase/firestore";
-import { getFirebaseDb } from "./firebase-init.js?v=25.0";
-import { getCurrentUser, isGuestMode } from "./auth.js?v=25.0";
-import { isFirebaseInitialized } from "./firebase-init.js?v=25.0";
+import { getFirebaseDb } from "./firebase-init.js?v=27.0";
+import { getCurrentUser, isGuestMode } from "./auth.js?v=27.0";
+import { isFirebaseInitialized } from "./firebase-init.js?v=27.0";
 
 // Helper for user local storage
 function getUserLocalBooks(userId = "guest_user") {

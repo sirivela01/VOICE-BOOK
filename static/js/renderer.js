@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=24.0";
+import { getPRNG } from "./utils.js?v=27.0";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -80,7 +80,11 @@ function parseInputToSegments(rawInput) {
     if (!rawInput) return [];
 
     if (Array.isArray(rawInput)) {
-        return rawInput.filter(s => s && typeof s.text === "string" && s.color);
+        return rawInput.filter(s => s && typeof s.text === "string").map(s => ({
+            text: s.text,
+            color: s.color || config.inkColor,
+            font: s.font || currentFont
+        }));
     }
     
     const strInput = String(rawInput);
@@ -90,7 +94,11 @@ function parseInputToSegments(rawInput) {
         try {
             const parsed = JSON.parse(strInput);
             if (Array.isArray(parsed)) {
-                return parsed.filter(s => s && typeof s.text === "string" && s.color);
+                return parsed.filter(s => s && typeof s.text === "string").map(s => ({
+                    text: s.text,
+                    color: s.color || config.inkColor,
+                    font: s.font || currentFont
+                }));
             }
         } catch (e) {
             // Fallthrough
@@ -107,22 +115,104 @@ function parseInputToSegments(rawInput) {
         while ((match = regex.exec(strInput)) !== null) {
             if (match.index > lastIndex) {
                 const plain = strInput.substring(lastIndex, match.index);
-                if (plain) segments.push({ text: plain, color: config.inkColor });
+                if (plain) segments.push({ text: plain, color: config.inkColor, font: currentFont });
             }
-            segments.push({ text: match[2], color: match[1] });
+            segments.push({ text: match[2], color: match[1], font: currentFont });
             lastIndex = regex.lastIndex;
         }
 
         if (lastIndex < strInput.length) {
             const plain = strInput.substring(lastIndex);
-            if (plain) segments.push({ text: plain, color: config.inkColor });
+            if (plain) segments.push({ text: plain, color: config.inkColor, font: currentFont });
         }
 
         return segments;
     }
 
-    // Plain text without tags: single segment with current active ink color
-    return [{ text: strInput, color: config.inkColor }];
+    // Plain text without tags: single segment with active ink color and font
+    return [{ text: strInput, color: config.inkColor, font: currentFont }];
+}
+
+/**
+ * Applies a specific handwriting font style to a range of character indices [start, end].
+ * If no range or start == end, updates default active handwriting font for future typing.
+ */
+export function applyFontToSelection(selectedFont, start = -1, end = -1) {
+    if (selectedFont) {
+        currentFont = selectedFont;
+    }
+
+    if (start >= 0 && end > start && textSegments.length > 0) {
+        const newSegments = [];
+        let globalIndex = 0;
+
+        for (const seg of textSegments) {
+            const segLen = seg.text.length;
+            const segStart = globalIndex;
+            const segEnd = globalIndex + segLen;
+
+            if (segEnd <= start || segStart >= end) {
+                // Entirely outside selection range
+                newSegments.push(seg);
+            } else {
+                // Overlaps selection range: split into sub-segments
+                if (start > segStart) {
+                    const prefixLen = start - segStart;
+                    newSegments.push({
+                        text: seg.text.substring(0, prefixLen),
+                        color: seg.color || config.inkColor,
+                        font: seg.font || currentFont
+                    });
+                }
+
+                const selectSubStart = Math.max(0, start - segStart);
+                const selectSubEnd = Math.min(segLen, end - segStart);
+                newSegments.push({
+                    text: seg.text.substring(selectSubStart, selectSubEnd),
+                    color: seg.color || config.inkColor,
+                    font: selectedFont
+                });
+
+                if (end < segEnd) {
+                    const suffixSubStart = end - segStart;
+                    newSegments.push({
+                        text: seg.text.substring(suffixSubStart),
+                        color: seg.color || config.inkColor,
+                        font: seg.font || currentFont
+                    });
+                }
+            }
+
+            globalIndex += segLen;
+        }
+
+        // Merge adjacent segments with identical color & font
+        const merged = [];
+        for (const seg of newSegments) {
+            if (!seg.text) continue;
+            const segColor = seg.color || config.inkColor;
+            const segFont = seg.font || currentFont;
+
+            if (merged.length > 0 && 
+                (merged[merged.length - 1].color || config.inkColor) === segColor && 
+                (merged[merged.length - 1].font || currentFont) === segFont) {
+                merged[merged.length - 1].text += seg.text;
+            } else {
+                merged.push({
+                    text: seg.text,
+                    color: segColor,
+                    font: segFont
+                });
+            }
+        }
+
+        textSegments = merged;
+    }
+
+    recalculateLayout();
+    animatedCharCount = charPositions.length;
+    isAnimating = false;
+    drawPage();
 }
 
 /**
@@ -399,7 +489,7 @@ function recalculateLayout() {
     let overflowSegIndex = -1;
     let overflowCharOffset = -1;
 
-    // Break textSegments down into words with individual segment color!
+    // Break textSegments down into words with individual segment color & font!
     const wordsWithColor = [];
     for (let sIndex = 0; sIndex < textSegments.length; sIndex++) {
         const seg = textSegments[sIndex];
@@ -410,7 +500,8 @@ function recalculateLayout() {
             if (part !== "") {
                 wordsWithColor.push({
                     word: part,
-                    color: seg.color,
+                    color: seg.color || config.inkColor,
+                    font: seg.font || currentFont,
                     segIndex: sIndex,
                     charOffset: charOffset
                 });
@@ -425,7 +516,10 @@ function recalculateLayout() {
         const item = wordsWithColor[w];
         const word = item.word;
         const color = item.color;
+        const font = item.font || currentFont;
         if (word === "") continue;
+
+        ctx.font = `${currentFontSize}px "${font}"`;
 
         // Check if word contains explicit newline
         if (word.includes('\n')) {
@@ -513,7 +607,8 @@ function recalculateLayout() {
                 wordIndex: w,
                 charIndex: c,
                 advanceWidth: charWidth,
-                color: color
+                color: color,
+                font: font
             });
 
             const spacingJitter = (prng() - 0.5) * jitter.spacing;
@@ -532,12 +627,12 @@ function recalculateLayout() {
         const fittingSegments = textSegments.slice(0, overflowSegIndex);
         const targetSeg = textSegments[overflowSegIndex];
         if (targetSeg && overflowCharOffset > 0) {
-            fittingSegments.push({ text: targetSeg.text.substring(0, overflowCharOffset), color: targetSeg.color });
+            fittingSegments.push({ text: targetSeg.text.substring(0, overflowCharOffset), color: targetSeg.color, font: targetSeg.font });
         }
         
         const remainingSegments = [];
         if (targetSeg && overflowCharOffset < targetSeg.text.length) {
-            remainingSegments.push({ text: targetSeg.text.substring(overflowCharOffset), color: targetSeg.color });
+            remainingSegments.push({ text: targetSeg.text.substring(overflowCharOffset), color: targetSeg.color, font: targetSeg.font });
         }
         for (let s = overflowSegIndex + 1; s < textSegments.length; s++) {
             remainingSegments.push(textSegments[s]);
@@ -641,8 +736,6 @@ function drawPage() {
     ctx.fillText(`PAGE: ${pageNumber}   DATE: ___/___/___`, VIRTUAL_WIDTH - 192, 36);
 
     // 4. Draw Handwritten Text Characters
-    ctx.font = `${currentFontSize}px "${currentFont}"`;
-    ctx.fillStyle = config.inkColor;
     ctx.textBaseline = "alphabetic";
 
     const jitter = jitterSettings[currentJitterLevel];
@@ -663,6 +756,7 @@ function drawPage() {
         const scaleJitter = 1.0 + (prng() - 0.5) * jitter.scale;
 
         ctx.save();
+        ctx.font = `${currentFontSize}px "${cp.font || currentFont}"`;
         ctx.fillStyle = cp.color || config.inkColor;
         
         // Translate to letter position + wobble
