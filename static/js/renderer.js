@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=21.0";
+import { getPRNG } from "./utils.js?v=24.0";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -158,6 +158,14 @@ export function initRenderer(canvasElement) {
     
     // Trigger initial render
     drawPage();
+
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(() => {
+            recalculateLayout();
+            if (!isAnimating) animatedCharCount = charPositions.length;
+            drawPage();
+        });
+    }
 }
 
 /**
@@ -174,6 +182,7 @@ export function setRenderOptions({ font, fontSize, jitterLevel, activeBookId, ac
     }
     
     recalculateLayout();
+    animatedCharCount = charPositions.length;
     drawPage();
 }
 
@@ -214,6 +223,9 @@ export function updateFromPlainText(newPlainText) {
     }
     if (!newPlainText) {
         textSegments = [];
+        charPositions = [];
+        animatedCharCount = 0;
+        isAnimating = false;
         recalculateLayout();
         drawPage();
         return;
@@ -222,7 +234,11 @@ export function updateFromPlainText(newPlainText) {
     const activeColor = config.inkColor;
     const currentPlain = getPlainText();
 
-    if (newPlainText === currentPlain) return;
+    if (newPlainText === currentPlain) {
+        animatedCharCount = charPositions.length;
+        drawPage();
+        return;
+    }
 
     // Case 1: Appended text at the end
     if (newPlainText.startsWith(currentPlain)) {
@@ -277,6 +293,8 @@ export function updateFromPlainText(newPlainText) {
     }
 
     recalculateLayout();
+    animatedCharCount = charPositions.length;
+    isAnimating = false;
     drawPage();
 }
 

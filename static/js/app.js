@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=23.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=23.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=23.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=23.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex } from "./renderer.js?v=23.0";
-import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=23.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=24.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=24.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=24.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=24.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex } from "./renderer.js?v=24.0";
+import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=24.0";
 
 // Session App State
 let activeBookId = null;
@@ -814,21 +814,7 @@ function setupEventListeners() {
         }
     });
 
-    // Tap page left/right sides to turn page
-    const pageWrapper = document.getElementById("notebook-paper-wrapper");
-    if (pageWrapper) {
-        pageWrapper.addEventListener("click", (e) => {
-            const rect = pageWrapper.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const width = rect.width;
-            
-            if (clickX < width * 0.4) {
-                turnPage("prev");
-            } else if (clickX > width * 0.6) {
-                turnPage("next");
-            }
-        });
-    }
+
 
     // Rename notebook by clicking the title in the workspace header
     notebookTitle.addEventListener("click", () => {
