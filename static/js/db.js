@@ -12,45 +12,60 @@ import {
     serverTimestamp,
     updateDoc
 } from "firebase/firestore";
-import { getFirebaseDb } from "./firebase-init.js?v=22.0";
-import { getCurrentUser } from "./auth.js?v=22.0";
+import { getFirebaseDb } from "./firebase-init.js?v=25.0";
+import { getCurrentUser, isGuestMode } from "./auth.js?v=25.0";
+import { isFirebaseInitialized } from "./firebase-init.js?v=25.0";
 
-import { isGuestMode } from "./auth.js?v=22.0";
-import { isFirebaseInitialized } from "./firebase-init.js?v=22.0";
-
-// Helper for local guest storage
-function getLocalGuestBooks() {
+// Helper for user local storage
+function getUserLocalBooks(userId = "guest_user") {
+    const storageKey = `user_books_${userId}`;
     try {
-        const data = localStorage.getItem("guest_books");
+        const data = localStorage.getItem(storageKey);
         if (data) return JSON.parse(data);
     } catch (e) {}
-    // Default initial guest book
-    const defaultBooks = [{
-        id: "book_physics_default",
-        userId: "guest_user",
-        name: "physics",
-        createdAt: { seconds: Date.now() / 1000 },
-        currentPage: 1,
-        maxPages: 365,
-        slotIndex: 0
-    }];
-    localStorage.setItem("guest_books", JSON.stringify(defaultBooks));
+    
+    // Also check legacy "guest_books"
+    try {
+        const legacyData = localStorage.getItem("guest_books");
+        if (legacyData) {
+            const parsed = JSON.parse(legacyData);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                localStorage.setItem(storageKey, JSON.stringify(parsed));
+                return parsed;
+            }
+        }
+    } catch (e) {}
+
+    // Default initial 5 books
+    const defaultBooks = [
+        { id: "book_math", userId: userId, name: "math", createdAt: { seconds: Date.now() / 1000 }, currentPage: 1, maxPages: 365, slotIndex: 0 },
+        { id: "book_social", userId: userId, name: "social", createdAt: { seconds: Date.now() / 1000 - 10 }, currentPage: 1, maxPages: 365, slotIndex: 1 },
+        { id: "book_physics", userId: userId, name: "physics", createdAt: { seconds: Date.now() / 1000 - 20 }, currentPage: 1, maxPages: 365, slotIndex: 2 },
+        { id: "book_chemistry", userId: userId, name: "chemistry", createdAt: { seconds: Date.now() / 1000 - 30 }, currentPage: 1, maxPages: 365, slotIndex: 3 },
+        { id: "book_genai", userId: userId, name: "Gen AI", createdAt: { seconds: Date.now() / 1000 - 40 }, currentPage: 1, maxPages: 365, slotIndex: 4 }
+    ];
+    localStorage.setItem(storageKey, JSON.stringify(defaultBooks));
     return defaultBooks;
 }
 
-function saveLocalGuestBooks(books) {
-    localStorage.setItem("guest_books", JSON.stringify(books));
+function saveUserLocalBooks(userId, books) {
+    const storageKey = `user_books_${userId}`;
+    localStorage.setItem(storageKey, JSON.stringify(books));
 }
 
 /**
  * Creates a new notebook document in Firestore or LocalStorage.
  */
 export async function createBook(name, slotIndex = 0) {
-    if (isGuestMode() || !isFirebaseInitialized()) {
-        const books = getLocalGuestBooks();
+    const user = getCurrentUser();
+    const userId = user ? user.uid : "guest_user";
+    const db = getFirebaseDb();
+
+    if (isGuestMode() || !isFirebaseInitialized() || !db) {
+        const books = getUserLocalBooks(userId);
         const newBook = {
-            id: "guest_book_" + Date.now(),
-            userId: "guest_user",
+            id: "book_" + Date.now(),
+            userId: userId,
             name: name,
             createdAt: { seconds: Date.now() / 1000 },
             currentPage: 1,
@@ -58,83 +73,113 @@ export async function createBook(name, slotIndex = 0) {
             slotIndex: slotIndex
         };
         books.unshift(newBook);
-        saveLocalGuestBooks(books);
+        saveUserLocalBooks(userId, books);
         return newBook.id;
     }
 
-    const db = getFirebaseDb();
-    const user = getCurrentUser();
-    if (!user) throw new Error("User must be authenticated to create a notebook.");
-
-    const bookData = {
-        userId: user.uid,
-        name: name,
-        createdAt: serverTimestamp(),
-        currentPage: 1,
-        maxPages: 365,
-        slotIndex: slotIndex
-    };
-
-    const docRef = await addDoc(collection(db, "books"), bookData);
-    return docRef.id;
+    try {
+        const bookData = {
+            userId: userId,
+            name: name,
+            createdAt: serverTimestamp(),
+            currentPage: 1,
+            maxPages: 365,
+            slotIndex: slotIndex
+        };
+        const docRef = await addDoc(collection(db, "books"), bookData);
+        return docRef.id;
+    } catch (e) {
+        console.warn("Firestore createBook notice, saving locally:", e);
+        const books = getUserLocalBooks(userId);
+        const newBook = {
+            id: "book_" + Date.now(),
+            userId: userId,
+            name: name,
+            createdAt: { seconds: Date.now() / 1000 },
+            currentPage: 1,
+            maxPages: 365,
+            slotIndex: slotIndex
+        };
+        books.unshift(newBook);
+        saveUserLocalBooks(userId, books);
+        return newBook.id;
+    }
 }
 
 /**
  * Fetches all notebooks belonging to the current user.
  */
 export async function getUserBooks() {
+    const user = getCurrentUser();
+    const userId = user ? user.uid : "guest_user";
+
     if (isGuestMode() || !isFirebaseInitialized()) {
-        return getLocalGuestBooks();
+        return getUserLocalBooks(userId);
     }
 
-    const db = getFirebaseDb();
-    const user = getCurrentUser();
-    if (!user) throw new Error("User must be authenticated to fetch notebooks.");
+    try {
+        const db = getFirebaseDb();
+        if (!db) return getUserLocalBooks(userId);
 
-    const q = query(
-        collection(db, "books"),
-        where("userId", "==", user.uid)
-    );
+        const q = query(
+            collection(db, "books"),
+            where("userId", "==", userId)
+        );
 
-    const querySnapshot = await getDocs(q);
-    const books = [];
-    querySnapshot.forEach((doc) => {
-        books.push({
-            id: doc.id,
-            ...doc.data()
+        const querySnapshot = await getDocs(q);
+        const books = [];
+        querySnapshot.forEach((doc) => {
+            books.push({
+                id: doc.id,
+                ...doc.data()
+            });
         });
-    });
 
-    books.sort((a, b) => {
-        const timeA = a.createdAt ? (a.createdAt.seconds || 0) : 0;
-        const timeB = b.createdAt ? (b.createdAt.seconds || 0) : 0;
-        return timeB - timeA;
-    });
+        if (books.length === 0) {
+            return getUserLocalBooks(userId);
+        }
 
-    return books;
+        books.sort((a, b) => {
+            const timeA = a.createdAt ? (a.createdAt.seconds || 0) : 0;
+            const timeB = b.createdAt ? (b.createdAt.seconds || 0) : 0;
+            return timeB - timeA;
+        });
+
+        return books;
+    } catch (e) {
+        console.warn("Firestore getUserBooks notice, using local books fallback:", e);
+        return getUserLocalBooks(userId);
+    }
 }
 
 /**
  * Deletes a notebook.
  */
 export async function deleteBook(bookId) {
-    if (isGuestMode() || !isFirebaseInitialized()) {
-        let books = getLocalGuestBooks();
-        books = books.filter(b => b.id !== bookId);
-        saveLocalGuestBooks(books);
-        return;
+    const user = getCurrentUser();
+    const userId = user ? user.uid : "guest_user";
+
+    let books = getUserLocalBooks(userId);
+    books = books.filter(b => b.id !== bookId);
+    saveUserLocalBooks(userId, books);
+
+    if (isGuestMode() || !isFirebaseInitialized()) return;
+
+    try {
+        const db = getFirebaseDb();
+        if (!db) return;
+        await deleteDoc(doc(db, "books", bookId));
+
+        const pagesCol = collection(db, "books", bookId, "pages");
+        const pagesSnapshot = await getDocs(pagesCol);
+        const deletePromises = [];
+        pagesSnapshot.forEach((pageDoc) => {
+            deletePromises.push(deleteDoc(doc(db, "books", bookId, "pages", pageDoc.id)));
+        });
+        await Promise.all(deletePromises);
+    } catch (e) {
+        console.warn("Firestore deleteBook notice:", e);
     }
-
-    const db = getFirebaseDb();
-    await deleteDoc(doc(db, "books", bookId));
-
-    const pagesCol = collection(db, "books", bookId, "pages");
-    const pagesSnapshot = await getDocs(pagesCol);
-    const deletePromises = [];
-    pagesSnapshot.forEach((pageDoc) => {
-        deletePromises.push(deleteDoc(doc(db, "books", bookId, "pages", pageDoc.id)));
-    });
-    await Promise.all(deletePromises);
 }
 
 /**

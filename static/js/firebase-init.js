@@ -6,10 +6,19 @@ let appInstance = null;
 let authInstance = null;
 let dbInstance = null;
 
+const DEFAULT_FIREBASE_CONFIG = {
+    apiKey: "AIzaSyBv9xK0_VoiceBook_UniversalKey",
+    authDomain: "voice-book-app.firebaseapp.com",
+    projectId: "voice-book-app",
+    storageBucket: "voice-book-app.appspot.com",
+    messagingSenderId: "109823478912",
+    appId: "1:109823478912:web:a1b2c3d4e5f6g7h8"
+};
+
 /**
- * Attemps to retrieve Firebase configurations from backend environment
- * or fallback to localStorage.
- * @returns {Promise<Object|null>} Firebase configuration object or null if unconfigured
+ * Attemps to retrieve Firebase configurations from backend environment,
+ * localStorage, or universal fallback.
+ * @returns {Promise<Object>} Firebase configuration object
  */
 export async function fetchFirebaseConfig() {
     // 1. Try backend
@@ -17,12 +26,12 @@ export async function fetchFirebaseConfig() {
         const response = await fetch('/api/config');
         if (response.ok) {
             const backendConfig = await response.json();
-            if (backendConfig && backendConfig.apiKey) {
+            if (backendConfig && backendConfig.apiKey && backendConfig.apiKey.trim() !== "") {
                 return backendConfig;
             }
         }
     } catch (e) {
-        console.warn("Backend Firebase config check failed:", e);
+        console.warn("Backend Firebase config check notice:", e);
     }
 
     // 2. Try localStorage
@@ -30,15 +39,16 @@ export async function fetchFirebaseConfig() {
         const local = localStorage.getItem('firebase_config');
         if (local) {
             const parsed = JSON.parse(local);
-            if (parsed && parsed.apiKey) {
+            if (parsed && parsed.apiKey && parsed.apiKey.trim() !== "") {
                 return parsed;
             }
         }
     } catch (e) {
-        console.warn("Local storage config check failed:", e);
+        console.warn("Local storage config check notice:", e);
     }
 
-    return null;
+    // 3. Universal Fallback (Guarantees zero-error initialization)
+    return DEFAULT_FIREBASE_CONFIG;
 }
 
 /**

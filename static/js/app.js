@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=25.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=25.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=25.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=25.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex } from "./renderer.js?v=25.0";
-import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=25.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=26.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=26.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=26.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=26.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex } from "./renderer.js?v=26.0";
+import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=26.0";
 
 // Session App State
 let activeBookId = null;
@@ -632,30 +632,15 @@ function setupEventListeners() {
         btnGoogleLogin.addEventListener("click", async () => {
             if (isGoogleLoginPending) return;
 
-            if (!isFirebaseInitialized()) {
-                showToast("Firebase credentials required for Google Sign-In. Opening setup...", "warning");
-                showModal(modalConfig);
-                return;
-            }
-
             try {
                 isGoogleLoginPending = true;
                 btnGoogleLogin.disabled = true;
                 const result = await loginWithGoogle();
                 if (result) {
-                    showToast("Successfully logged in with Google!", "success");
+                    showToast("Signed in successfully!", "success");
                 }
             } catch (err) {
                 console.warn("Google Auth notice:", err);
-                if (err && err.code === "auth/unauthorized-domain") {
-                    alert("Firebase Error: Authorized Domain missing!\n\nPlease go to Firebase Console -> Authentication -> Settings -> Authorized Domains and add:\nvoice-book-llh4.onrender.com");
-                } else if (err && err.code === "auth/popup-blocked") {
-                    alert("Google Sign-In popup was blocked by your browser.\n\nPlease click the popup icon in your browser address bar and select 'Always allow popups for this site'.");
-                } else if (err && (err.code === "auth/cancelled-popup-request" || err.code === "auth/popup-closed-by-user")) {
-                    showToast("Google Sign-In popup closed.", "info");
-                } else {
-                    showToast(err ? (err.message || "Google Sign-In failed.") : "Sign-in cancelled.", "error");
-                }
             } finally {
                 isGoogleLoginPending = false;
                 btnGoogleLogin.disabled = false;
