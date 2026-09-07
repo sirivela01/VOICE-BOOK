@@ -11,10 +11,11 @@
 - `[x]` **Phase 3: Client Auth Logic (`app.js` & `auth.js`)**
   - `[x]` Added double-click protection (`isGoogleLoginPending`) to `btn-google-login` in `app.js`
   - `[x]` Added internal `try/catch` in `loginWithGoogle` in `auth.js`
-- `[x]` **Phase 4: Handwriting Styles Expansion & Dark Theme CSS (`style.css` & `index.html`)**
-  - `[x]` Added 5 new realistic handwriting fonts: **Indie Flower**, **Dancing Script**, **Shadows Into Light**, **Kalam**, **Sacramento**
-  - `[x]` **Persistent Font Memory**: Selected handwriting style is permanently saved per notebook in `LocalStorage`
-  - `[x]` **Dark Theme Dropdown CSS Fix**: Styled `select.form-control option` with `#0f172a` slate background and `#f8fafc` crisp white text!
+- `[x]` **Phase 4: 9-Second Title Intro Splash Screen (`index.html`, `style.css`, `app.js`)**
+  - `[x]` Designed professional **"Voice Book"** opening splash screen card
+  - `[x]` Added 3D animated glowing logo ring & floating card effect
+  - `[x]` Implemented **9-second real-time countdown timer & progress bar**
+  - `[x]` Added **"Enter Now ➔"** fast skip button
 - `[x]` **Phase 5: Verification & Push**
   - `[x]` Commit changes and push to GitHub for Render auto-redeployment
   - `[x]` Write updated `walkthrough.md`

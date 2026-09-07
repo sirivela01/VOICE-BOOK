@@ -1,21 +1,23 @@
-# Walkthrough - Dark Theme Dropdown Menu CSS Styling (v=16.0)
+# Walkthrough - 9-Second Professional Title Splash Screen (v=17.0)
 
-We have updated `static/css/style.css` with custom styling for the **Handwriting Style** `<select>` dropdown menu options to ensure **100% crisp, vibrant readability**!
+We have created a **stunning, professional opening Title Screen** for **"Voice Book"** that displays automatically for **9 seconds** when anyone opens your web application!
 
-## 🎨 What Was Fixed in the Dropdown Menu (v=16.0)
+## 🌟 Splash Screen Features (v=17.0)
 
-1. **Dark Slate Option Background (`#0f172a`):**
-   * Replaced the default browser white background with a dark slate background matching the app's dark theme.
+1. **Title Branding:**
+   * Features the bold title **"Voice Book"** with a rich cyan-blue glowing gradient and 3D spinning logo ring.
+   * Tagline: *"AI-Powered Voice-to-Handwriting Digital Notebook"*
 
-2. **Crisp High-Contrast White Text (`#f8fafc`):**
-   * All 9 handwriting style font names are written in crisp white text, making every single handwriting font option clear and easy to read.
+2. **9-Second Smooth Countdown:**
+   * A vibrant gradient progress bar fills smoothly over **9 seconds**.
+   * Countdown badge displays: *"Opening in 9s...", "Opening in 8s...", etc.*
 
-3. **Vibrant Blue Active Highlight (`#2563eb`):**
-   * Hovering or selecting any handwriting style highlights the option in vibrant blue.
+3. **Fast Enter Button:**
+   * Includes a sleek **"Enter Now ➔"** button so you can jump straight into the application without waiting the full 9 seconds.
 
 ---
 
 ## 🚀 Try the Live Update:
 Wait **1 minute** for Render to finish building the update, and open this link:
 
-👉 **[https://voice-book-llh4.onrender.com/?v=16.0](https://voice-book-llh4.onrender.com/?v=16.0)**
+👉 **[https://voice-book-llh4.onrender.com/?v=17.0](https://voice-book-llh4.onrender.com/?v=17.0)**

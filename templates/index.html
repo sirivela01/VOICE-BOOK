@@ -10,18 +10,22 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Caveat:wght@400;700&family=Homemade+Apple&family=Reenie+Beanie&family=Architects+Daughter&family=Indie+Flower&family=Dancing+Script:wght@400;700&family=Shadows+Into+Light&family=Kalam:wght@300;400;700&family=Sacramento&display=swap" rel="stylesheet">
     <!-- Main Style -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='17.0') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='18.0') }}">
 </head>
 <body>
     <!-- ================= 9-SECOND PROFESSIONAL TITLE SPLASH SCREEN ================= -->
     <div id="splash-screen-overlay" class="splash-screen-overlay">
         <div class="splash-content-card">
-            <div class="splash-logo-container">
-                <div class="splash-glowing-ring"></div>
-                <div class="splash-icon">📖✒️</div>
+            <div class="splash-brand-hero">
+                <div class="soundwave-logo">
+                    <span class="bar bar-1"></span>
+                    <span class="bar bar-2"></span>
+                    <span class="bar bar-3"></span>
+                </div>
+                <h1 class="splash-brand-title">
+                    <span class="brand-voice">Voice</span><span class="brand-book">Book</span>
+                </h1>
             </div>
-            
-            <h1 class="splash-title">Voice Book</h1>
             <p class="splash-subtitle">AI-Powered Voice-to-Handwriting Digital Notebook</p>
             
             <div class="splash-features-pills">
@@ -56,9 +60,15 @@
         <section id="view-auth" class="view-panel active-view">
             <div class="auth-card">
                 <div class="auth-header">
-                    <div class="logo-icon">✍️</div>
-                    <h1>ScribeVoice</h1>
-                    <p class="tagline">Your spoken words, written in realistic handwriting.</p>
+                    <div class="soundwave-logo" style="margin-bottom: 0.8rem;">
+                        <span class="bar bar-1"></span>
+                        <span class="bar bar-2"></span>
+                        <span class="bar bar-3"></span>
+                    </div>
+                    <h1 class="splash-brand-title" style="font-size: 2.5rem;">
+                        <span class="brand-voice">Voice</span><span class="brand-book">Book</span>
+                    </h1>
+                    <p class="tagline" style="margin-top: 0.5rem;">Your spoken words, written in realistic handwriting.</p>
                 </div>
                 
                 <!-- Google Login Only -->
@@ -339,6 +349,6 @@
     </script>
 
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='17.0') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='18.0') }}"></script>
 </body>
 </html>
