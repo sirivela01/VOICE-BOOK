@@ -8,9 +8,9 @@
     <!-- Modern UI Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Caveat:wght@400;700&family=Homemade+Apple&family=Reenie+Beanie&family=Architects+Daughter&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Caveat:wght@400;700&family=Homemade+Apple&family=Reenie+Beanie&family=Architects+Daughter&family=Indie+Flower&family=Dancing+Script:wght@400;700&family=Shadows+Into+Light&family=Kalam:wght@300;400;700&family=Sacramento&display=swap" rel="stylesheet">
     <!-- Main Style -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='14.0') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='15.0') }}">
 </head>
 <body>
     <!-- Background Gradient Grids -->
@@ -103,10 +103,15 @@
                         <h4>Handwriting Style</h4>
                         <div class="control-group">
                             <select id="select-font" class="form-control">
-                                <option value="Caveat">Caveat (Clean Modern)</option>
                                 <option value="Homemade Apple" selected>Homemade Apple (Realistic Script)</option>
-                                <option value="Reenie Beanie">Reenie Beanie (Casual Sketch)</option>
-                                <option value="Architects Daughter">Architects Daughter (Neat Block)</option>
+                                <option value="Caveat">Caveat (Clean Cursive)</option>
+                                <option value="Indie Flower">Indie Flower (Casual Printed Pen)</option>
+                                <option value="Dancing Script">Dancing Script (Elegant Calligraphy)</option>
+                                <option value="Shadows Into Light">Shadows Into Light (Neat Personal Handwriting)</option>
+                                <option value="Kalam">Kalam (Realistic Student Ink Notes)</option>
+                                <option value="Sacramento">Sacramento (Fluent Flowing Pen)</option>
+                                <option value="Reenie Beanie">Reenie Beanie (Casual Quick Sketch)</option>
+                                <option value="Architects Daughter">Architects Daughter (Neat Block Print)</option>
                             </select>
                         </div>
 
@@ -304,6 +309,6 @@
     </script>
 
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='14.0') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='15.0') }}"></script>
 </body>
 </html>

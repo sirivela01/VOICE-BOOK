@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=14.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=14.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=14.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=14.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex } from "./renderer.js?v=14.0";
-import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=14.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=15.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=15.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=15.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=15.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex } from "./renderer.js?v=15.0";
+import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=15.0";
 
 // Session App State
 let activeBookId = null;
@@ -340,6 +340,13 @@ async function openNotebook(bookId, name, pageNum) {
     
     notebookTitle.innerText = name;
     
+    // Restore fixed handwriting style for this book / session
+    const savedFont = safeLocalStorageGet(`book_font_${bookId}`, safeLocalStorageGet("saved_handwriting_font", "Homemade Apple"));
+    if (selectFont) {
+        selectFont.value = savedFont;
+    }
+    setRenderOptions({ font: savedFont });
+
     // Clear live transcription elements
     liveTranscriptBox.innerHTML = `<span class="placeholder-text">Live speech transcript preview will appear here...</span>`;
     
@@ -746,7 +753,13 @@ function setupEventListeners() {
 
     // Canvas Settings adjustments
     selectFont.addEventListener("change", () => {
-        setRenderOptions({ font: selectFont.value });
+        const chosenFont = selectFont.value;
+        setRenderOptions({ font: chosenFont });
+        safeLocalStorageSet("saved_handwriting_font", chosenFont);
+        if (activeBookId) {
+            safeLocalStorageSet(`book_font_${activeBookId}`, chosenFont);
+        }
+        showToast(`Handwriting style set to '${chosenFont}'.`, "info");
     });
     
     inputFontSize.addEventListener("input", () => {

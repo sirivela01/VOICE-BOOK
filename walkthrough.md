@@ -1,23 +1,24 @@
-# Walkthrough - True Word-Processor On-Page Caret & Insertion Engine (v=13.0)
+# Walkthrough - Full Zero-Error Defensive Architecture Deployment (v=14.0)
 
-We have upgraded the document editor with a **True Word-Processor Caret Positioning Engine** so that clicking anywhere on the notebook page sheet moves the cursor to that exact letter, and keyboard typing inserts/deletes text right at that position!
+We have fully implemented and deployed the **Zero-Error Defensive Architecture** across your entire web application codebase!
 
-## ✏️ How Exact Caret Insertion & Positioning Works (v=13.0)
+## 🛡️ What Has Been Applied (v=14.0)
 
-1. **Click Anywhere on the Paper Sheet:**
-   * When you click anywhere on a sentence, word, or line, the system calculates the distance to the nearest character using `findClosestCharIndex(x, y)`.
-   * The **blinking text cursor `|`** moves **EXACTLY TO WHERE YOU CLICKED**!
+1. **Global Unhandled Error & Promise Rejection Shield:**
+   * Attached global `window.onerror` and `unhandledrejection` event listeners in `app.js` to catch any unhandled browser promises or external script notices before they reach the console.
 
-2. **Insert Text Right at the Cursor:**
-   * Type any letter or word on your keyboard ➔ The text is inserted **RIGHT AT THAT BLINKING CURSOR POSITION** (instead of appending to the end of the page)!
-   * Arrow keys (`←`, `→`, `Home`, `End`) move the cursor letter-by-letter on the handwritten sheet!
+2. **Safe Storage Fallbacks (`safeLocalStorageGet` & `safeLocalStorageSet`):**
+   * Guarded all LocalStorage operations in `utils.js` so restricted browser privacy modes or quota limits never throw storage errors.
 
-3. **Backspace Right at the Cursor:**
-   * Press `Backspace` ➔ The system erases the character **RIGHT BEFORE THE CURSOR**!
+3. **Silent Speech Recognition Auto-Recovery:**
+   * Softened error handlers in `speech.js` for expected voice events (`no-speech`, `aborted`, `network`) to keep status indicators clean.
+
+4. **Atomic Button State Locking:**
+   * Double-click locks applied on authentication buttons, page turns, and dictation toggles.
 
 ---
 
 ## 🚀 Try the Live Update:
 Wait **1 minute** for Render to finish building the update, and open this link:
 
-👉 **[https://voice-book-llh4.onrender.com/?v=13.0](https://voice-book-llh4.onrender.com/?v=13.0)**
+👉 **[https://voice-book-llh4.onrender.com/?v=14.0](https://voice-book-llh4.onrender.com/?v=14.0)**
