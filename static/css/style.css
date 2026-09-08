@@ -1241,16 +1241,27 @@ select.form-control option:checked {
     box-shadow: 0 0 12px rgba(234, 88, 12, 0.4);
 }
 
-.notebook-paper-wrapper.is-drawing {
-    cursor: crosshair !important;
+.eraser-toggle-btn.active {
+    background-color: #ef4444 !important;
+    border-color: #ef4444 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
 }
 
+.notebook-paper-wrapper.is-drawing,
 .notebook-paper-wrapper.is-drawing canvas {
     cursor: crosshair !important;
 }
 
+.notebook-paper-wrapper.is-erasing,
+.notebook-paper-wrapper.is-erasing canvas {
+    cursor: grab !important;
+}
+
 .notebook-paper-wrapper.is-drawing .direct-canvas-editor,
-.notebook-paper-wrapper.is-drawing .direct-date-editor {
+.notebook-paper-wrapper.is-drawing .direct-date-editor,
+.notebook-paper-wrapper.is-erasing .direct-canvas-editor,
+.notebook-paper-wrapper.is-erasing .direct-date-editor {
     pointer-events: none !important;
 }
 

@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=37.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=37.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=37.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=37.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection } from "./renderer.js?v=37.0";
-import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet, getTodayFormattedDate } from "./utils.js?v=37.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=38.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=38.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=38.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=38.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection, eraseStrokesNearPoint } from "./renderer.js?v=38.0";
+import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet, getTodayFormattedDate } from "./utils.js?v=38.0";
 
 // Session App State
 let activeBookId = null;
@@ -23,7 +23,9 @@ let btnToggleMic, micStatusIndicator, speechStatusText, liveTranscriptBox;
 let btnPrevPage, btnNextPage, btnClearPage, pageDisplayCounter, notebookTitle;
 let modalConfig, modalCreateBook, formCreateBook, directCanvasEditor, directDateEditor;
 let btnTogglePencil, pencilBtnLabel, selectPencilWidth;
+let btnToggleEraser, eraserBtnLabel, btnUndoStroke, btnClearDrawings;
 let isDrawingMode = false;
+let isEraserMode = false;
 let isMouseDown = false;
 let currentStroke = null;
 let pageStrokes = [];
@@ -114,6 +116,10 @@ function cacheElements() {
     btnTogglePencil = document.getElementById("btn-toggle-pencil");
     pencilBtnLabel = document.getElementById("pencil-btn-label");
     selectPencilWidth = document.getElementById("select-pencil-width");
+    btnToggleEraser = document.getElementById("btn-toggle-eraser");
+    eraserBtnLabel = document.getElementById("eraser-btn-label");
+    btnUndoStroke = document.getElementById("btn-undo-stroke");
+    btnClearDrawings = document.getElementById("btn-clear-drawings");
 }
 
 function setupAuthListener() {
@@ -939,15 +945,70 @@ function setupEventListeners() {
             isDrawingMode = !isDrawingMode;
             const paperWrapper = document.getElementById("notebook-paper-wrapper");
             if (isDrawingMode) {
+                isEraserMode = false;
+                if (btnToggleEraser) btnToggleEraser.classList.remove("active");
                 btnTogglePencil.classList.add("active");
-                if (pencilBtnLabel) pencilBtnLabel.innerText = "Pencil Mode (ON)";
-                if (paperWrapper) paperWrapper.classList.add("is-drawing");
+                if (pencilBtnLabel) pencilBtnLabel.innerText = "Pencil (ON)";
+                if (paperWrapper) {
+                    paperWrapper.classList.remove("is-erasing");
+                    paperWrapper.classList.add("is-drawing");
+                }
                 showToast("Pencil Mode Activated. Draw anywhere on paper!", "info");
             } else {
                 btnTogglePencil.classList.remove("active");
-                if (pencilBtnLabel) pencilBtnLabel.innerText = "Pencil Mode (OFF)";
+                if (pencilBtnLabel) pencilBtnLabel.innerText = "Pencil";
                 if (paperWrapper) paperWrapper.classList.remove("is-drawing");
                 showToast("Text Typing Mode Activated.", "info");
+            }
+        });
+    }
+
+    if (btnToggleEraser) {
+        btnToggleEraser.addEventListener("click", () => {
+            isEraserMode = !isEraserMode;
+            const paperWrapper = document.getElementById("notebook-paper-wrapper");
+            if (isEraserMode) {
+                isDrawingMode = false;
+                if (btnTogglePencil) btnTogglePencil.classList.remove("active");
+                if (pencilBtnLabel) pencilBtnLabel.innerText = "Pencil";
+                btnToggleEraser.classList.add("active");
+                if (paperWrapper) {
+                    paperWrapper.classList.remove("is-drawing");
+                    paperWrapper.classList.add("is-erasing");
+                }
+                showToast("Eraser Mode Activated. Drag over pencil lines to erase!", "info");
+            } else {
+                btnToggleEraser.classList.remove("active");
+                if (paperWrapper) paperWrapper.classList.remove("is-erasing");
+                showToast("Eraser Deactivated.", "info");
+            }
+        });
+    }
+
+    if (btnUndoStroke) {
+        btnUndoStroke.addEventListener("click", () => {
+            if (!pageStrokes || pageStrokes.length === 0) {
+                showToast("No pencil lines to undo!", "info");
+                return;
+            }
+            pageStrokes.pop();
+            setRenderOptions({ strokes: pageStrokes });
+            triggerAutosave();
+            showToast("Undo last pencil stroke.", "info");
+        });
+    }
+
+    if (btnClearDrawings) {
+        btnClearDrawings.addEventListener("click", () => {
+            if (!pageStrokes || pageStrokes.length === 0) {
+                showToast("No pencil marks on this page!", "info");
+                return;
+            }
+            if (confirm("Are you sure you want to clear all pencil drawings on this page? Text will not be touched.")) {
+                pageStrokes = [];
+                setRenderOptions({ strokes: pageStrokes });
+                triggerAutosave();
+                showToast("Pencil drawings cleared.", "info");
             }
         });
     }
@@ -975,7 +1036,23 @@ function setupEventListeners() {
             };
         };
 
+        const performErase = (e) => {
+            if (!isEraserMode || !pageStrokes || pageStrokes.length === 0) return;
+            const pt = getCanvasCoords(e);
+            const { updatedStrokes, erasedCount } = eraseStrokesNearPoint(pageStrokes, pt.x, pt.y, 25);
+            if (erasedCount > 0) {
+                pageStrokes = updatedStrokes;
+                setRenderOptions({ strokes: pageStrokes });
+            }
+        };
+
         const startStroke = (e) => {
+            if (isEraserMode) {
+                e.preventDefault();
+                isMouseDown = true;
+                performErase(e);
+                return;
+            }
             if (!isDrawingMode) return;
             e.preventDefault();
             const activeInkBtn = document.querySelector(".ink-btn.active");
@@ -993,6 +1070,11 @@ function setupEventListeners() {
         };
 
         const moveStroke = (e) => {
+            if (isEraserMode && isMouseDown) {
+                e.preventDefault();
+                performErase(e);
+                return;
+            }
             if (!isDrawingMode || !isMouseDown || !currentStroke) return;
             e.preventDefault();
             const pt = getCanvasCoords(e);
@@ -1001,6 +1083,11 @@ function setupEventListeners() {
         };
 
         const endStroke = (e) => {
+            if (isEraserMode && isMouseDown) {
+                isMouseDown = false;
+                triggerAutosave();
+                return;
+            }
             if (!isDrawingMode || !isMouseDown) return;
             isMouseDown = false;
             currentStroke = null;
@@ -1018,7 +1105,7 @@ function setupEventListeners() {
         canvasWrapper.addEventListener("touchcancel", endStroke);
 
         canvasWrapper.addEventListener("click", (e) => {
-            if (isDrawingMode) return;
+            if (isDrawingMode || isEraserMode) return;
             const canvasEl = document.getElementById("notebook-canvas");
             if (!canvasEl) return;
 

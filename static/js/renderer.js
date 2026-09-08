@@ -1,4 +1,4 @@
-import { getPRNG, getTodayFormattedDate } from "./utils.js?v=37.0";
+import { getPRNG, getTodayFormattedDate } from "./utils.js?v=38.0";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -249,6 +249,26 @@ export function drawNotebookStrokes(targetCtx, strokesToDraw) {
         }
     }
     targetCtx.restore();
+}
+
+/**
+ * Erases strokes touching or close to a given canvas coordinate point.
+ */
+export function eraseStrokesNearPoint(strokes, x, y, radius = 20) {
+    if (!strokes || !Array.isArray(strokes) || strokes.length === 0) return { updatedStrokes: [], erasedCount: 0 };
+    let erasedCount = 0;
+    const remainingStrokes = strokes.filter(stroke => {
+        if (!stroke.points || stroke.points.length === 0) return false;
+        for (const pt of stroke.points) {
+            const dist = Math.hypot(pt.x - x, pt.y - y);
+            if (dist <= radius + (stroke.width || 2) / 2) {
+                erasedCount++;
+                return false; // Remove this stroke!
+            }
+        }
+        return true;
+    });
+    return { updatedStrokes: remainingStrokes, erasedCount };
 }
 
 /**
