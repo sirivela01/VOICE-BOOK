@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=29.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=29.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=29.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=29.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection } from "./renderer.js?v=29.0";
-import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=29.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=30.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=30.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=30.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=30.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection } from "./renderer.js?v=30.0";
+import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=30.0";
 
 // Session App State
 let activeBookId = null;
@@ -748,17 +748,9 @@ function setupEventListeners() {
     // Canvas Settings adjustments
     selectFont.addEventListener("change", () => {
         const chosenFont = selectFont.value;
-        let selStart = directCanvasEditor ? directCanvasEditor.selectionStart : -1;
-        let selEnd = directCanvasEditor ? directCanvasEditor.selectionEnd : -1;
-
-        // Fallback to last recorded selection if dropdown focus collapsed text selection
-        if ((selStart < 0 || selStart === selEnd) && lastSelectionStart >= 0 && lastSelectionEnd > lastSelectionStart) {
-            selStart = lastSelectionStart;
-            selEnd = lastSelectionEnd;
-        }
 
         setRenderOptions({ font: chosenFont });
-        applyFontToSelection(chosenFont, selStart, selEnd);
+        applyFontToSelection(chosenFont);
 
         safeLocalStorageSet("saved_handwriting_font", chosenFont);
         if (activeBookId) {
@@ -766,13 +758,7 @@ function setupEventListeners() {
         }
         triggerAutosave();
 
-        if (selStart >= 0 && selEnd > selStart) {
-            showToast(`Applied '${chosenFont}' style to selected text!`, "success");
-            lastSelectionStart = -1;
-            lastSelectionEnd = -1;
-        } else {
-            showToast(`Handwriting style set to '${chosenFont}'.`, "info");
-        }
+        showToast(`Handwriting style updated to '${chosenFont}' for the entire page!`, "info");
     });
     
     inputFontSize.addEventListener("input", () => {

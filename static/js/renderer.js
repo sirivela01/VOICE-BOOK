@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=29.0";
+import { getPRNG } from "./utils.js?v=30.0";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -137,83 +137,17 @@ function parseInputToSegments(rawInput) {
  * Applies a specific handwriting font style to a range of character indices [start, end].
  * If no range or start == end, updates default active handwriting font for future typing.
  */
-export function applyFontToSelection(selectedFont, start = -1, end = -1) {
+/**
+ * Sets the single handwriting font style for the entire page and redraws immediately.
+ */
+export function setPageFont(selectedFont) {
     if (selectedFont) {
         currentFont = selectedFont;
     }
 
     if (textSegments && textSegments.length > 0) {
-        if (start >= 0 && end > start) {
-            // Selected range: split & apply selectedFont ONLY to character range [start, end]
-            const newSegments = [];
-            let globalIndex = 0;
-
-            for (const seg of textSegments) {
-                const segLen = seg.text.length;
-                const segStart = globalIndex;
-                const segEnd = globalIndex + segLen;
-
-                if (segEnd <= start || segStart >= end) {
-                    // Entirely outside selection range
-                    newSegments.push(seg);
-                } else {
-                    // Overlaps selection range: split into sub-segments
-                    if (start > segStart) {
-                        const prefixLen = start - segStart;
-                        newSegments.push({
-                            text: seg.text.substring(0, prefixLen),
-                            color: seg.color || config.inkColor,
-                            font: seg.font || currentFont
-                        });
-                    }
-
-                    const selectSubStart = Math.max(0, start - segStart);
-                    const selectSubEnd = Math.min(segLen, end - segStart);
-                    newSegments.push({
-                        text: seg.text.substring(selectSubStart, selectSubEnd),
-                        color: seg.color || config.inkColor,
-                        font: selectedFont
-                    });
-
-                    if (end < segEnd) {
-                        const suffixSubStart = end - segStart;
-                        newSegments.push({
-                            text: seg.text.substring(suffixSubStart),
-                            color: seg.color || config.inkColor,
-                            font: seg.font || currentFont
-                        });
-                    }
-                }
-
-                globalIndex += segLen;
-            }
-
-            // Merge adjacent segments with identical color & font
-            const merged = [];
-            for (const seg of newSegments) {
-                if (!seg.text) continue;
-                const segColor = seg.color || config.inkColor;
-                const segFont = seg.font || currentFont;
-
-                if (merged.length > 0 && 
-                    (merged[merged.length - 1].color || config.inkColor) === segColor && 
-                    (merged[merged.length - 1].font || currentFont) === segFont) {
-                    merged[merged.length - 1].text += seg.text;
-                } else {
-                    merged.push({
-                        text: seg.text,
-                        color: segColor,
-                        font: segFont
-                    });
-                }
-            }
-
-            textSegments = merged;
-        } else {
-            // No selection highlighted (or full page change): update font for ALL segments on this page!
-            for (const seg of textSegments) {
-                seg.font = selectedFont;
-            }
+        for (const seg of textSegments) {
+            seg.font = selectedFont;
         }
     }
 
@@ -232,6 +166,13 @@ export function applyFontToSelection(selectedFont, start = -1, end = -1) {
     animatedCharCount = charPositions.length;
     isAnimating = false;
     drawPage();
+}
+
+/**
+ * Backward compatibility alias for setPageFont.
+ */
+export function applyFontToSelection(selectedFont) {
+    setPageFont(selectedFont);
 }
 
 /**
