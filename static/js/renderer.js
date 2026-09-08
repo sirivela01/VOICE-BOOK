@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=28.0";
+import { getPRNG } from "./utils.js?v=29.0";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -142,71 +142,90 @@ export function applyFontToSelection(selectedFont, start = -1, end = -1) {
         currentFont = selectedFont;
     }
 
-    if (start >= 0 && end > start && textSegments.length > 0) {
-        const newSegments = [];
-        let globalIndex = 0;
+    if (textSegments && textSegments.length > 0) {
+        if (start >= 0 && end > start) {
+            // Selected range: split & apply selectedFont ONLY to character range [start, end]
+            const newSegments = [];
+            let globalIndex = 0;
 
-        for (const seg of textSegments) {
-            const segLen = seg.text.length;
-            const segStart = globalIndex;
-            const segEnd = globalIndex + segLen;
+            for (const seg of textSegments) {
+                const segLen = seg.text.length;
+                const segStart = globalIndex;
+                const segEnd = globalIndex + segLen;
 
-            if (segEnd <= start || segStart >= end) {
-                // Entirely outside selection range
-                newSegments.push(seg);
-            } else {
-                // Overlaps selection range: split into sub-segments
-                if (start > segStart) {
-                    const prefixLen = start - segStart;
+                if (segEnd <= start || segStart >= end) {
+                    // Entirely outside selection range
+                    newSegments.push(seg);
+                } else {
+                    // Overlaps selection range: split into sub-segments
+                    if (start > segStart) {
+                        const prefixLen = start - segStart;
+                        newSegments.push({
+                            text: seg.text.substring(0, prefixLen),
+                            color: seg.color || config.inkColor,
+                            font: seg.font || currentFont
+                        });
+                    }
+
+                    const selectSubStart = Math.max(0, start - segStart);
+                    const selectSubEnd = Math.min(segLen, end - segStart);
                     newSegments.push({
-                        text: seg.text.substring(0, prefixLen),
+                        text: seg.text.substring(selectSubStart, selectSubEnd),
                         color: seg.color || config.inkColor,
-                        font: seg.font || currentFont
+                        font: selectedFont
                     });
+
+                    if (end < segEnd) {
+                        const suffixSubStart = end - segStart;
+                        newSegments.push({
+                            text: seg.text.substring(suffixSubStart),
+                            color: seg.color || config.inkColor,
+                            font: seg.font || currentFont
+                        });
+                    }
                 }
 
-                const selectSubStart = Math.max(0, start - segStart);
-                const selectSubEnd = Math.min(segLen, end - segStart);
-                newSegments.push({
-                    text: seg.text.substring(selectSubStart, selectSubEnd),
-                    color: seg.color || config.inkColor,
-                    font: selectedFont
-                });
+                globalIndex += segLen;
+            }
 
-                if (end < segEnd) {
-                    const suffixSubStart = end - segStart;
-                    newSegments.push({
-                        text: seg.text.substring(suffixSubStart),
-                        color: seg.color || config.inkColor,
-                        font: seg.font || currentFont
+            // Merge adjacent segments with identical color & font
+            const merged = [];
+            for (const seg of newSegments) {
+                if (!seg.text) continue;
+                const segColor = seg.color || config.inkColor;
+                const segFont = seg.font || currentFont;
+
+                if (merged.length > 0 && 
+                    (merged[merged.length - 1].color || config.inkColor) === segColor && 
+                    (merged[merged.length - 1].font || currentFont) === segFont) {
+                    merged[merged.length - 1].text += seg.text;
+                } else {
+                    merged.push({
+                        text: seg.text,
+                        color: segColor,
+                        font: segFont
                     });
                 }
             }
 
-            globalIndex += segLen;
-        }
-
-        // Merge adjacent segments with identical color & font
-        const merged = [];
-        for (const seg of newSegments) {
-            if (!seg.text) continue;
-            const segColor = seg.color || config.inkColor;
-            const segFont = seg.font || currentFont;
-
-            if (merged.length > 0 && 
-                (merged[merged.length - 1].color || config.inkColor) === segColor && 
-                (merged[merged.length - 1].font || currentFont) === segFont) {
-                merged[merged.length - 1].text += seg.text;
-            } else {
-                merged.push({
-                    text: seg.text,
-                    color: segColor,
-                    font: segFont
-                });
+            textSegments = merged;
+        } else {
+            // No selection highlighted (or full page change): update font for ALL segments on this page!
+            for (const seg of textSegments) {
+                seg.font = selectedFont;
             }
         }
+    }
 
-        textSegments = merged;
+    // Trigger font load check if document.fonts is available
+    if (document.fonts && selectedFont) {
+        try {
+            document.fonts.load(`18px "${selectedFont}"`).then(() => {
+                recalculateLayout();
+                animatedCharCount = charPositions.length;
+                drawPage();
+            }).catch(() => {});
+        } catch (e) {}
     }
 
     recalculateLayout();
@@ -262,7 +281,14 @@ export function initRenderer(canvasElement) {
  * Sets current styling options and redraws immediately.
  */
 export function setRenderOptions({ font, fontSize, jitterLevel, activeBookId, activePageNumber, inkColor }) {
-    if (font !== undefined) currentFont = font;
+    if (font !== undefined) {
+        currentFont = font;
+        if (textSegments && textSegments.length > 0) {
+            for (const seg of textSegments) {
+                seg.font = font;
+            }
+        }
+    }
     if (fontSize !== undefined) currentFontSize = fontSize;
     if (jitterLevel !== undefined) currentJitterLevel = jitterLevel;
     if (activeBookId !== undefined) bookId = activeBookId;
@@ -273,6 +299,7 @@ export function setRenderOptions({ font, fontSize, jitterLevel, activeBookId, ac
     
     recalculateLayout();
     animatedCharCount = charPositions.length;
+    isAnimating = false;
     drawPage();
 }
 
@@ -333,10 +360,10 @@ export function updateFromPlainText(newPlainText) {
     // Case 1: Appended text at the end
     if (newPlainText.startsWith(currentPlain)) {
         const added = newPlainText.substring(currentPlain.length);
-        if (textSegments.length > 0 && textSegments[textSegments.length - 1].color === activeColor) {
+        if (textSegments.length > 0 && textSegments[textSegments.length - 1].color === activeColor && (textSegments[textSegments.length - 1].font || currentFont) === currentFont) {
             textSegments[textSegments.length - 1].text += added;
         } else {
-            textSegments.push({ text: added, color: activeColor });
+            textSegments.push({ text: added, color: activeColor, font: currentFont });
         }
     }
     // Case 2: Deleted/backspaced text from the end
@@ -349,7 +376,7 @@ export function updateFromPlainText(newPlainText) {
                 updated.push(seg);
                 remaining = remaining.substring(seg.text.length);
             } else {
-                updated.push({ text: seg.text.substring(0, remaining.length), color: seg.color });
+                updated.push({ text: seg.text.substring(0, remaining.length), color: seg.color || activeColor, font: seg.font || currentFont });
                 remaining = "";
             }
         }
@@ -370,14 +397,14 @@ export function updateFromPlainText(newPlainText) {
                     matchedLen++;
                 }
                 if (matchedLen > 0) {
-                    updated.push({ text: seg.text.substring(0, matchedLen), color: seg.color });
+                    updated.push({ text: seg.text.substring(0, matchedLen), color: seg.color || activeColor, font: seg.font || currentFont });
                     remaining = remaining.substring(matchedLen);
                 }
                 break;
             }
         }
         if (remaining) {
-            updated.push({ text: remaining, color: activeColor });
+            updated.push({ text: remaining, color: activeColor, font: currentFont });
         }
         textSegments = updated;
     }

@@ -6,7 +6,7 @@ import {
     GoogleAuthProvider,
     signInWithPopup
 } from "firebase/auth";
-import { getFirebaseAuth } from "./firebase-init.js?v=28.0";
+import { getFirebaseAuth } from "./firebase-init.js?v=29.0";
 
 let authObserverCallback = null;
 let isGuestActive = localStorage.getItem("guest_mode_active") === "true";

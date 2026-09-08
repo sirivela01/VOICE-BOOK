@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=28.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=28.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=28.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=28.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection } from "./renderer.js?v=28.0";
-import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=28.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=29.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=29.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=29.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=29.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection } from "./renderer.js?v=29.0";
+import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=29.0";
 
 // Session App State
 let activeBookId = null;
@@ -22,6 +22,8 @@ let selectFont, inputFontSize, inputJitter, valFontSize, valJitter;
 let btnToggleMic, micStatusIndicator, speechStatusText, liveTranscriptBox;
 let btnPrevPage, btnNextPage, btnClearPage, pageDisplayCounter, notebookTitle;
 let modalConfig, modalCreateBook, formCreateBook, directCanvasEditor;
+let lastSelectionStart = -1;
+let lastSelectionEnd = -1;
 
 function stripColorTags(text) {
     if (!text) return "";
@@ -746,8 +748,14 @@ function setupEventListeners() {
     // Canvas Settings adjustments
     selectFont.addEventListener("change", () => {
         const chosenFont = selectFont.value;
-        const selStart = directCanvasEditor ? directCanvasEditor.selectionStart : -1;
-        const selEnd = directCanvasEditor ? directCanvasEditor.selectionEnd : -1;
+        let selStart = directCanvasEditor ? directCanvasEditor.selectionStart : -1;
+        let selEnd = directCanvasEditor ? directCanvasEditor.selectionEnd : -1;
+
+        // Fallback to last recorded selection if dropdown focus collapsed text selection
+        if ((selStart < 0 || selStart === selEnd) && lastSelectionStart >= 0 && lastSelectionEnd > lastSelectionStart) {
+            selStart = lastSelectionStart;
+            selEnd = lastSelectionEnd;
+        }
 
         setRenderOptions({ font: chosenFont });
         applyFontToSelection(chosenFont, selStart, selEnd);
@@ -760,6 +768,8 @@ function setupEventListeners() {
 
         if (selStart >= 0 && selEnd > selStart) {
             showToast(`Applied '${chosenFont}' style to selected text!`, "success");
+            lastSelectionStart = -1;
+            lastSelectionEnd = -1;
         } else {
             showToast(`Handwriting style set to '${chosenFont}'.`, "info");
         }
@@ -836,6 +846,12 @@ function setupEventListeners() {
         const syncCursor = () => {
             const cPos = directCanvasEditor.selectionStart;
             setCursorIndex(cPos);
+            if (directCanvasEditor.selectionStart !== null && directCanvasEditor.selectionEnd !== null) {
+                if (directCanvasEditor.selectionEnd > directCanvasEditor.selectionStart) {
+                    lastSelectionStart = directCanvasEditor.selectionStart;
+                    lastSelectionEnd = directCanvasEditor.selectionEnd;
+                }
+            }
         };
 
         directCanvasEditor.addEventListener("input", () => {
