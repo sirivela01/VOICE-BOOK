@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=30.0";
+import { getPRNG } from "./utils.js?v=31.0";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -487,30 +487,13 @@ function recalculateLayout() {
         const font = item.font || currentFont;
         if (word === "") continue;
 
-        ctx.font = `${currentFontSize}px "${font}"`;
-
-        // Check if word contains explicit newline
-        if (word.includes('\n')) {
-            const newlines = word.split('\n').length - 1;
-            lineIndex += newlines;
-            cursorX = startX;
-            
-            if (lineIndex >= maxLines) {
-                isFull = true;
-                overflowSegIndex = item.segIndex;
-                overflowCharOffset = item.charOffset;
-                break;
-            }
-            textProcessedLength += word.length;
-            continue;
-        }
-
         const isWhitespace = /^\s+$/.test(word);
 
         // Measure word width including glyph overhang and character jitter safety padding
         let wordWidth = 0;
         for (let i = 0; i < word.length; i++) {
             const ch = word[i];
+            if (ch === '\n') continue;
             const chW = ch === " " ? Math.max(ctx.measureText(ch).width, currentFontSize * 0.32) : ctx.measureText(ch).width;
             wordWidth += chW;
         }
@@ -523,7 +506,7 @@ function recalculateLayout() {
                 cursorX = startX;
                 lineIndex++;
             }
-        } else if (isWhitespace && (cursorX + wordWidth > rightMargin)) {
+        } else if (isWhitespace && (cursorX + wordWidth > rightMargin) && !word.includes('\n')) {
             cursorX = startX;
             lineIndex++;
             textProcessedLength += word.length;
@@ -538,8 +521,8 @@ function recalculateLayout() {
             break;
         }
 
-        // Ignore leading whitespace at the start of a line
-        if (isWhitespace && cursorX === startX) {
+        // Ignore leading whitespace at the start of a line (unless it's a newline)
+        if (isWhitespace && cursorX === startX && !word.includes('\n')) {
             textProcessedLength += word.length;
             continue;
         }
@@ -553,6 +536,33 @@ function recalculateLayout() {
 
         for (let c = 0; c < word.length; c++) {
             const char = word[c];
+
+            if (char === '\n') {
+                layout.push({
+                    char: '\n',
+                    x: startX,
+                    y: config.topMargin + lineIndex * config.lineSpacing + (config.lineSpacing * 0.72),
+                    lineIndex: lineIndex,
+                    wordIndex: w,
+                    charIndex: c,
+                    advanceWidth: 0,
+                    color: color,
+                    font: font,
+                    isNewline: true
+                });
+
+                lineIndex++;
+                if (lineIndex >= maxLines) {
+                    isFull = true;
+                    overflowSegIndex = item.segIndex;
+                    overflowCharOffset = item.charOffset + c;
+                    break;
+                }
+                wordX = startX;
+                cursorX = startX;
+                continue;
+            }
+
             const charWidth = char === " " ? Math.max(ctx.measureText(char).width, currentFontSize * 0.32) : ctx.measureText(char).width;
             
             // Character-level safety fallback: if single character exceeds right margin, wrap line
@@ -787,7 +797,7 @@ function drawPage() {
 
     for (let i = 0; i < totalToDraw; i++) {
         const cp = charPositions[i];
-        if (!cp) continue;
+        if (!cp || cp.char === '\n') continue;
 
         // Seeded PRNG for stable transformations
         const seedStr = `${bookId}_${pageNumber}_char_${i}_${cp.char}`;
@@ -831,14 +841,21 @@ function drawPage() {
         let targetIdx = (currentCursorIndex >= 0) ? currentCursorIndex : charPositions.length;
         if (targetIdx > charPositions.length) targetIdx = charPositions.length;
 
-        let cursorX = 112;
+        const startX = 112;
+        let cursorX = startX;
         let cursorY = config.topMargin + (config.lineSpacing * 0.72);
 
-        if (targetIdx > 0 && charPositions.length > 0) {
-            const charObj = charPositions[targetIdx - 1];
-            if (charObj) {
-                cursorX = charObj.x + (charObj.advanceWidth || 8);
-                cursorY = charObj.y;
+        if (targetIdx > 0 && charPositions.length >= targetIdx) {
+            const lastCharObj = charPositions[targetIdx - 1];
+            if (lastCharObj) {
+                if (lastCharObj.isNewline || lastCharObj.char === '\n') {
+                    const nextLineIdx = lastCharObj.lineIndex + 1;
+                    cursorX = startX;
+                    cursorY = config.topMargin + nextLineIdx * config.lineSpacing + (config.lineSpacing * 0.72);
+                } else {
+                    cursorX = lastCharObj.x + (lastCharObj.advanceWidth || 8);
+                    cursorY = lastCharObj.y;
+                }
             }
         } else if (targetIdx === 0 && charPositions.length > 0) {
             cursorX = charPositions[0].x;

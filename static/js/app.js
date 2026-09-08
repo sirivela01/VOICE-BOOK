@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=30.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=30.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=30.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=30.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection } from "./renderer.js?v=30.0";
-import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=30.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=31.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=31.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=31.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=31.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection } from "./renderer.js?v=31.0";
+import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=31.0";
 
 // Session App State
 let activeBookId = null;
@@ -845,6 +845,14 @@ function setupEventListeners() {
             updateFromPlainText(typedText);
             syncCursor();
             triggerAutosave();
+        });
+
+        directCanvasEditor.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                setTimeout(() => {
+                    syncCursor();
+                }, 10);
+            }
         });
 
         directCanvasEditor.addEventListener("keyup", syncCursor);
