@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=31.0";
+import { getPRNG } from "./utils.js?v=32.0";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -506,11 +506,9 @@ function recalculateLayout() {
                 cursorX = startX;
                 lineIndex++;
             }
-        } else if (isWhitespace && (cursorX + wordWidth > rightMargin) && !word.includes('\n')) {
+        } else if (isWhitespace && (cursorX + wordWidth > rightMargin)) {
             cursorX = startX;
             lineIndex++;
-            textProcessedLength += word.length;
-            continue;
         }
 
         // Check if page vertical capacity is exceeded
@@ -519,12 +517,6 @@ function recalculateLayout() {
             overflowSegIndex = item.segIndex;
             overflowCharOffset = item.charOffset;
             break;
-        }
-
-        // Ignore leading whitespace at the start of a line (unless it's a newline)
-        if (isWhitespace && cursorX === startX && !word.includes('\n')) {
-            textProcessedLength += word.length;
-            continue;
         }
 
         // Calculate positions for characters in this word

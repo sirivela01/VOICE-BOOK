@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=31.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=31.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=31.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=31.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection } from "./renderer.js?v=31.0";
-import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=31.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=32.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=32.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=32.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=32.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection } from "./renderer.js?v=32.0";
+import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=32.0";
 
 // Session App State
 let activeBookId = null;
@@ -849,9 +849,24 @@ function setupEventListeners() {
 
         directCanvasEditor.addEventListener("keydown", (e) => {
             if (e.key === "Enter") {
-                setTimeout(() => {
-                    syncCursor();
-                }, 10);
+                if (!e.shiftKey) {
+                    // Plain Enter key: block newline creation
+                    e.preventDefault();
+                    return;
+                }
+
+                // Shift + Enter: Insert newline \n explicitly and position cursor on next line
+                e.preventDefault();
+                const start = directCanvasEditor.selectionStart;
+                const end = directCanvasEditor.selectionEnd;
+                const val = directCanvasEditor.value;
+
+                directCanvasEditor.value = val.substring(0, start) + "\n" + val.substring(end);
+                directCanvasEditor.selectionStart = directCanvasEditor.selectionEnd = start + 1;
+
+                updateFromPlainText(directCanvasEditor.value);
+                syncCursor();
+                triggerAutosave();
             }
         });
 
