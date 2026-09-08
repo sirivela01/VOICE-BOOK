@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=34.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=34.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=34.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=34.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection } from "./renderer.js?v=34.0";
-import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet, getTodayFormattedDate } from "./utils.js?v=34.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=35.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=35.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=35.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=35.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection } from "./renderer.js?v=35.0";
+import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet, getTodayFormattedDate } from "./utils.js?v=35.0";
 
 // Session App State
 let activeBookId = null;
@@ -805,19 +805,12 @@ function setupEventListeners() {
     btnPrevPage.addEventListener("click", () => turnPage("prev"));
     btnNextPage.addEventListener("click", () => turnPage("next"));
     
-    // Page counter click (Go to specific page)
-    pageDisplayCounter.addEventListener("click", () => {
-        const userInput = prompt(`Go to page (1-365):`, activePageNumber);
-        if (userInput) {
-            const targetPage = parseInt(userInput);
-            if (!isNaN(targetPage) && targetPage >= 1 && targetPage <= 365) {
-                if (targetPage === activePageNumber) return;
-                goToPage(targetPage);
-            } else {
-                showToast("Please enter a valid page number between 1 and 365.", "error");
-            }
-        }
-    });
+    // Page counter click -> Turn page to next page
+    if (pageDisplayCounter) {
+        pageDisplayCounter.addEventListener("click", () => {
+            turnPage("next");
+        });
+    }
 
 
 
@@ -933,17 +926,8 @@ function setupEventListeners() {
                         directDateEditor.setSelectionRange(directDateEditor.value.length, directDateEditor.value.length);
                     }
                 } else {
-                    // Clicked on PAGE section
-                    const userInput = prompt(`Go to page (1-365):`, activePageNumber);
-                    if (userInput) {
-                        const targetPage = parseInt(userInput);
-                        if (!isNaN(targetPage) && targetPage >= 1 && targetPage <= 365) {
-                            if (targetPage === activePageNumber) return;
-                            goToPage(targetPage);
-                        } else {
-                            showToast("Please enter a valid page number between 1 and 365.", "error");
-                        }
-                    }
+                    // Clicked on PAGE section -> Turn page to next page
+                    turnPage("next");
                 }
                 return;
             }
