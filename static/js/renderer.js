@@ -1,4 +1,4 @@
-import { getPRNG, getTodayFormattedDate } from "./utils.js?v=35.0";
+import { getPRNG, getTodayFormattedDate } from "./utils.js?v=36.0";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -30,7 +30,7 @@ let currentFontSize = 23;
 let pageText = "";
 let bookId = "preview";
 let pageNumber = 1;
-let pageDate = getTodayFormattedDate();
+let pageDate = "";
 
 let textSegments = []; // Array of { text: string, color: string }
 let charPositions = [];
@@ -239,7 +239,7 @@ export function setRenderOptions({ font, fontSize, jitterLevel, activeBookId, ac
         config.inkColor = inkColor; // Active color for NEW text only! Existing textSegments stay in their original colors!
     }
     if (customDate !== undefined) {
-        pageDate = customDate || getTodayFormattedDate();
+        pageDate = customDate || "";
     }
     
     recalculateLayout();
@@ -780,7 +780,7 @@ function drawPage() {
     
     ctx.font = "10px 'Inter', sans-serif";
     ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
-    const displayDate = pageDate || getTodayFormattedDate();
+    const displayDate = pageDate && pageDate.trim() !== "" ? pageDate.trim() : "___/___/___";
     ctx.fillText(`PAGE: ${pageNumber}   DATE: ${displayDate}`, VIRTUAL_WIDTH - 192, 36);
 
     // 4. Draw Footer "SIRIVELA YASHWANTH ROYAL" on every page
@@ -918,7 +918,7 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     
     staticCtx.font = "10px 'Inter', sans-serif";
     staticCtx.fillStyle = "rgba(0, 0, 0, 0.65)";
-    const staticDate = options.customDate || options.pageDate || pageDate || getTodayFormattedDate();
+    const staticDate = (options.customDate && options.customDate.trim() !== "") ? options.customDate.trim() : ((options.pageDate && options.pageDate.trim() !== "") ? options.pageDate.trim() : ((pageDate && pageDate.trim() !== "") ? pageDate.trim() : "___/___/___"));
     staticCtx.fillText(`PAGE: ${pageNum}   DATE: ${staticDate}`, VIRTUAL_WIDTH - 192, 36);
     
     // 4. Draw Footer "SIRIVELA YASHWANTH ROYAL" on every page

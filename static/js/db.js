@@ -12,9 +12,9 @@ import {
     serverTimestamp,
     updateDoc
 } from "firebase/firestore";
-import { getFirebaseDb } from "./firebase-init.js?v=35.0";
-import { getCurrentUser, isGuestMode } from "./auth.js?v=35.0";
-import { isFirebaseInitialized } from "./firebase-init.js?v=35.0";
+import { getFirebaseDb } from "./firebase-init.js?v=36.0";
+import { getCurrentUser, isGuestMode } from "./auth.js?v=36.0";
+import { isFirebaseInitialized } from "./firebase-init.js?v=36.0";
 
 // Helper for user local storage
 function getUserLocalBooks(userId = "guest_user") {
@@ -183,12 +183,14 @@ export async function deleteBook(bookId) {
 }
 
 /**
- * Gets the text content of a specific page inside a book.
+ * Gets page content and custom date for a specific page.
  */
-export async function getPageContent(bookId, pageNumber) {
-    const localFallback = localStorage.getItem(`guest_page_${bookId}_${pageNumber}`) || "";
+export async function getPageData(bookId, pageNumber) {
+    const localText = localStorage.getItem(`guest_page_${bookId}_${pageNumber}`) || "";
+    const localDate = localStorage.getItem(`date_${bookId}_${pageNumber}`) || "";
+
     if (isGuestMode() || !isFirebaseInitialized()) {
-        return localFallback;
+        return { textContent: localText, customDate: localDate };
     }
 
     try {
@@ -197,22 +199,38 @@ export async function getPageContent(bookId, pageNumber) {
         const pageSnapshot = await getDoc(pageDocRef);
         
         if (pageSnapshot.exists()) {
-            const cloudText = pageSnapshot.data().textContent || "";
-            if (cloudText) return cloudText;
+            const data = pageSnapshot.data();
+            const cloudText = data.textContent !== undefined ? data.textContent : localText;
+            const cloudDate = data.customDate !== undefined ? data.customDate : localDate;
+            if (cloudDate) {
+                localStorage.setItem(`date_${bookId}_${pageNumber}`, cloudDate);
+            }
+            return { textContent: cloudText, customDate: cloudDate };
         }
-        return localFallback;
+        return { textContent: localText, customDate: localDate };
     } catch (e) {
         console.warn("Firestore page read error, using local fallback:", e);
-        return localFallback;
+        return { textContent: localText, customDate: localDate };
     }
 }
 
 /**
- * Saves/Autosaves text content for a specific page.
+ * Gets the text content of a specific page inside a book.
  */
-export async function savePageContent(bookId, pageNumber, textContent) {
+export async function getPageContent(bookId, pageNumber) {
+    const data = await getPageData(bookId, pageNumber);
+    return data.textContent;
+}
+
+/**
+ * Saves/Autosaves text content and custom date for a specific page.
+ */
+export async function savePageContent(bookId, pageNumber, textContent, customDate = null) {
     // ALWAYS save to local backup first so user text is never lost!
     localStorage.setItem(`guest_page_${bookId}_${pageNumber}`, textContent);
+    if (customDate !== null && customDate !== undefined) {
+        localStorage.setItem(`date_${bookId}_${pageNumber}`, customDate);
+    }
 
     if (isGuestMode() || !isFirebaseInitialized()) {
         const books = getLocalGuestBooks();
@@ -227,10 +245,14 @@ export async function savePageContent(bookId, pageNumber, textContent) {
     try {
         const db = getFirebaseDb();
         const pageDocRef = doc(db, "books", bookId, "pages", pageNumber.toString());
-        await setDoc(pageDocRef, {
+        const payload = {
             textContent: textContent,
             updatedAt: serverTimestamp()
-        }, { merge: true });
+        };
+        if (customDate !== null && customDate !== undefined) {
+            payload.customDate = customDate;
+        }
+        await setDoc(pageDocRef, payload, { merge: true });
 
         const bookDocRef = doc(db, "books", bookId);
         await updateDoc(bookDocRef, {

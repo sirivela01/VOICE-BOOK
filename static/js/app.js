@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=35.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=35.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=35.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=35.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection } from "./renderer.js?v=35.0";
-import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet, getTodayFormattedDate } from "./utils.js?v=35.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=36.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=36.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=36.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=36.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection } from "./renderer.js?v=36.0";
+import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet, getTodayFormattedDate } from "./utils.js?v=36.0";
 
 // Session App State
 let activeBookId = null;
@@ -144,19 +144,23 @@ const triggerAutosave = debounce(async () => {
 async function saveActivePageData() {
     if (!activeBookId) return;
     
-    // Capture snapshot of target book, target page, and text RIGHT NOW synchronously!
+    // Capture snapshot of target book, target page, text, and custom date RIGHT NOW synchronously!
     const targetBookId = activeBookId;
     const targetPageNum = activePageNumber;
     const text = getPageText();
+    const customDate = directDateEditor ? directDateEditor.value : "";
     
     // Save to local backup synchronously
     if (text) {
         localStorage.setItem(`backup_${targetBookId}_${targetPageNum}`, text);
     }
+    if (customDate !== undefined) {
+        localStorage.setItem(`date_${targetBookId}_${targetPageNum}`, customDate);
+    }
     
     setSaveStatus("saving", "Saving progress...");
     try {
-        await savePageContent(targetBookId, targetPageNum, text);
+        await savePageContent(targetBookId, targetPageNum, text, customDate);
         // Clear local backup once successfully persisted to Firestore
         localStorage.removeItem(`backup_${targetBookId}_${targetPageNum}`);
         setSaveStatus("saved", "All changes saved");
@@ -495,11 +499,15 @@ async function loadActivePage() {
     setSaveStatus("saving", "Loading page...");
     
     let pageText = "";
+    let savedDate = "";
     try {
-        pageText = (await getPageContent(activeBookId, activePageNumber)) || "";
+        const data = await getPageData(activeBookId, activePageNumber);
+        pageText = data.textContent || "";
+        savedDate = data.customDate || "";
     } catch (err) {
-        console.warn("getPageContent failed, using local fallback:", err);
+        console.warn("getPageData failed, using local fallback:", err);
         pageText = localStorage.getItem(`guest_page_${activeBookId}_${activePageNumber}`) || "";
+        savedDate = safeLocalStorageGet(`date_${activeBookId}_${activePageNumber}`, "");
     }
     
     try {
@@ -508,14 +516,13 @@ async function loadActivePage() {
         const backupText = localStorage.getItem(backupKey);
         if (backupText && backupText.length > (pageText ? pageText.length : 0)) {
             pageText = backupText;
-            await savePageContent(activeBookId, activePageNumber, pageText);
+            await savePageContent(activeBookId, activePageNumber, pageText, savedDate);
             localStorage.removeItem(backupKey);
         }
 
         const canvasEl = document.getElementById("notebook-canvas");
         const activeInkBtn = document.querySelector(".ink-btn.active");
         const currentInkColor = activeInkBtn ? activeInkBtn.getAttribute("data-color") : "#1d3d84";
-        const savedDate = safeLocalStorageGet(`date_${activeBookId}_${activePageNumber}`, getTodayFormattedDate());
 
         initRenderer(canvasEl);
         setRenderOptions({ 
