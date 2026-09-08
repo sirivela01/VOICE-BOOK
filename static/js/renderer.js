@@ -1,4 +1,4 @@
-import { getPRNG } from "./utils.js?v=32.0";
+import { getPRNG, getTodayFormattedDate } from "./utils.js?v=33.0";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -30,6 +30,7 @@ let currentFontSize = 23;
 let pageText = "";
 let bookId = "preview";
 let pageNumber = 1;
+let pageDate = getTodayFormattedDate();
 
 let textSegments = []; // Array of { text: string, color: string }
 let charPositions = [];
@@ -221,7 +222,7 @@ export function initRenderer(canvasElement) {
 /**
  * Sets current styling options and redraws immediately.
  */
-export function setRenderOptions({ font, fontSize, jitterLevel, activeBookId, activePageNumber, inkColor }) {
+export function setRenderOptions({ font, fontSize, jitterLevel, activeBookId, activePageNumber, inkColor, customDate }) {
     if (font !== undefined) {
         currentFont = font;
         if (textSegments && textSegments.length > 0) {
@@ -236,6 +237,9 @@ export function setRenderOptions({ font, fontSize, jitterLevel, activeBookId, ac
     if (activePageNumber !== undefined) pageNumber = activePageNumber;
     if (inkColor !== undefined) {
         config.inkColor = inkColor; // Active color for NEW text only! Existing textSegments stay in their original colors!
+    }
+    if (customDate !== undefined) {
+        pageDate = customDate || getTodayFormattedDate();
     }
     
     recalculateLayout();
@@ -775,8 +779,9 @@ function drawPage() {
     ctx.strokeRect(VIRTUAL_WIDTH - 200, 20, 185, 24);
     
     ctx.font = "10px 'Inter', sans-serif";
-    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-    ctx.fillText(`PAGE: ${pageNumber}   DATE: ___/___/___`, VIRTUAL_WIDTH - 192, 36);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+    const displayDate = pageDate || getTodayFormattedDate();
+    ctx.fillText(`PAGE: ${pageNumber}   DATE: ${displayDate}`, VIRTUAL_WIDTH - 192, 36);
 
     // 4. Draw Footer "SIRIVELA YASHWANTH ROYAL" on every page
     drawNotebookFooter(ctx);
@@ -912,8 +917,9 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     staticCtx.strokeRect(VIRTUAL_WIDTH - 200, 20, 185, 24);
     
     staticCtx.font = "10px 'Inter', sans-serif";
-    staticCtx.fillStyle = "rgba(0, 0, 0, 0.5)";
-    staticCtx.fillText(`PAGE: ${pageNum}   DATE: ___/___/___`, VIRTUAL_WIDTH - 192, 36);
+    staticCtx.fillStyle = "rgba(0, 0, 0, 0.65)";
+    const staticDate = options.customDate || options.pageDate || pageDate || getTodayFormattedDate();
+    staticCtx.fillText(`PAGE: ${pageNum}   DATE: ${staticDate}`, VIRTUAL_WIDTH - 192, 36);
     
     // 4. Draw Footer "SIRIVELA YASHWANTH ROYAL" on every page
     drawNotebookFooter(staticCtx);

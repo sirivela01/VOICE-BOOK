@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=32.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=32.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=32.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=32.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection } from "./renderer.js?v=32.0";
-import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet } from "./utils.js?v=32.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=33.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=33.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=33.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=33.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection } from "./renderer.js?v=33.0";
+import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet, getTodayFormattedDate } from "./utils.js?v=33.0";
 
 // Session App State
 let activeBookId = null;
@@ -514,7 +514,8 @@ async function loadActivePage() {
         const canvasEl = document.getElementById("notebook-canvas");
         const activeInkBtn = document.querySelector(".ink-btn.active");
         const currentInkColor = activeInkBtn ? activeInkBtn.getAttribute("data-color") : "#1d3d84";
-        
+        const savedDate = safeLocalStorageGet(`date_${activeBookId}_${activePageNumber}`, getTodayFormattedDate());
+
         initRenderer(canvasEl);
         setRenderOptions({ 
             activePageNumber: activePageNumber,
@@ -522,7 +523,8 @@ async function loadActivePage() {
             fontSize: parseInt(inputFontSize.value),
             jitterLevel: parseInt(inputJitter.value),
             activeBookId: activeBookId,
-            inkColor: currentInkColor
+            inkColor: currentInkColor,
+            customDate: savedDate
         });
         renderText(pageText, false);
         if (directCanvasEditor) directCanvasEditor.value = getPlainText();
@@ -888,26 +890,55 @@ function setupEventListeners() {
         });
     }
 
-    // Clicking paper wrapper or canvas calculates exact click position and sets caret
+    // Clicking paper wrapper or canvas calculates exact click position and sets caret or opens Header prompts
     const canvasWrapper = document.getElementById("notebook-paper-wrapper");
     if (canvasWrapper) {
         canvasWrapper.addEventListener("click", (e) => {
+            const canvasEl = document.getElementById("notebook-canvas");
+            if (!canvasEl) return;
+
+            const rect = canvasEl.getBoundingClientRect();
+            const scaleX = 800 / rect.width;
+            const scaleY = 1000 / rect.height;
+            const clickX = (e.clientX - rect.left) * scaleX;
+            const clickY = (e.clientY - rect.top) * scaleY;
+
+            // Check if user clicked inside top-right Header Box (x: 580..790, y: 10..55)
+            if (clickY >= 10 && clickY <= 55 && clickX >= 580 && clickX <= 790) {
+                if (clickX >= 665) {
+                    // Clicked on DATE section
+                    const currentDate = safeLocalStorageGet(`date_${activeBookId}_${activePageNumber}`, getTodayFormattedDate());
+                    const newDate = prompt(`Enter Date for Page ${activePageNumber}:`, currentDate);
+                    if (newDate !== null) {
+                        const trimmedDate = newDate.trim() || getTodayFormattedDate();
+                        safeLocalStorageSet(`date_${activeBookId}_${activePageNumber}`, trimmedDate);
+                        setRenderOptions({ customDate: trimmedDate });
+                        triggerAutosave();
+                        showToast(`Date set to '${trimmedDate}' for Page ${activePageNumber}`, "success");
+                    }
+                } else {
+                    // Clicked on PAGE section
+                    const userInput = prompt(`Go to page (1-365):`, activePageNumber);
+                    if (userInput) {
+                        const targetPage = parseInt(userInput);
+                        if (!isNaN(targetPage) && targetPage >= 1 && targetPage <= 365) {
+                            if (targetPage === activePageNumber) return;
+                            goToPage(targetPage);
+                        } else {
+                            showToast("Please enter a valid page number between 1 and 365.", "error");
+                        }
+                    }
+                }
+                return;
+            }
+
             if (!directCanvasEditor) return;
             directCanvasEditor.focus();
 
-            const canvasEl = document.getElementById("notebook-canvas");
-            if (canvasEl) {
-                const rect = canvasEl.getBoundingClientRect();
-                const scaleX = 800 / rect.width;
-                const scaleY = 1000 / rect.height;
-                const clickX = (e.clientX - rect.left) * scaleX;
-                const clickY = (e.clientY - rect.top) * scaleY;
-
-                const closestIdx = findClosestCharIndex(clickX, clickY);
-                if (closestIdx >= 0) {
-                    directCanvasEditor.setSelectionRange(closestIdx, closestIdx);
-                    setCursorIndex(closestIdx);
-                }
+            const closestIdx = findClosestCharIndex(clickX, clickY);
+            if (closestIdx >= 0) {
+                directCanvasEditor.setSelectionRange(closestIdx, closestIdx);
+                setCursorIndex(closestIdx);
             }
         });
     }
