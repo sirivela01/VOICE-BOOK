@@ -1,4 +1,4 @@
-import { getPRNG, getTodayFormattedDate } from "./utils.js?v=36.0";
+import { getPRNG, getTodayFormattedDate } from "./utils.js?v=37.0";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
@@ -31,6 +31,7 @@ let pageText = "";
 let bookId = "preview";
 let pageNumber = 1;
 let pageDate = "";
+let pageStrokes = [];
 
 let textSegments = []; // Array of { text: string, color: string }
 let charPositions = [];
@@ -220,9 +221,40 @@ export function initRenderer(canvasElement) {
 }
 
 /**
+ * Renders freehand pencil drawing strokes onto a canvas context.
+ */
+export function drawNotebookStrokes(targetCtx, strokesToDraw) {
+    if (!strokesToDraw || !Array.isArray(strokesToDraw) || strokesToDraw.length === 0) return;
+    targetCtx.save();
+    targetCtx.lineCap = "round";
+    targetCtx.lineJoin = "round";
+    for (const stroke of strokesToDraw) {
+        if (!stroke.points || stroke.points.length === 0) continue;
+        targetCtx.strokeStyle = stroke.color || "#1d3d84";
+        targetCtx.lineWidth = stroke.width || 2;
+        targetCtx.beginPath();
+        if (stroke.points.length === 1) {
+            targetCtx.arc(stroke.points[0].x, stroke.points[0].y, (stroke.width || 2) / 2, 0, Math.PI * 2);
+            targetCtx.fillStyle = stroke.color || "#1d3d84";
+            targetCtx.fill();
+        } else {
+            targetCtx.moveTo(stroke.points[0].x, stroke.points[0].y);
+            for (let i = 1; i < stroke.points.length - 1; i++) {
+                const xc = (stroke.points[i].x + stroke.points[i + 1].x) / 2;
+                const yc = (stroke.points[i].y + stroke.points[i + 1].y) / 2;
+                targetCtx.quadraticCurveTo(stroke.points[i].x, stroke.points[i].y, xc, yc);
+            }
+            targetCtx.lineTo(stroke.points[stroke.points.length - 1].x, stroke.points[stroke.points.length - 1].y);
+            targetCtx.stroke();
+        }
+    }
+    targetCtx.restore();
+}
+
+/**
  * Sets current styling options and redraws immediately.
  */
-export function setRenderOptions({ font, fontSize, jitterLevel, activeBookId, activePageNumber, inkColor, customDate }) {
+export function setRenderOptions({ font, fontSize, jitterLevel, activeBookId, activePageNumber, inkColor, customDate, strokes }) {
     if (font !== undefined) {
         currentFont = font;
         if (textSegments && textSegments.length > 0) {
@@ -240,6 +272,9 @@ export function setRenderOptions({ font, fontSize, jitterLevel, activeBookId, ac
     }
     if (customDate !== undefined) {
         pageDate = customDate || "";
+    }
+    if (strokes !== undefined) {
+        pageStrokes = strokes || [];
     }
     
     recalculateLayout();
@@ -786,7 +821,10 @@ function drawPage() {
     // 4. Draw Footer "SIRIVELA YASHWANTH ROYAL" on every page
     drawNotebookFooter(ctx);
 
-    // 4. Draw Handwritten Text Characters
+    // 5. Draw Freehand Pencil Strokes
+    drawNotebookStrokes(ctx, pageStrokes);
+
+    // 6. Draw Handwritten Text Characters
     ctx.textBaseline = "alphabetic";
 
     const jitter = jitterSettings[currentJitterLevel];
@@ -923,6 +961,9 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
     
     // 4. Draw Footer "SIRIVELA YASHWANTH ROYAL" on every page
     drawNotebookFooter(staticCtx);
+
+    // 5. Draw Freehand Pencil Strokes
+    drawNotebookStrokes(staticCtx, options.strokes || pageStrokes);
 
     if (!text) return;
     

@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=36.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=36.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=36.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=36.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection } from "./renderer.js?v=36.0";
-import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet, getTodayFormattedDate } from "./utils.js?v=36.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=37.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=37.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=37.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=37.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection } from "./renderer.js?v=37.0";
+import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet, getTodayFormattedDate } from "./utils.js?v=37.0";
 
 // Session App State
 let activeBookId = null;
@@ -22,6 +22,12 @@ let selectFont, inputFontSize, inputJitter, valFontSize, valJitter;
 let btnToggleMic, micStatusIndicator, speechStatusText, liveTranscriptBox;
 let btnPrevPage, btnNextPage, btnClearPage, pageDisplayCounter, notebookTitle;
 let modalConfig, modalCreateBook, formCreateBook, directCanvasEditor, directDateEditor;
+let btnTogglePencil, pencilBtnLabel, selectPencilWidth;
+let isDrawingMode = false;
+let isMouseDown = false;
+let currentStroke = null;
+let pageStrokes = [];
+let currentPencilWidth = 2;
 let lastSelectionStart = -1;
 let lastSelectionEnd = -1;
 
@@ -104,6 +110,10 @@ function cacheElements() {
     formCreateBook = document.getElementById("form-create-book");
     directCanvasEditor = document.getElementById("direct-canvas-editor");
     directDateEditor = document.getElementById("direct-date-editor");
+    
+    btnTogglePencil = document.getElementById("btn-toggle-pencil");
+    pencilBtnLabel = document.getElementById("pencil-btn-label");
+    selectPencilWidth = document.getElementById("select-pencil-width");
 }
 
 function setupAuthListener() {
@@ -144,11 +154,12 @@ const triggerAutosave = debounce(async () => {
 async function saveActivePageData() {
     if (!activeBookId) return;
     
-    // Capture snapshot of target book, target page, text, and custom date RIGHT NOW synchronously!
+    // Capture snapshot of target book, target page, text, custom date, and drawings RIGHT NOW synchronously!
     const targetBookId = activeBookId;
     const targetPageNum = activePageNumber;
     const text = getPageText();
     const customDate = directDateEditor ? directDateEditor.value : "";
+    const strokes = pageStrokes || [];
     
     // Save to local backup synchronously
     if (text) {
@@ -157,10 +168,13 @@ async function saveActivePageData() {
     if (customDate !== undefined) {
         localStorage.setItem(`date_${targetBookId}_${targetPageNum}`, customDate);
     }
+    if (strokes) {
+        localStorage.setItem(`drawings_${targetBookId}_${targetPageNum}`, JSON.stringify(strokes));
+    }
     
     setSaveStatus("saving", "Saving progress...");
     try {
-        await savePageContent(targetBookId, targetPageNum, text, customDate);
+        await savePageContent(targetBookId, targetPageNum, text, customDate, strokes);
         // Clear local backup once successfully persisted to Firestore
         localStorage.removeItem(`backup_${targetBookId}_${targetPageNum}`);
         setSaveStatus("saved", "All changes saved");
@@ -500,15 +514,23 @@ async function loadActivePage() {
     
     let pageText = "";
     let savedDate = "";
+    let savedDrawings = [];
     try {
         const data = await getPageData(activeBookId, activePageNumber);
         pageText = data.textContent || "";
         savedDate = data.customDate || "";
+        savedDrawings = data.drawings || [];
     } catch (err) {
         console.warn("getPageData failed, using local fallback:", err);
         pageText = localStorage.getItem(`guest_page_${activeBookId}_${activePageNumber}`) || "";
         savedDate = safeLocalStorageGet(`date_${activeBookId}_${activePageNumber}`, "");
+        try {
+            const raw = localStorage.getItem(`drawings_${activeBookId}_${activePageNumber}`);
+            if (raw) savedDrawings = JSON.parse(raw);
+        } catch (e) {}
     }
+    
+    pageStrokes = savedDrawings;
     
     try {
         // Restore local emergency backup if un-synced text exists
@@ -516,7 +538,7 @@ async function loadActivePage() {
         const backupText = localStorage.getItem(backupKey);
         if (backupText && backupText.length > (pageText ? pageText.length : 0)) {
             pageText = backupText;
-            await savePageContent(activeBookId, activePageNumber, pageText, savedDate);
+            await savePageContent(activeBookId, activePageNumber, pageText, savedDate, pageStrokes);
             localStorage.removeItem(backupKey);
         }
 
@@ -532,7 +554,8 @@ async function loadActivePage() {
             jitterLevel: parseInt(inputJitter.value),
             activeBookId: activeBookId,
             inkColor: currentInkColor,
-            customDate: savedDate
+            customDate: savedDate,
+            strokes: pageStrokes
         });
         renderText(pageText, false);
         if (directCanvasEditor) directCanvasEditor.value = getPlainText();
@@ -911,10 +934,91 @@ function setupEventListeners() {
         });
     }
 
+    if (btnTogglePencil) {
+        btnTogglePencil.addEventListener("click", () => {
+            isDrawingMode = !isDrawingMode;
+            const paperWrapper = document.getElementById("notebook-paper-wrapper");
+            if (isDrawingMode) {
+                btnTogglePencil.classList.add("active");
+                if (pencilBtnLabel) pencilBtnLabel.innerText = "Pencil Mode (ON)";
+                if (paperWrapper) paperWrapper.classList.add("is-drawing");
+                showToast("Pencil Mode Activated. Draw anywhere on paper!", "info");
+            } else {
+                btnTogglePencil.classList.remove("active");
+                if (pencilBtnLabel) pencilBtnLabel.innerText = "Pencil Mode (OFF)";
+                if (paperWrapper) paperWrapper.classList.remove("is-drawing");
+                showToast("Text Typing Mode Activated.", "info");
+            }
+        });
+    }
+
+    if (selectPencilWidth) {
+        selectPencilWidth.addEventListener("change", () => {
+            currentPencilWidth = parseInt(selectPencilWidth.value) || 2;
+        });
+    }
+
     // Clicking paper wrapper or canvas calculates exact click position and sets caret or opens Header prompts
     const canvasWrapper = document.getElementById("notebook-paper-wrapper");
     if (canvasWrapper) {
+        const getCanvasCoords = (e) => {
+            const canvasEl = document.getElementById("notebook-canvas");
+            if (!canvasEl) return { x: 0, y: 0 };
+            const rect = canvasEl.getBoundingClientRect();
+            const scaleX = 800 / rect.width;
+            const scaleY = 1000 / rect.height;
+            const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : e.clientY;
+            return {
+                x: Math.round((clientX - rect.left) * scaleX),
+                y: Math.round((clientY - rect.top) * scaleY)
+            };
+        };
+
+        const startStroke = (e) => {
+            if (!isDrawingMode) return;
+            e.preventDefault();
+            const activeInkBtn = document.querySelector(".ink-btn.active");
+            const currentInkColor = activeInkBtn ? activeInkBtn.getAttribute("data-color") : "#1d3d84";
+            const pt = getCanvasCoords(e);
+            
+            currentStroke = {
+                color: currentInkColor,
+                width: currentPencilWidth,
+                points: [pt]
+            };
+            pageStrokes.push(currentStroke);
+            isMouseDown = true;
+            setRenderOptions({ strokes: pageStrokes });
+        };
+
+        const moveStroke = (e) => {
+            if (!isDrawingMode || !isMouseDown || !currentStroke) return;
+            e.preventDefault();
+            const pt = getCanvasCoords(e);
+            currentStroke.points.push(pt);
+            setRenderOptions({ strokes: pageStrokes });
+        };
+
+        const endStroke = (e) => {
+            if (!isDrawingMode || !isMouseDown) return;
+            isMouseDown = false;
+            currentStroke = null;
+            triggerAutosave();
+        };
+
+        canvasWrapper.addEventListener("mousedown", startStroke);
+        canvasWrapper.addEventListener("mousemove", moveStroke);
+        canvasWrapper.addEventListener("mouseup", endStroke);
+        canvasWrapper.addEventListener("mouseleave", endStroke);
+
+        canvasWrapper.addEventListener("touchstart", startStroke, { passive: false });
+        canvasWrapper.addEventListener("touchmove", moveStroke, { passive: false });
+        canvasWrapper.addEventListener("touchend", endStroke);
+        canvasWrapper.addEventListener("touchcancel", endStroke);
+
         canvasWrapper.addEventListener("click", (e) => {
+            if (isDrawingMode) return;
             const canvasEl = document.getElementById("notebook-canvas");
             if (!canvasEl) return;
 
@@ -952,8 +1056,10 @@ function setupEventListeners() {
 
     // Erase page
     btnClearPage.addEventListener("click", () => {
-        if (confirm("Are you sure you want to erase all handwriting on this page? This cannot be undone.")) {
+        if (confirm("Are you sure you want to erase all handwriting and drawings on this page? This cannot be undone.")) {
             clearPage();
+            pageStrokes = [];
+            setRenderOptions({ strokes: pageStrokes });
             if (directCanvasEditor) directCanvasEditor.value = "";
             saveActivePageData();
             showToast("Page erased.", "info");

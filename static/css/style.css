@@ -1233,6 +1233,27 @@ select.form-control option:checked {
     font-size: 11px;
 }
 
+/* Freehand Pencil Drawing Tool Styles */
+.pencil-toggle-btn.active {
+    background-color: var(--accent) !important;
+    border-color: var(--accent) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 12px rgba(234, 88, 12, 0.4);
+}
+
+.notebook-paper-wrapper.is-drawing {
+    cursor: crosshair !important;
+}
+
+.notebook-paper-wrapper.is-drawing canvas {
+    cursor: crosshair !important;
+}
+
+.notebook-paper-wrapper.is-drawing .direct-canvas-editor,
+.notebook-paper-wrapper.is-drawing .direct-date-editor {
+    pointer-events: none !important;
+}
+
 .notebook-paper-wrapper.is-editing {
     box-shadow: 
         0 0 0 3px var(--accent),

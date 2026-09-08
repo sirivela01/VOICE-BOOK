@@ -173,6 +173,27 @@
                                 <button class="ink-btn ink-red" data-color="#c02626" title="Crimson Red"></button>
                             </div>
                         </div>
+
+                        <div class="control-group" style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.08);">
+                            <div class="slider-label">
+                                <span>Freehand Drawing</span>
+                            </div>
+                            <button type="button" id="btn-toggle-pencil" class="btn btn-outline btn-block icon-btn pencil-toggle-btn" style="margin-bottom: 0.5rem;">
+                                <svg class="icon" viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;">
+                                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                                </svg>
+                                <span id="pencil-btn-label">Pencil Mode (OFF)</span>
+                            </button>
+                            <div class="pencil-sub-controls" id="pencil-sub-controls" style="display: flex; gap: 0.5rem; align-items: center;">
+                                <label style="font-size: 0.75rem; color: #94a3b8; margin: 0;">Width:</label>
+                                <select id="select-pencil-width" class="form-control" style="font-size: 0.8rem; padding: 0.2rem 0.5rem; height: 28px;">
+                                    <option value="1">Fine (1px)</option>
+                                    <option value="2" selected>Medium (2px)</option>
+                                    <option value="4">Bold (4px)</option>
+                                    <option value="7">Marker (7px)</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Recording / Speech Status panel -->
@@ -344,6 +365,6 @@
     </script>
 
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='36.0') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='37.0') }}"></script>
 </body>
 </html>

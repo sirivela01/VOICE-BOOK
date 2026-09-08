@@ -12,9 +12,9 @@ import {
     serverTimestamp,
     updateDoc
 } from "firebase/firestore";
-import { getFirebaseDb } from "./firebase-init.js?v=36.0";
-import { getCurrentUser, isGuestMode } from "./auth.js?v=36.0";
-import { isFirebaseInitialized } from "./firebase-init.js?v=36.0";
+import { getFirebaseDb } from "./firebase-init.js?v=37.0";
+import { getCurrentUser, isGuestMode } from "./auth.js?v=37.0";
+import { isFirebaseInitialized } from "./firebase-init.js?v=37.0";
 
 // Helper for user local storage
 function getUserLocalBooks(userId = "guest_user") {
@@ -183,14 +183,21 @@ export async function deleteBook(bookId) {
 }
 
 /**
- * Gets page content and custom date for a specific page.
+ * Gets page content, custom date, and drawings for a specific page.
  */
 export async function getPageData(bookId, pageNumber) {
     const localText = localStorage.getItem(`guest_page_${bookId}_${pageNumber}`) || "";
     const localDate = localStorage.getItem(`date_${bookId}_${pageNumber}`) || "";
+    let localDrawings = [];
+    try {
+        const rawDrawings = localStorage.getItem(`drawings_${bookId}_${pageNumber}`);
+        if (rawDrawings) localDrawings = JSON.parse(rawDrawings);
+    } catch (e) {
+        console.warn("Failed to parse local drawings:", e);
+    }
 
     if (isGuestMode() || !isFirebaseInitialized()) {
-        return { textContent: localText, customDate: localDate };
+        return { textContent: localText, customDate: localDate, drawings: localDrawings };
     }
 
     try {
@@ -202,15 +209,21 @@ export async function getPageData(bookId, pageNumber) {
             const data = pageSnapshot.data();
             const cloudText = data.textContent !== undefined ? data.textContent : localText;
             const cloudDate = data.customDate !== undefined ? data.customDate : localDate;
+            const cloudDrawings = data.drawings !== undefined ? data.drawings : localDrawings;
+
             if (cloudDate) {
                 localStorage.setItem(`date_${bookId}_${pageNumber}`, cloudDate);
             }
-            return { textContent: cloudText, customDate: cloudDate };
+            if (cloudDrawings && Array.isArray(cloudDrawings)) {
+                localStorage.setItem(`drawings_${bookId}_${pageNumber}`, JSON.stringify(cloudDrawings));
+            }
+
+            return { textContent: cloudText, customDate: cloudDate, drawings: cloudDrawings };
         }
-        return { textContent: localText, customDate: localDate };
+        return { textContent: localText, customDate: localDate, drawings: localDrawings };
     } catch (e) {
         console.warn("Firestore page read error, using local fallback:", e);
-        return { textContent: localText, customDate: localDate };
+        return { textContent: localText, customDate: localDate, drawings: localDrawings };
     }
 }
 
@@ -223,13 +236,16 @@ export async function getPageContent(bookId, pageNumber) {
 }
 
 /**
- * Saves/Autosaves text content and custom date for a specific page.
+ * Saves/Autosaves text content, custom date, and drawings for a specific page.
  */
-export async function savePageContent(bookId, pageNumber, textContent, customDate = null) {
-    // ALWAYS save to local backup first so user text is never lost!
+export async function savePageContent(bookId, pageNumber, textContent, customDate = null, drawings = null) {
+    // ALWAYS save to local backup first so user data is never lost!
     localStorage.setItem(`guest_page_${bookId}_${pageNumber}`, textContent);
     if (customDate !== null && customDate !== undefined) {
         localStorage.setItem(`date_${bookId}_${pageNumber}`, customDate);
+    }
+    if (drawings !== null && drawings !== undefined) {
+        localStorage.setItem(`drawings_${bookId}_${pageNumber}`, JSON.stringify(drawings));
     }
 
     if (isGuestMode() || !isFirebaseInitialized()) {
@@ -251,6 +267,9 @@ export async function savePageContent(bookId, pageNumber, textContent, customDat
         };
         if (customDate !== null && customDate !== undefined) {
             payload.customDate = customDate;
+        }
+        if (drawings !== null && drawings !== undefined) {
+            payload.drawings = drawings;
         }
         await setDoc(pageDocRef, payload, { merge: true });
 
