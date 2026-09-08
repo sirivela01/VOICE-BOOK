@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=33.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=33.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=33.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=33.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection } from "./renderer.js?v=33.0";
-import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet, getTodayFormattedDate } from "./utils.js?v=33.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=34.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=34.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=34.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=34.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection } from "./renderer.js?v=34.0";
+import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet, getTodayFormattedDate } from "./utils.js?v=34.0";
 
 // Session App State
 let activeBookId = null;
@@ -21,7 +21,7 @@ let activeRenameBookId = null;
 let selectFont, inputFontSize, inputJitter, valFontSize, valJitter;
 let btnToggleMic, micStatusIndicator, speechStatusText, liveTranscriptBox;
 let btnPrevPage, btnNextPage, btnClearPage, pageDisplayCounter, notebookTitle;
-let modalConfig, modalCreateBook, formCreateBook, directCanvasEditor;
+let modalConfig, modalCreateBook, formCreateBook, directCanvasEditor, directDateEditor;
 let lastSelectionStart = -1;
 let lastSelectionEnd = -1;
 
@@ -103,6 +103,7 @@ function cacheElements() {
     modalCreateBook = document.getElementById("modal-create-book");
     formCreateBook = document.getElementById("form-create-book");
     directCanvasEditor = document.getElementById("direct-canvas-editor");
+    directDateEditor = document.getElementById("direct-date-editor");
 }
 
 function setupAuthListener() {
@@ -528,6 +529,7 @@ async function loadActivePage() {
         });
         renderText(pageText, false);
         if (directCanvasEditor) directCanvasEditor.value = getPlainText();
+        if (directDateEditor) directDateEditor.value = savedDate;
         
         setSaveStatus("saved", "All changes saved");
         updateCurrentPage(activeBookId, activePageNumber);
@@ -890,6 +892,25 @@ function setupEventListeners() {
         });
     }
 
+    if (directDateEditor) {
+        directDateEditor.addEventListener("input", () => {
+            const typedDate = directDateEditor.value;
+            safeLocalStorageSet(`date_${activeBookId}_${activePageNumber}`, typedDate);
+            setRenderOptions({ customDate: typedDate });
+            triggerAutosave();
+        });
+
+        directDateEditor.addEventListener("focus", () => {
+            const wrapper = document.getElementById("notebook-paper-wrapper");
+            if (wrapper) wrapper.classList.add("is-editing");
+        });
+
+        directDateEditor.addEventListener("blur", () => {
+            const wrapper = document.getElementById("notebook-paper-wrapper");
+            if (wrapper) wrapper.classList.remove("is-editing");
+        });
+    }
+
     // Clicking paper wrapper or canvas calculates exact click position and sets caret or opens Header prompts
     const canvasWrapper = document.getElementById("notebook-paper-wrapper");
     if (canvasWrapper) {
@@ -906,15 +927,10 @@ function setupEventListeners() {
             // Check if user clicked inside top-right Header Box (x: 580..790, y: 10..55)
             if (clickY >= 10 && clickY <= 55 && clickX >= 580 && clickX <= 790) {
                 if (clickX >= 665) {
-                    // Clicked on DATE section
-                    const currentDate = safeLocalStorageGet(`date_${activeBookId}_${activePageNumber}`, getTodayFormattedDate());
-                    const newDate = prompt(`Enter Date for Page ${activePageNumber}:`, currentDate);
-                    if (newDate !== null) {
-                        const trimmedDate = newDate.trim() || getTodayFormattedDate();
-                        safeLocalStorageSet(`date_${activeBookId}_${activePageNumber}`, trimmedDate);
-                        setRenderOptions({ customDate: trimmedDate });
-                        triggerAutosave();
-                        showToast(`Date set to '${trimmedDate}' for Page ${activePageNumber}`, "success");
+                    // Clicked on DATE section -> Focus direct on-page date input
+                    if (directDateEditor) {
+                        directDateEditor.focus();
+                        directDateEditor.setSelectionRange(directDateEditor.value.length, directDateEditor.value.length);
                     }
                 } else {
                     // Clicked on PAGE section

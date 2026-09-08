@@ -1216,6 +1216,23 @@ select.form-control option:checked {
     background: transparent;
 }
 
+/* Transparent Direct On-Page Date Editor Overlay (Positioned over Top-Right Date Header) */
+.direct-date-editor {
+    position: absolute;
+    top: 1.8%;
+    right: 2.8%;
+    width: 15%;
+    height: 2.8%;
+    opacity: 0;
+    cursor: text;
+    z-index: 12;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+}
+
 .notebook-paper-wrapper.is-editing {
     box-shadow: 
         0 0 0 3px var(--accent),
