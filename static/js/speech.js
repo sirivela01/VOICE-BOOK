@@ -1,9 +1,10 @@
-// Web Speech API Speech Recognition Wrapper
+// Web Speech API Speech Recognition Wrapper with Mobile Duplication Shield
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 let recognition = null;
 let isRecording = false;
 let lastProcessedIndex = -1;
+let lastEmittedText = "";
 
 /**
  * Checks if Speech Recognition is supported by the user's browser.
@@ -11,6 +12,74 @@ let lastProcessedIndex = -1;
  */
 export function isSpeechSupported() {
     return !!SpeechRecognition;
+}
+
+/**
+ * Removes consecutive duplicate words from a string (e.g., "currently currently" -> "currently").
+ */
+function cleanDeduplicatedWords(str) {
+    if (!str) return "";
+    const words = str.split(/\s+/);
+    const result = [];
+    for (let i = 0; i < words.length; i++) {
+        if (i > 0 && words[i].toLowerCase() === words[i - 1].toLowerCase()) {
+            continue;
+        }
+        result.push(words[i]);
+    }
+    return result.join(" ");
+}
+
+/**
+ * Extracts only NEW delta text from incoming speech transcripts,
+ * preventing Mobile Chrome duplicate accumulated speech bug.
+ */
+function getNewDeltaText(incomingText) {
+    const cleanIncoming = incomingText.trim();
+    if (!cleanIncoming) return "";
+
+    // 1. If exact match with last emitted reference, ignore
+    if (cleanIncoming.toLowerCase() === lastEmittedText.toLowerCase()) {
+        return "";
+    }
+
+    // 2. If incoming text starts with lastEmittedText, extract trailing delta
+    if (lastEmittedText && cleanIncoming.toLowerCase().startsWith(lastEmittedText.toLowerCase())) {
+        const delta = cleanIncoming.substring(lastEmittedText.length).trim();
+        if (delta) {
+            lastEmittedText = cleanIncoming;
+            return cleanDeduplicatedWords(delta);
+        }
+        return "";
+    }
+
+    // 3. Overlap matching for trailing/leading word sequences
+    const wordsIncoming = cleanIncoming.split(/\s+/);
+    const wordsLast = lastEmittedText.split(/\s+/);
+
+    let overlapCount = 0;
+    for (let k = Math.min(wordsLast.length, wordsIncoming.length); k > 0; k--) {
+        const lastTail = wordsLast.slice(wordsLast.length - k).join(" ").toLowerCase();
+        const incomingHead = wordsIncoming.slice(0, k).join(" ").toLowerCase();
+        if (lastTail === incomingHead) {
+            overlapCount = k;
+            break;
+        }
+    }
+
+    if (overlapCount > 0) {
+        const deltaWords = wordsIncoming.slice(overlapCount);
+        if (deltaWords.length > 0) {
+            const deltaStr = deltaWords.join(" ");
+            lastEmittedText = (lastEmittedText + " " + deltaStr).slice(-300);
+            return cleanDeduplicatedWords(deltaStr);
+        }
+        return "";
+    }
+
+    // 4. Brand new phrase
+    lastEmittedText = cleanIncoming.slice(-300);
+    return cleanDeduplicatedWords(cleanIncoming);
 }
 
 /**
@@ -33,12 +102,16 @@ export function startListening(onWordsAdded, onInterimResult, onStatusChange) {
         }
 
         recognition = new SpeechRecognition();
-        recognition.continuous = true;
+        
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        // Mobile Chrome works far better with continuous=false to prevent cumulative result re-emissions
+        recognition.continuous = !isMobile;
         recognition.interimResults = true;
         recognition.lang = navigator.language || 'en-US';
         recognition.maxAlternatives = 1;
 
         lastProcessedIndex = -1;
+        lastEmittedText = "";
         isRecording = true;
 
         recognition.onstart = () => {
@@ -62,13 +135,16 @@ export function startListening(onWordsAdded, onInterimResult, onStatusChange) {
 
         recognition.onend = () => {
             if (isRecording) {
-                console.log("Speech recognition ended automatically. Restarting...");
-                try {
-                    lastProcessedIndex = -1;
-                    recognition.start();
-                } catch (e) {
-                    console.error("Failed to auto-restart speech recognition:", e);
-                }
+                console.log("Speech session ended. Auto-restarting...");
+                setTimeout(() => {
+                    if (isRecording) {
+                        try {
+                            recognition.start();
+                        } catch (e) {
+                            console.warn("Speech restart notice:", e);
+                        }
+                    }
+                }, 150);
             } else {
                 onStatusChange(false, "Microphone Idle");
             }
@@ -76,23 +152,24 @@ export function startListening(onWordsAdded, onInterimResult, onStatusChange) {
 
         recognition.onresult = (event) => {
             let interimTranscript = '';
-            let newFinals = [];
+            let finalAccumulated = '';
 
             for (let i = 0; i < event.results.length; ++i) {
+                const transcript = event.results[i][0].transcript;
                 if (event.results[i].isFinal) {
                     if (i > lastProcessedIndex) {
-                        newFinals.push(event.results[i][0].transcript.trim());
+                        finalAccumulated += (finalAccumulated ? ' ' : '') + transcript.trim();
                         lastProcessedIndex = i;
                     }
                 } else {
-                    interimTranscript += event.results[i][0].transcript;
+                    interimTranscript += transcript;
                 }
             }
 
-            if (newFinals.length > 0) {
-                const newText = newFinals.join(' ');
-                if (newText) {
-                    onWordsAdded(newText);
+            if (finalAccumulated) {
+                const deltaText = getNewDeltaText(finalAccumulated);
+                if (deltaText) {
+                    onWordsAdded(deltaText);
                 }
             }
 
@@ -113,6 +190,7 @@ export function startListening(onWordsAdded, onInterimResult, onStatusChange) {
  */
 export function stopListening() {
     isRecording = false;
+    lastEmittedText = "";
     if (recognition) {
         try {
             recognition.stop();
