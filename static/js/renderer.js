@@ -1,4 +1,4 @@
-import { getPRNG, getTodayFormattedDate } from "./utils.js?v=39.0";
+import { getPRNG, getTodayFormattedDate } from "./utils.js?v=40.0";
 
 const VIRTUAL_WIDTH = 800;
 const VIRTUAL_HEIGHT = 1000;
