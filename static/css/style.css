@@ -1903,11 +1903,11 @@ canvas.notebook-canvas {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: linear-gradient(135deg, #1e2d3e 0%, #273a4d 100%);
+    background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
     padding: 0.5rem 1.1rem;
     border-radius: 12px;
     margin-bottom: 0.65rem;
-    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.3);
+    box-shadow: 0 4px 16px rgba(234, 88, 12, 0.35);
     color: #ffffff;
     flex-shrink: 0;
 }
@@ -1916,9 +1916,9 @@ canvas.notebook-canvas {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.2);
     color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     padding: 0.35rem 0.85rem;
     border-radius: 20px;
     font-size: 0.85rem;
@@ -1928,7 +1928,7 @@ canvas.notebook-canvas {
 }
 
 .prof-back-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.35);
     transform: translateY(-1px);
 }
 
@@ -1937,7 +1937,7 @@ canvas.notebook-canvas {
     font-weight: 700;
     letter-spacing: 0.5px;
     color: #ffffff;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
 .prof-header-icon {
@@ -1946,7 +1946,7 @@ canvas.notebook-canvas {
     justify-content: center;
     width: 32px;
     height: 32px;
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.2);
     border-radius: 8px;
     color: #ffffff;
 }
