@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=52.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=52.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook, getBookFilledPages } from "./db.js?v=52.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=52.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection, eraseStrokesNearPoint } from "./renderer.js?v=52.0";
-import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet, getTodayFormattedDate } from "./utils.js?v=52.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=53.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=53.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook, getBookFilledPages } from "./db.js?v=53.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=53.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection, eraseStrokesNearPoint } from "./renderer.js?v=53.0";
+import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet, getTodayFormattedDate } from "./utils.js?v=53.0";
 
 // Session App State
 let activeBookId = null;
@@ -25,6 +25,8 @@ let modalConfig, modalCreateBook, formCreateBook, directCanvasEditor, directDate
 let btnTogglePencil, pencilBtnLabel, selectPencilWidth;
 let btnToggleEraser, eraserBtnLabel, btnUndoStroke, btnClearDrawings;
 let modalExportPdf, btnExportPdf, btnGeneratePdf, btnCancelExportPdf, btnCloseExportPdf, inputPdfRange, pdfCustomRangeWrapper, pdfProgressStatus, pdfBookTitleName, pdfCurrentPageNum, radioPdfOptions;
+let modalAllPages, btnOpenAllPages, btnCloseAllPages, allPagesGridContainer, allPagesBookTitle, filterAllPages, filterFilledPages;
+
 
 let isDrawingMode = false;
 let isEraserMode = false;
@@ -134,6 +136,14 @@ function cacheElements() {
     pdfBookTitleName = document.getElementById("pdf-book-title-name");
     pdfCurrentPageNum = document.getElementById("pdf-current-page-num");
     radioPdfOptions = document.querySelectorAll('input[name="pdf-page-option"]');
+
+    modalAllPages = document.getElementById("modal-all-pages");
+    btnOpenAllPages = document.getElementById("btn-open-all-pages");
+    btnCloseAllPages = document.getElementById("btn-close-all-pages");
+    allPagesGridContainer = document.getElementById("all-pages-grid-container");
+    allPagesBookTitle = document.getElementById("all-pages-book-title");
+    filterAllPages = document.getElementById("filter-all-pages");
+    filterFilledPages = document.getElementById("filter-filled-pages");
 }
 
 function setupAuthListener() {
@@ -1239,9 +1249,100 @@ function setupEventListeners() {
         btnGeneratePdf.addEventListener("click", handleGeneratePdf);
     }
 
+    // All Pages Catalog Listeners
+    if (btnOpenAllPages) {
+        btnOpenAllPages.addEventListener("click", () => {
+            if (!activeBookId) return;
+            if (allPagesBookTitle) allPagesBookTitle.textContent = activeBookName || "Notebook";
+            if (filterAllPages && filterFilledPages) {
+                filterAllPages.classList.add("active");
+                filterFilledPages.classList.remove("active");
+            }
+            renderAllPagesCatalog("all");
+            showModal(modalAllPages);
+        });
+    }
+
+    if (btnCloseAllPages) {
+        btnCloseAllPages.addEventListener("click", () => closeModal(modalAllPages));
+    }
+
+    if (filterAllPages) {
+        filterAllPages.addEventListener("click", () => {
+            filterAllPages.classList.add("active");
+            if (filterFilledPages) filterFilledPages.classList.remove("active");
+            renderAllPagesCatalog("all");
+        });
+    }
+
+    if (filterFilledPages) {
+        filterFilledPages.addEventListener("click", () => {
+            filterFilledPages.classList.add("active");
+            if (filterAllPages) filterAllPages.classList.remove("active");
+            renderAllPagesCatalog("filled");
+        });
+    }
+
     // Initialize speech integration
     setupSpeechRecognition();
 }
+
+/**
+ * Renders all 365 mini page cards for the active notebook in the catalog modal.
+ */
+async function renderAllPagesCatalog(filterMode = "all") {
+    if (!allPagesGridContainer || !activeBookId) return;
+
+    allPagesGridContainer.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: #94a3b8;">Loading notebook pages...</div>`;
+
+    const cards = [];
+    for (let i = 1; i <= 365; i++) {
+        const text = localStorage.getItem(`guest_page_${activeBookId}_${i}`) || "";
+        const cleanText = text.replace(/\[color:#[0-9a-fA-F]{6}\]/g, "").replace(/\[\/color\]/g, "").trim();
+        const date = localStorage.getItem(`date_${activeBookId}_${i}`) || "";
+        let drawings = [];
+        try {
+            const raw = localStorage.getItem(`drawings_${activeBookId}_${i}`);
+            if (raw) drawings = JSON.parse(raw);
+        } catch(e) {}
+
+        const hasText = cleanText.length > 0;
+        const hasDrawings = drawings && drawings.length > 0;
+        const isFilled = hasText || hasDrawings;
+
+        if (filterMode === "filled" && !isFilled) {
+            continue;
+        }
+
+        const isActive = i === activePageNumber;
+        const displayText = cleanText ? cleanText.substring(0, 120) : (hasDrawings ? "[ Freehand Pencil Sketch ]" : "Empty page...");
+
+        cards.push(`
+            <div class="mini-page-card ${isActive ? 'active-page' : ''}" onclick="selectCatalogPage(${i})">
+                <div class="mini-page-header">
+                    <span class="mini-page-num">Page ${i}</span>
+                    <span class="mini-page-date">${escapeHTML(date) || '___/___/___'}</span>
+                </div>
+                <div class="mini-page-body">
+                    <p class="mini-page-text">${escapeHTML(displayText)}</p>
+                    ${hasDrawings ? '<span class="mini-drawing-badge">🎨 Sketch</span>' : ''}
+                </div>
+            </div>
+        `);
+    }
+
+    if (cards.length === 0) {
+        allPagesGridContainer.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: #94a3b8; font-size: 0.9rem;">No pages with content or drawings found in this notebook yet.</div>`;
+    } else {
+        allPagesGridContainer.innerHTML = cards.join("");
+    }
+}
+
+window.selectCatalogPage = function(targetPage) {
+    if (modalAllPages) closeModal(modalAllPages);
+    goToPage(targetPage);
+};
+
 
 /**
  * Parses user input page range strings like "1, 2, 5-10" into sorted unique page numbers.
