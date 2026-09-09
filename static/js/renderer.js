@@ -231,10 +231,10 @@ export function drawNotebookStrokes(targetCtx, strokesToDraw) {
     for (const stroke of strokesToDraw) {
         if (!stroke.points || stroke.points.length === 0) continue;
         targetCtx.strokeStyle = stroke.color || "#1d3d84";
-        targetCtx.lineWidth = stroke.width || 2;
+        targetCtx.lineWidth = stroke.width || 4;
         targetCtx.beginPath();
         if (stroke.points.length === 1) {
-            targetCtx.arc(stroke.points[0].x, stroke.points[0].y, (stroke.width || 2) / 2, 0, Math.PI * 2);
+            targetCtx.arc(stroke.points[0].x, stroke.points[0].y, (stroke.width || 4) / 2, 0, Math.PI * 2);
             targetCtx.fillStyle = stroke.color || "#1d3d84";
             targetCtx.fill();
         } else {
@@ -254,7 +254,7 @@ export function drawNotebookStrokes(targetCtx, strokesToDraw) {
 /**
  * Erases strokes touching or close to a given canvas coordinate point.
  */
-export function eraseStrokesNearPoint(strokes, x, y, radius = 20) {
+export function eraseStrokesNearPoint(strokes, x, y, radius = 35) {
     if (!strokes || !Array.isArray(strokes) || strokes.length === 0) return { updatedStrokes: [], erasedCount: 0 };
     let erasedCount = 0;
     const remainingStrokes = strokes.filter(stroke => {
