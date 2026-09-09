@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Caveat:wght@400;700&family=Homemade+Apple&family=Reenie+Beanie&family=Architects+Daughter&family=Indie+Flower&family=Dancing+Script:wght@400;700&family=Shadows+Into+Light&family=Kalam:wght@300;400;700&family=Sacramento&display=swap" rel="stylesheet">
     <!-- Main Style -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='46.0') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='49.0') }}">
 </head>
 <body>
     <!-- ================= 9-SECOND PROFESSIONAL TITLE SPLASH SCREEN ================= -->
@@ -121,9 +121,10 @@
                     <span>Bookshelf</span>
                 </button>
                 <div class="prof-header-title">📖 Voice Book</div>
-                <div class="prof-header-icon" title="Bookshelf Library">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
-                </div>
+                <button type="button" class="btn-export-pdf-trigger" id="btn-export-pdf-top" style="display: flex; align-items: center; gap: 0.4rem; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; border: none; padding: 0.4rem 0.9rem; border-radius: 20px; font-size: 0.82rem; font-weight: 700; cursor: pointer; box-shadow: 0 3px 10px rgba(2, 132, 199, 0.4); transition: transform 0.2s ease;">
+                    <svg class="icon" viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor;"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9.5 8.5c0 .83-.67 1.5-1.5 1.5H7v2H5.5V9H8c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V9H13c.83 0 1.5.67 1.5 1.5v3zm4-3H17v1h1.5V13H17v2h-1.5V9h3v1.5zM7 10.5h1v1H7v-1zm4.5 0h1v3h-1v-3z"/></svg>
+                    <span>📄 Export PDF</span>
+                </button>
             </div>
 
             <!-- Notebook Layout Container -->
@@ -132,42 +133,51 @@
                 <div class="notebook-sidebar prof-sidebar">
                     
                     <!-- Top Metadata & Illustration Card -->
-                    <div class="prof-meta-card">
-                        <div class="meta-left">
-                            <div class="prof-icon-badge">
-                                <svg viewBox="0 0 24 24"><path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/></svg>
-                            </div>
-                            <div class="meta-info">
-                                <h2 id="notebook-title" class="prof-book-title" title="Click to rename this notebook">Notebook Title</h2>
-                                <div class="save-status" id="save-status">
-                                    <span class="status-dot green"></span>
-                                    <span class="status-text">All changes saved</span>
+                    <div class="prof-meta-card" style="flex-direction: column; align-items: stretch; gap: 0.6rem;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                            <div class="meta-left">
+                                <div class="prof-icon-badge">
+                                    <svg viewBox="0 0 24 24"><path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/></svg>
+                                </div>
+                                <div class="meta-info">
+                                    <h2 id="notebook-title" class="prof-book-title" title="Click to rename this notebook">Notebook Title</h2>
+                                    <div class="save-status" id="save-status">
+                                        <span class="status-dot green"></span>
+                                        <span class="status-text">All changes saved</span>
+                                    </div>
                                 </div>
                             </div>
+                            <div class="meta-graphic">
+                                <!-- 3D Open Book Illustration Graphic -->
+                                <svg viewBox="0 0 100 80" class="prof-3d-book-svg">
+                                    <defs>
+                                        <linearGradient id="coverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#ea580c"/>
+                                            <stop offset="100%" stop-color="#c2410c"/>
+                                        </linearGradient>
+                                        <linearGradient id="pageGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" stop-color="#ffffff"/>
+                                            <stop offset="100%" stop-color="#fff7ed"/>
+                                        </linearGradient>
+                                    </defs>
+                                    <path d="M10 65 Q 50 80 90 65 L 90 20 Q 50 35 10 20 Z" fill="url(#coverGrad)"/>
+                                    <path d="M14 60 Q 50 72 86 60 L 86 18 Q 50 30 14 18 Z" fill="url(#pageGrad)"/>
+                                    <path d="M50 25 L 50 72" stroke="#ea580c" stroke-width="1.5" stroke-dasharray="2 2"/>
+                                    <!-- Sparkles -->
+                                    <circle cx="15" cy="12" r="1.5" fill="#f97316"/>
+                                    <polygon points="85,10 87,14 91,15 87,16 85,20 83,16 79,15 83,14" fill="#fb923c"/>
+                                    <polygon points="8,35 9,37 11,38 9,39 8,41 7,39 5,38 7,37" fill="#fdba74"/>
+                                </svg>
+                            </div>
                         </div>
-                        <div class="meta-graphic">
-                            <!-- 3D Open Book Illustration Graphic -->
-                            <svg viewBox="0 0 100 80" class="prof-3d-book-svg">
-                                <defs>
-                                    <linearGradient id="coverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%" stop-color="#ea580c"/>
-                                        <stop offset="100%" stop-color="#c2410c"/>
-                                    </linearGradient>
-                                    <linearGradient id="pageGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                                        <stop offset="0%" stop-color="#ffffff"/>
-                                        <stop offset="100%" stop-color="#fff7ed"/>
-                                    </linearGradient>
-                                </defs>
-                                <path d="M10 65 Q 50 80 90 65 L 90 20 Q 50 35 10 20 Z" fill="url(#coverGrad)"/>
-                                <path d="M14 60 Q 50 72 86 60 L 86 18 Q 50 30 14 18 Z" fill="url(#pageGrad)"/>
-                                <path d="M50 25 L 50 72" stroke="#ea580c" stroke-width="1.5" stroke-dasharray="2 2"/>
-                                <!-- Sparkles -->
-                                <circle cx="15" cy="12" r="1.5" fill="#f97316"/>
-                                <polygon points="85,10 87,14 91,15 87,16 85,20 83,16 79,15 83,14" fill="#fb923c"/>
-                                <polygon points="8,35 9,37 11,38 9,39 8,41 7,39 5,38 7,37" fill="#fdba74"/>
-                            </svg>
-                        </div>
+
+                        <!-- Top Quick Export PDF Button -->
+                        <button type="button" class="btn-export-pdf-trigger prof-btn-pill-orange" id="btn-export-pdf-meta" style="justify-content: center; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35); padding: 0.5rem; font-size: 0.84rem; font-weight: 700;">
+                            <svg class="icon" viewBox="0 0 24 24" style="width: 17px; height: 17px; fill: currentColor;"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9.5 8.5c0 .83-.67 1.5-1.5 1.5H7v2H5.5V9H8c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V9H13c.83 0 1.5.67 1.5 1.5v3zm4-3H17v1h1.5V13H17v2h-1.5V9h3v1.5zM7 10.5h1v1H7v-1zm4.5 0h1v3h-1v-3z"/></svg>
+                            <span>Export Pages to PDF</span>
+                        </button>
                     </div>
+
 
                     <!-- CARD 1: Handwriting Style Card -->
                     <div class="prof-card">
@@ -492,6 +502,6 @@
     </script>
 
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='48.0') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='49.0') }}"></script>
 </body>
 </html>
