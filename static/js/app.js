@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=40.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=40.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=40.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=40.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection, eraseStrokesNearPoint } from "./renderer.js?v=40.0";
-import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet, getTodayFormattedDate } from "./utils.js?v=40.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=42.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=42.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=42.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=42.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection, eraseStrokesNearPoint } from "./renderer.js?v=42.0";
+import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet, getTodayFormattedDate } from "./utils.js?v=42.0";
 
 // Session App State
 let activeBookId = null;
@@ -770,6 +770,19 @@ function setupEventListeners() {
             }
         }
     });
+
+    // Rename notebook directly by clicking notebook title in sidebar
+    if (notebookTitle) {
+        notebookTitle.addEventListener("click", () => {
+            if (!activeBookId) return;
+            modalMode = "rename";
+            activeRenameBookId = activeBookId;
+            document.getElementById("modal-create-title").innerText = "Rename Notebook";
+            document.getElementById("btn-submit-create-book").innerText = "Rename Book";
+            document.getElementById("input-book-name").value = activeBookName || notebookTitle.innerText;
+            showModal(modalCreateBook);
+        });
+    }
 
     // Firebase Config triggers
     document.getElementById("btn-show-config").addEventListener("click", () => {
