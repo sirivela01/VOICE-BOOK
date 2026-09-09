@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=45.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=45.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=45.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=45.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection, eraseStrokesNearPoint } from "./renderer.js?v=45.0";
-import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet, getTodayFormattedDate } from "./utils.js?v=45.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=46.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=46.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=46.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=46.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection, eraseStrokesNearPoint } from "./renderer.js?v=46.0";
+import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet, getTodayFormattedDate } from "./utils.js?v=46.0";
 
 // Session App State
 let activeBookId = null;
@@ -272,8 +272,8 @@ async function loadBookshelf() {
                     bookEl.innerHTML = `
                         <div class="spine-gold-band gold-top"></div>
                         <div class="spine-title">${escapeHTML(book.name)}</div>
-                        <button class="spine-delete-btn" title="Delete notebook">×</button>
-                        <button class="spine-rename-btn" title="Rename notebook">✎</button>
+                        <button class="spine-delete-btn" title="Delete notebook">✕</button>
+                        <button class="spine-rename-btn" title="Rename notebook"><svg viewBox="0 0 24 24" style="width: 13px; height: 13px; fill: #ffffff;"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
                         <div class="spine-gold-band gold-bottom"></div>
                     `;
                     
