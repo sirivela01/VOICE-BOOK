@@ -1,10 +1,13 @@
-// Web Speech API Speech Recognition Wrapper with Mobile Duplication Shield
+// Web Speech API Speech Recognition Wrapper with Mobile Duplication & Silence Shield
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 let recognition = null;
 let isRecording = false;
 let lastProcessedIndex = -1;
 let lastEmittedText = "";
+let latestInterimText = "";
+let restartAttempts = 0;
+let restartTimer = null;
 
 /**
  * Checks if Speech Recognition is supported by the user's browser.
@@ -96,93 +99,125 @@ export function startListening(onWordsAdded, onInterimResult, onStatusChange) {
 
     if (isRecording) return;
 
-    try {
-        if (recognition) {
-            try { recognition.abort(); } catch(e) {}
-        }
+    isRecording = true;
+    lastProcessedIndex = -1;
+    lastEmittedText = "";
+    latestInterimText = "";
+    restartAttempts = 0;
 
-        recognition = new SpeechRecognition();
-        
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        // Mobile Chrome works far better with continuous=false to prevent cumulative result re-emissions
-        recognition.continuous = !isMobile;
-        recognition.interimResults = true;
-        recognition.lang = navigator.language || 'en-US';
-        recognition.maxAlternatives = 1;
+    function createAndStartRecognition() {
+        if (!isRecording) return;
 
-        lastProcessedIndex = -1;
-        lastEmittedText = "";
-        isRecording = true;
-
-        recognition.onstart = () => {
-            onStatusChange(true, "Microphone Listening...");
-        };
-
-        recognition.onerror = (event) => {
-            console.error("Speech recognition error:", event.error);
-            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-                onStatusChange(false, "Permission Denied: Allow mic access in your browser address bar.");
-                isRecording = false;
-            } else if (event.error === 'no-speech') {
-                onStatusChange(true, "Listening (Waiting for speech...)...");
-            } else if (event.error === 'audio-capture') {
-                onStatusChange(false, "Microphone error: Ensure your microphone is plugged in.");
-                isRecording = false;
-            } else {
-                onStatusChange(true, `Mic Status: ${event.error}`);
+        try {
+            if (recognition) {
+                try { 
+                    recognition.onstart = null; 
+                    recognition.onend = null; 
+                    recognition.onerror = null; 
+                    recognition.onresult = null; 
+                    recognition.abort(); 
+                } catch(e) {}
             }
-        };
 
-        recognition.onend = () => {
-            if (isRecording) {
-                console.log("Speech session ended. Auto-restarting...");
-                setTimeout(() => {
-                    if (isRecording) {
-                        try {
-                            recognition.start();
-                        } catch (e) {
-                            console.warn("Speech restart notice:", e);
+            recognition = new SpeechRecognition();
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            recognition.continuous = !isMobile;
+            recognition.interimResults = true;
+            recognition.lang = navigator.language || 'en-US';
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = () => {
+                restartAttempts = 0;
+                onStatusChange(true, "Microphone Listening... (Speak now)");
+            };
+
+            recognition.onerror = (event) => {
+                console.warn("Mobile speech recognition notice:", event.error);
+                if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                    isRecording = false;
+                    onStatusChange(false, "Permission Denied: Allow mic access in your browser address bar.");
+                } else if (event.error === 'no-speech') {
+                    onStatusChange(true, "Listening... (Waiting for speech)");
+                } else if (event.error === 'audio-capture') {
+                    isRecording = false;
+                    onStatusChange(false, "Microphone error: Ensure mic is enabled.");
+                }
+            };
+
+            recognition.onend = () => {
+                // FLUSH PENDING INTERIM TEXT ON MOBILE BEFORE RESTARTING SO NO SPOKEN WORDS ARE EVER LOST!
+                if (latestInterimText && latestInterimText.trim()) {
+                    const pendingText = latestInterimText.trim();
+                    latestInterimText = "";
+                    const delta = getNewDeltaText(pendingText);
+                    if (delta) {
+                        onWordsAdded(delta);
+                    }
+                }
+                onInterimResult("");
+
+                if (isRecording) {
+                    restartAttempts++;
+                    if (restartAttempts > 5) {
+                        isRecording = false;
+                        onStatusChange(false, "Microphone Idle. Tap Start Dictation to talk.");
+                        return;
+                    }
+                    
+                    onStatusChange(true, "Listening... (Re-connecting)");
+                    restartTimer = setTimeout(() => {
+                        if (isRecording) {
+                            createAndStartRecognition();
                         }
-                    }
-                }, 150);
-            } else {
-                onStatusChange(false, "Microphone Idle");
-            }
-        };
-
-        recognition.onresult = (event) => {
-            let interimTranscript = '';
-            let finalAccumulated = '';
-
-            for (let i = 0; i < event.results.length; ++i) {
-                const transcript = event.results[i][0].transcript;
-                if (event.results[i].isFinal) {
-                    if (i > lastProcessedIndex) {
-                        finalAccumulated += (finalAccumulated ? ' ' : '') + transcript.trim();
-                        lastProcessedIndex = i;
-                    }
+                    }, isMobile ? 250 : 100);
                 } else {
-                    interimTranscript += transcript;
+                    onStatusChange(false, "Microphone Idle");
                 }
-            }
+            };
 
-            if (finalAccumulated) {
-                const deltaText = getNewDeltaText(finalAccumulated);
-                if (deltaText) {
-                    onWordsAdded(deltaText);
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                let finalAccumulated = '';
+
+                for (let i = 0; i < event.results.length; ++i) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        if (i > lastProcessedIndex) {
+                            finalAccumulated += (finalAccumulated ? ' ' : '') + transcript.trim();
+                            lastProcessedIndex = i;
+                        }
+                    } else {
+                        interimTranscript += transcript;
+                    }
                 }
+
+                latestInterimText = interimTranscript;
+
+                if (finalAccumulated) {
+                    const deltaText = getNewDeltaText(finalAccumulated);
+                    if (deltaText) {
+                        onWordsAdded(deltaText);
+                        latestInterimText = "";
+                    }
+                }
+
+                onInterimResult(interimTranscript);
+            };
+
+            recognition.start();
+
+        } catch (e) {
+            console.error("Speech creation error:", e);
+            if (isRecording) {
+                restartTimer = setTimeout(() => {
+                    if (isRecording) createAndStartRecognition();
+                }, 400);
             }
-
-            onInterimResult(interimTranscript);
-        };
-
-        recognition.start();
-
-    } catch (e) {
-        console.error("Speech initialization error:", e);
-        onStatusChange(false, `Initialization Error: ${e.message}`);
-        isRecording = false;
+        }
     }
+
+    createAndStartRecognition();
 }
 
 /**
@@ -191,12 +226,15 @@ export function startListening(onWordsAdded, onInterimResult, onStatusChange) {
 export function stopListening() {
     isRecording = false;
     lastEmittedText = "";
+    latestInterimText = "";
+    if (restartTimer) {
+        clearTimeout(restartTimer);
+        restartTimer = null;
+    }
     if (recognition) {
         try {
             recognition.stop();
-        } catch (e) {
-            console.error("Failed to stop speech recognition:", e);
-        }
+        } catch (e) {}
     }
 }
 
