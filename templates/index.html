@@ -292,7 +292,11 @@
 
                     <!-- Utility actions -->
                     <div class="sidebar-utilities">
-                        <button id="btn-clear-page" class="prof-outline-btn text-danger btn-block" style="justify-content: center; padding: 0.6rem;">
+                        <button type="button" id="btn-export-pdf" class="prof-btn-pill-orange" style="margin-bottom: 0.5rem; justify-content: center; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);">
+                            <svg class="icon" viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9.5 8.5c0 .83-.67 1.5-1.5 1.5H7v2H5.5V9H8c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V9H13c.83 0 1.5.67 1.5 1.5v3zm4-3H17v1h1.5V13H17v2h-1.5V9h3v1.5zM7 10.5h1v1H7v-1zm4.5 0h1v3h-1v-3z"/></svg>
+                            <span>Export Pages to PDF</span>
+                        </button>
+                        <button type="button" id="btn-clear-page" class="prof-outline-btn text-danger btn-block" style="justify-content: center; padding: 0.55rem;">
                             <svg class="icon" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                             Erase Entire Page
                         </button>
@@ -430,6 +434,52 @@
     <!-- ================= TOAST / NOTIFICATION ================= -->
     <div id="toast" class="toast-notification">Notification Message</div>
 
+    <!-- ================= EXPORT PDF MODAL ================= -->
+    <div id="modal-export-pdf" class="modal-overlay">
+        <div class="modal-box modal-sm">
+            <div class="modal-header">
+                <h3>📄 Export Pages to PDF</h3>
+                <button class="modal-close" id="btn-close-export-pdf">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="font-size: 0.88rem; font-weight: 600; color: #334155; margin-bottom: 0.8rem;">
+                    Select pages to export from <span id="pdf-book-title-name" style="color: #ea580c; font-weight: 700;">Notebook</span>:
+                </div>
+                
+                <div class="pdf-options-group" style="display: flex; flex-direction: column; gap: 0.65rem;">
+                    <label class="prof-radio-label" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.85rem; font-weight: 500; color: #1e293b;">
+                        <input type="radio" name="pdf-page-option" value="current" checked />
+                        <span>Current Page (<span id="pdf-current-page-num">Page 1</span>)</span>
+                    </label>
+                    <label class="prof-radio-label" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.85rem; font-weight: 500; color: #1e293b;">
+                        <input type="radio" name="pdf-page-option" value="filled" />
+                        <span>Pages with Content / Drawings Only</span>
+                    </label>
+                    <label class="prof-radio-label" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.85rem; font-weight: 500; color: #1e293b;">
+                        <input type="radio" name="pdf-page-option" value="custom" />
+                        <span>Custom Page Range</span>
+                    </label>
+                </div>
+                
+                <div id="pdf-custom-range-wrapper" style="margin-top: 0.65rem; display: none;">
+                    <input type="text" id="input-pdf-range" class="form-control" placeholder="e.g. 1, 2, 5-10, 15" style="padding: 0.45rem 0.7rem; font-size: 0.85rem;">
+                    <span class="editor-hint" style="font-size: 0.75rem; color: #64748b; margin-top: 4px; display: block;">Enter page numbers separated by commas or dash range.</span>
+                </div>
+                
+                <div id="pdf-progress-status" style="margin-top: 0.8rem; font-size: 0.82rem; font-weight: 600; color: #0284c7; text-align: center; display: none;">
+                    Rendering PDF pages...
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" id="btn-cancel-export-pdf">Cancel</button>
+                <button type="button" id="btn-generate-pdf" class="btn btn-primary" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">Download PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- jsPDF Engine CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <!-- Firebase v10 SDK Core Libraries via CDN -->
     <script type="importmap">
         {
@@ -442,6 +492,6 @@
     </script>
 
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='47.0') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='48.0') }}"></script>
 </body>
 </html>

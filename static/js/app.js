@@ -1,9 +1,9 @@
-import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=47.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=47.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook } from "./db.js?v=47.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=47.0";
-import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection, eraseStrokesNearPoint } from "./renderer.js?v=47.0";
-import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet, getTodayFormattedDate } from "./utils.js?v=47.0";
+import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=48.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=48.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook, getBookFilledPages } from "./db.js?v=48.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported } from "./speech.js?v=48.0";
+import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection, eraseStrokesNearPoint } from "./renderer.js?v=48.0";
+import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet, getTodayFormattedDate } from "./utils.js?v=48.0";
 
 // Session App State
 let activeBookId = null;
@@ -24,6 +24,8 @@ let btnPrevPage, btnNextPage, btnClearPage, pageDisplayCounter, notebookTitle;
 let modalConfig, modalCreateBook, formCreateBook, directCanvasEditor, directDateEditor;
 let btnTogglePencil, pencilBtnLabel, selectPencilWidth;
 let btnToggleEraser, eraserBtnLabel, btnUndoStroke, btnClearDrawings;
+let modalExportPdf, btnExportPdf, btnGeneratePdf, btnCancelExportPdf, btnCloseExportPdf, inputPdfRange, pdfCustomRangeWrapper, pdfProgressStatus, pdfBookTitleName, pdfCurrentPageNum, radioPdfOptions;
+
 let isDrawingMode = false;
 let isEraserMode = false;
 let isMouseDown = false;
@@ -120,6 +122,18 @@ function cacheElements() {
     eraserBtnLabel = document.getElementById("eraser-btn-label");
     btnUndoStroke = document.getElementById("btn-undo-stroke");
     btnClearDrawings = document.getElementById("btn-clear-drawings");
+
+    modalExportPdf = document.getElementById("modal-export-pdf");
+    btnExportPdf = document.getElementById("btn-export-pdf");
+    btnGeneratePdf = document.getElementById("btn-generate-pdf");
+    btnCancelExportPdf = document.getElementById("btn-cancel-export-pdf");
+    btnCloseExportPdf = document.getElementById("btn-close-export-pdf");
+    inputPdfRange = document.getElementById("input-pdf-range");
+    pdfCustomRangeWrapper = document.getElementById("pdf-custom-range-wrapper");
+    pdfProgressStatus = document.getElementById("pdf-progress-status");
+    pdfBookTitleName = document.getElementById("pdf-book-title-name");
+    pdfCurrentPageNum = document.getElementById("pdf-current-page-num");
+    radioPdfOptions = document.querySelectorAll('input[name="pdf-page-option"]');
 }
 
 function setupAuthListener() {
@@ -1172,9 +1186,205 @@ function setupEventListeners() {
         }
     });
 
+    // PDF Export Listeners
+    if (btnExportPdf) {
+        btnExportPdf.addEventListener("click", () => {
+            if (!activeBookId) return;
+            if (pdfBookTitleName) pdfBookTitleName.textContent = activeBookName || "Notebook";
+            if (pdfCurrentPageNum) pdfCurrentPageNum.textContent = `Page ${activePageNumber}`;
+            
+            const currentRadio = document.querySelector('input[name="pdf-page-option"][value="current"]');
+            if (currentRadio) currentRadio.checked = true;
+            
+            if (pdfCustomRangeWrapper) pdfCustomRangeWrapper.style.display = "none";
+            if (pdfProgressStatus) {
+                pdfProgressStatus.style.display = "none";
+                pdfProgressStatus.textContent = "Rendering PDF pages...";
+            }
+            if (btnGeneratePdf) {
+                btnGeneratePdf.disabled = false;
+                btnGeneratePdf.textContent = "Download PDF";
+            }
+            if (inputPdfRange) inputPdfRange.value = "";
+            
+            showModal(modalExportPdf);
+        });
+    }
+
+    if (radioPdfOptions) {
+        radioPdfOptions.forEach(radio => {
+            radio.addEventListener("change", (e) => {
+                if (pdfCustomRangeWrapper) {
+                    if (e.target.value === "custom") {
+                        pdfCustomRangeWrapper.style.display = "block";
+                        if (inputPdfRange) inputPdfRange.focus();
+                    } else {
+                        pdfCustomRangeWrapper.style.display = "none";
+                    }
+                }
+            });
+        });
+    }
+
+    if (btnCancelExportPdf) {
+        btnCancelExportPdf.addEventListener("click", () => closeModal(modalExportPdf));
+    }
+
+    if (btnCloseExportPdf) {
+        btnCloseExportPdf.addEventListener("click", () => closeModal(modalExportPdf));
+    }
+
+    if (btnGeneratePdf) {
+        btnGeneratePdf.addEventListener("click", handleGeneratePdf);
+    }
+
     // Initialize speech integration
     setupSpeechRecognition();
 }
+
+/**
+ * Parses user input page range strings like "1, 2, 5-10" into sorted unique page numbers.
+ */
+function parsePageRange(rangeStr, maxPages = 365) {
+    if (!rangeStr || !rangeStr.trim()) return [];
+    const pagesSet = new Set();
+    const parts = rangeStr.split(",");
+
+    for (let part of parts) {
+        part = part.trim();
+        if (!part) continue;
+
+        if (part.includes("-")) {
+            const range = part.split("-");
+            if (range.length === 2) {
+                const start = parseInt(range[0].trim(), 10);
+                const end = parseInt(range[1].trim(), 10);
+                if (!isNaN(start) && !isNaN(end)) {
+                    const min = Math.max(1, Math.min(start, end));
+                    const max = Math.min(maxPages, Math.max(start, end));
+                    for (let p = min; p <= max; p++) {
+                        pagesSet.add(p);
+                    }
+                }
+            }
+        } else {
+            const pNum = parseInt(part, 10);
+            if (!isNaN(pNum) && pNum >= 1 && pNum <= maxPages) {
+                pagesSet.add(pNum);
+            }
+        }
+    }
+
+    return Array.from(pagesSet).sort((a, b) => a - b);
+}
+
+/**
+ * Handles generating multi-page PDF document containing offscreen-rendered notebook pages.
+ */
+async function handleGeneratePdf() {
+    if (!activeBookId) return;
+
+    const selectedOption = document.querySelector('input[name="pdf-page-option"]:checked')?.value || "current";
+    let targetPages = [];
+
+    if (selectedOption === "current") {
+        targetPages = [activePageNumber];
+    } else if (selectedOption === "filled") {
+        if (pdfProgressStatus) {
+            pdfProgressStatus.style.display = "block";
+            pdfProgressStatus.textContent = "Scanning notebook for pages with content...";
+        }
+        targetPages = await getBookFilledPages(activeBookId);
+        if (targetPages.length === 0) {
+            showToast("No pages with content or drawings found. Exporting current page.", "info");
+            targetPages = [activePageNumber];
+        }
+    } else if (selectedOption === "custom") {
+        const rawRange = inputPdfRange ? inputPdfRange.value : "";
+        targetPages = parsePageRange(rawRange, 365);
+        if (targetPages.length === 0) {
+            showToast("Please enter a valid page range (e.g. 1, 2, 5-10)", "error");
+            return;
+        }
+    }
+
+    if (pdfProgressStatus) {
+        pdfProgressStatus.style.display = "block";
+        pdfProgressStatus.textContent = `Preparing PDF (${targetPages.length} page${targetPages.length > 1 ? 's' : ''})...`;
+    }
+    if (btnGeneratePdf) {
+        btnGeneratePdf.disabled = true;
+        btnGeneratePdf.textContent = "Generating PDF...";
+    }
+
+    try {
+        const jsPDF = window.jspdf ? window.jspdf.jsPDF : null;
+        if (!jsPDF) {
+            showToast("PDF generator library not loaded. Please refresh the page.", "error");
+            if (pdfProgressStatus) pdfProgressStatus.style.display = "none";
+            if (btnGeneratePdf) {
+                btnGeneratePdf.disabled = false;
+                btnGeneratePdf.textContent = "Download PDF";
+            }
+            return;
+        }
+
+        const doc = new jsPDF({
+            orientation: "portrait",
+            unit: "pt",
+            format: [800, 1000]
+        });
+
+        const offscreenCanvas = document.createElement("canvas");
+
+        const font = selectFont ? selectFont.value : "Homemade Apple";
+        const fontSize = inputFontSize ? parseInt(inputFontSize.value, 10) : 15;
+        const jitterLevel = inputJitter ? parseInt(inputJitter.value, 10) : 2;
+
+        for (let i = 0; i < targetPages.length; i++) {
+            const pNum = targetPages[i];
+            if (pdfProgressStatus) {
+                pdfProgressStatus.textContent = `Rendering page ${i + 1} of ${targetPages.length} (Page ${pNum})...`;
+            }
+            
+            await new Promise(r => setTimeout(r, 15));
+
+            const pageData = await getPageData(activeBookId, pNum);
+
+            renderPageStatic(offscreenCanvas, pageData.textContent, pNum, {
+                customDate: pageData.customDate,
+                strokes: pageData.drawings,
+                font: font,
+                fontSize: fontSize,
+                jitterLevel: jitterLevel
+            });
+
+            const imgData = offscreenCanvas.toDataURL("image/png");
+
+            if (i > 0) {
+                doc.addPage([800, 1000], "portrait");
+            }
+            doc.addImage(imgData, "PNG", 0, 0, 800, 1000);
+        }
+
+        const safeTitle = (activeBookName || "Notebook").replace(/[^a-zA-Z0-9_-]/g, "_");
+        doc.save(`${safeTitle}_Pages.pdf`);
+
+        showToast(`Exported ${targetPages.length} page(s) to PDF successfully!`, "success");
+        closeModal(modalExportPdf);
+
+    } catch (err) {
+        console.error("PDF export error:", err);
+        showToast("An error occurred while generating the PDF.", "error");
+    } finally {
+        if (pdfProgressStatus) pdfProgressStatus.style.display = "none";
+        if (btnGeneratePdf) {
+            btnGeneratePdf.disabled = false;
+            btnGeneratePdf.textContent = "Download PDF";
+        }
+    }
+}
+
 
 /**
  * Extracts, sanitizes, and saves manual Firebase configurations entered in the UI.

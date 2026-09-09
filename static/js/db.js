@@ -359,3 +359,52 @@ export async function renameBook(bookId, rawNewName) {
         }
     }
 }
+
+/**
+ * Scans all pages (1..365) for a book and returns list of page numbers containing text or drawings.
+ */
+export async function getBookFilledPages(bookId) {
+    const filledPages = new Set();
+
+    // 1. Scan LocalStorage for guest/cached page entries
+    for (let i = 1; i <= 365; i++) {
+        const text = localStorage.getItem(`guest_page_${bookId}_${i}`) || "";
+        const cleanText = text.replace(/\[color:#[0-9a-fA-F]{6}\]/g, "").replace(/\[\/color\]/g, "").trim();
+        let drawings = [];
+        try {
+            const raw = localStorage.getItem(`drawings_${bookId}_${i}`);
+            if (raw) drawings = JSON.parse(raw);
+        } catch(e) {}
+
+        if (cleanText.length > 0 || (drawings && drawings.length > 0)) {
+            filledPages.add(i);
+        }
+    }
+
+    // 2. Scan Firestore pages sub-collection if initialized
+    if (!isGuestMode() && isFirebaseInitialized()) {
+        try {
+            const db = getFirebaseDb();
+            if (db) {
+                const pagesRef = collection(db, "books", bookId, "pages");
+                const docSnaps = await getDocs(pagesRef);
+                docSnaps.forEach(docSnap => {
+                    const pageNum = parseInt(docSnap.id, 10);
+                    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= 365) {
+                        const data = docSnap.data();
+                        const text = (data.textContent || "").replace(/\[color:#[0-9a-fA-F]{6}\]/g, "").replace(/\[\/color\]/g, "").trim();
+                        const drawings = data.drawings || [];
+                        if (text.length > 0 || (drawings && drawings.length > 0)) {
+                            filledPages.add(pageNum);
+                        }
+                    }
+                });
+            }
+        } catch (e) {
+            console.warn("Firestore getBookFilledPages notice:", e);
+        }
+    }
+
+    return Array.from(filledPages).sort((a, b) => a - b);
+}
+
