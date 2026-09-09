@@ -12,9 +12,9 @@ import {
     serverTimestamp,
     updateDoc
 } from "firebase/firestore";
-import { getFirebaseDb } from "./firebase-init.js?v=40.0";
-import { getCurrentUser, isGuestMode } from "./auth.js?v=40.0";
-import { isFirebaseInitialized } from "./firebase-init.js?v=40.0";
+import { getFirebaseDb } from "./firebase-init.js?v=44.0";
+import { getCurrentUser, isGuestMode } from "./auth.js?v=44.0";
+import { isFirebaseInitialized } from "./firebase-init.js?v=44.0";
 
 // Helper for user local storage
 function getUserLocalBooks(userId = "guest_user") {
@@ -73,19 +73,21 @@ export async function createBook(name, slotIndex = 0) {
     const userId = user ? user.uid : "guest_user";
     const db = getFirebaseDb();
 
+    // Always create locally first so user experience is instant
+    const localBooks = getUserLocalBooks(userId);
+    const newBook = {
+        id: "book_" + Date.now(),
+        userId: userId,
+        name: name,
+        createdAt: { seconds: Date.now() / 1000 },
+        currentPage: 1,
+        maxPages: 365,
+        slotIndex: slotIndex
+    };
+    localBooks.unshift(newBook);
+    saveUserLocalBooks(userId, localBooks);
+
     if (isGuestMode() || !isFirebaseInitialized() || !db) {
-        const books = getUserLocalBooks(userId);
-        const newBook = {
-            id: "book_" + Date.now(),
-            userId: userId,
-            name: name,
-            createdAt: { seconds: Date.now() / 1000 },
-            currentPage: 1,
-            maxPages: 365,
-            slotIndex: slotIndex
-        };
-        books.unshift(newBook);
-        saveUserLocalBooks(userId, books);
         return newBook.id;
     }
 
@@ -101,19 +103,7 @@ export async function createBook(name, slotIndex = 0) {
         const docRef = await addDoc(collection(db, "books"), bookData);
         return docRef.id;
     } catch (e) {
-        console.warn("Firestore createBook notice, saving locally:", e);
-        const books = getUserLocalBooks(userId);
-        const newBook = {
-            id: "book_" + Date.now(),
-            userId: userId,
-            name: name,
-            createdAt: { seconds: Date.now() / 1000 },
-            currentPage: 1,
-            maxPages: 365,
-            slotIndex: slotIndex
-        };
-        books.unshift(newBook);
-        saveUserLocalBooks(userId, books);
+        console.warn("Firestore createBook notice, saved locally:", e);
         return newBook.id;
     }
 }
@@ -141,6 +131,10 @@ export async function getUserBooks() {
             books.push({ id: doc.id, ...doc.data() });
         });
         
+        if (books.length === 0) {
+            return getUserLocalBooks(userId);
+        }
+
         // Sort by slotIndex or createdAt
         books.sort((a, b) => (a.slotIndex || 0) - (b.slotIndex || 0));
         return books;
@@ -253,6 +247,7 @@ export async function getPageData(bookId, pageNumber) {
  * Saves content, custom date, and freehand drawings for a single page.
  */
 export async function savePageContent(bookId, pageNumber, textContent, customDate = null, drawings = null) {
+    // ALWAYS save to local backup first so user data is never lost!
     localStorage.setItem(`guest_page_${bookId}_${pageNumber}`, textContent);
     if (customDate !== null && customDate !== undefined) {
         localStorage.setItem(`date_${bookId}_${pageNumber}`, customDate);
@@ -322,26 +317,42 @@ export async function updateCurrentPage(bookId, pageNumber) {
 }
 
 /**
- * Renames an existing notebook document.
+ * Renames an existing notebook document in Local Storage and Firestore.
  */
 export async function renameBook(bookId, newName) {
-    const books = getLocalGuestBooks();
-    const book = books.find(b => b.id === bookId);
-    if (book) {
-        book.name = newName;
-        saveLocalGuestBooks(books);
+    const user = getCurrentUser();
+    const userId = user ? user.uid : "guest_user";
+    
+    // 1. Update in active user local storage
+    const userBooks = getUserLocalBooks(userId);
+    const uBook = userBooks.find(b => b.id === bookId);
+    if (uBook) {
+        uBook.name = newName;
+        saveUserLocalBooks(userId, userBooks);
     }
 
-    if (isGuestMode() || !isFirebaseInitialized()) return;
+    // 2. Update in default guest user local storage
+    const guestBooks = getUserLocalBooks("guest_user");
+    const gBook = guestBooks.find(b => b.id === bookId);
+    if (gBook) {
+        gBook.name = newName;
+        saveUserLocalBooks("guest_user", guestBooks);
+    }
 
-    try {
-        const db = getFirebaseDb();
-        if (!db) return;
-        const bookDocRef = doc(db, "books", bookId);
-        await updateDoc(bookDocRef, {
-            name: newName
-        });
-    } catch (e) {
-        console.warn("Firestore renameBook error:", e);
+    // 3. Update in Firestore with setDoc merge
+    if (!isGuestMode() && isFirebaseInitialized()) {
+        try {
+            const db = getFirebaseDb();
+            if (db) {
+                const bookDocRef = doc(db, "books", bookId);
+                await setDoc(bookDocRef, { 
+                    name: newName,
+                    userId: userId,
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
+            }
+        } catch (e) {
+            console.warn("Firestore renameBook notice:", e);
+        }
     }
 }
