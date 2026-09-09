@@ -115,3 +115,18 @@ export function getTodayFormattedDate() {
     const yyyy = today.getFullYear();
     return `${dd}/${mm}/${yyyy}`;
 }
+
+/**
+ * Sanitizes input strings to prevent XSS attacks and payload flooding.
+ * @param {string} str Input string
+ * @param {number} maxLength Maximum length allowed
+ * @returns {string} Sanitized string
+ */
+export function sanitizeInput(str, maxLength = 5000) {
+    if (typeof str !== 'string') return '';
+    return str
+        .slice(0, maxLength)
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+        .replace(/on\w+="[^"]*"/g, '')
+        .replace(/javascript:/gi, '');
+}

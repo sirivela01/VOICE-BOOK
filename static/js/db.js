@@ -12,9 +12,10 @@ import {
     serverTimestamp,
     updateDoc
 } from "firebase/firestore";
-import { getFirebaseDb } from "./firebase-init.js?v=44.0";
-import { getCurrentUser, isGuestMode } from "./auth.js?v=44.0";
-import { isFirebaseInitialized } from "./firebase-init.js?v=44.0";
+import { getFirebaseDb } from "./firebase-init.js?v=46.0";
+import { getCurrentUser, isGuestMode } from "./auth.js?v=46.0";
+import { isFirebaseInitialized } from "./firebase-init.js?v=46.0";
+import { sanitizeInput } from "./utils.js?v=46.0";
 
 // Helper for user local storage
 function getUserLocalBooks(userId = "guest_user") {
@@ -68,7 +69,8 @@ function saveLocalGuestBooks(books) {
 /**
  * Creates a new notebook document in Firestore or LocalStorage.
  */
-export async function createBook(name, slotIndex = 0) {
+export async function createBook(rawName, slotIndex = 0) {
+    const name = sanitizeInput(rawName, 100) || "Untitled Notebook";
     const user = getCurrentUser();
     const userId = user ? user.uid : "guest_user";
     const db = getFirebaseDb();
@@ -319,7 +321,8 @@ export async function updateCurrentPage(bookId, pageNumber) {
 /**
  * Renames an existing notebook document in Local Storage and Firestore.
  */
-export async function renameBook(bookId, newName) {
+export async function renameBook(bookId, rawNewName) {
+    const newName = sanitizeInput(rawNewName, 100) || "Untitled Notebook";
     const user = getCurrentUser();
     const userId = user ? user.uid : "guest_user";
     

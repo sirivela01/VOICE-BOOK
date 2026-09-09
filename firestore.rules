@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // User Notebooks Collection
+    match /books/{bookId} {
+      // Only authenticated users can create notebooks with their own userId
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      
+      // Users can only read, update, or delete their own notebooks
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      
+      // Page Sub-collection under a notebook
+      match /pages/{pageId} {
+        allow read, write, delete: if request.auth != null && 
+          get(/databases/$(database)/documents/books/$(bookId)).data.userId == request.auth.uid;
+      }
+    }
+  }
+}
