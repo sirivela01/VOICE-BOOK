@@ -648,11 +648,11 @@ function setupSpeechRecognition() {
     if (btnOpenWhisperKey && modalWhisperConfig) {
         btnOpenWhisperKey.addEventListener("click", () => {
             if (inputOpenAiKey) inputOpenAiKey.value = getStoredOpenAIKey();
-            modalWhisperConfig.classList.add("active");
+            modalWhisperConfig.classList.add("active", "active-modal");
         });
     }
     const closeWhisperModal = () => {
-        if (modalWhisperConfig) modalWhisperConfig.classList.remove("active");
+        if (modalWhisperConfig) modalWhisperConfig.classList.remove("active", "active-modal");
     };
     if (btnCloseWhisperConfig) btnCloseWhisperConfig.addEventListener("click", closeWhisperModal);
     if (btnCancelWhisperConfig) btnCancelWhisperConfig.addEventListener("click", closeWhisperModal);

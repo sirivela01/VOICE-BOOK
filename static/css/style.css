@@ -1500,8 +1500,9 @@ canvas.notebook-canvas {
     justify-content: center;
 }
 
-.modal-overlay.active-modal {
-    display: flex;
+.modal-overlay.active, .modal-overlay.active-modal {
+    display: flex !important;
+    z-index: 99999 !important;
     animation: fadeInModal 0.25s ease-out forwards;
 }
 
