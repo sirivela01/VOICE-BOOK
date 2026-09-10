@@ -639,8 +639,7 @@ function setupSpeechRecognition() {
     }
 
     // Direct Speech Engine Switcher
-    window.setSpeechEngineModeDirect = function(mode, e) {
-        if (e) { try { e.preventDefault(); e.stopPropagation(); } catch(err) {} }
+    window.setSpeechEngineModeDirect = function(mode) {
         const btnEngineWebspeech = document.getElementById("btn-engine-webspeech");
         const btnEngineWhisper = document.getElementById("btn-engine-whisper");
         const btnToggleMic = document.getElementById("btn-toggle-mic");
@@ -671,8 +670,7 @@ function setupSpeechRecognition() {
     };
 
     // Bulletproof Modal API Key Config Listeners
-    window.openWhisperModalDirect = function(e) {
-        if (e) { try { e.preventDefault(); e.stopPropagation(); } catch(err) {} }
+    window.openWhisperModalDirect = function() {
         const modal = document.getElementById("modal-whisper-config");
         const inputKey = document.getElementById("input-openai-key");
         if (inputKey) inputKey.value = getStoredOpenAIKey();
@@ -685,8 +683,7 @@ function setupSpeechRecognition() {
         }
     };
 
-    window.closeWhisperModalDirect = function(e) {
-        if (e) { try { e.preventDefault(); e.stopPropagation(); } catch(err) {} }
+    window.closeWhisperModalDirect = function() {
         const modal = document.getElementById("modal-whisper-config");
         if (modal) {
             modal.style.display = "none";
@@ -697,28 +694,27 @@ function setupSpeechRecognition() {
     document.addEventListener("click", (e) => {
         const keyBtn = e.target.closest("#btn-open-whisper-key");
         if (keyBtn) {
-            window.openWhisperModalDirect(e);
+            window.openWhisperModalDirect();
             return;
         }
         const closeBtn = e.target.closest("#btn-close-whisper-config") || e.target.closest("#btn-cancel-whisper-config");
         if (closeBtn) {
-            window.closeWhisperModalDirect(e);
+            window.closeWhisperModalDirect();
             return;
         }
     });
 
     if (btnSaveWhisperConfig) {
-        btnSaveWhisperConfig.addEventListener("click", (e) => {
+        btnSaveWhisperConfig.addEventListener("click", () => {
             const val = inputOpenAiKey ? inputOpenAiKey.value : "";
             saveStoredOpenAIKey(val);
-            window.closeWhisperModalDirect(e);
+            window.closeWhisperModalDirect();
             showToast("API Key saved successfully!", "success");
         });
     }
 
     // Direct Microphone Toggle Handler
-    window.toggleDictationDirect = function(e) {
-        if (e) { try { e.preventDefault(); e.stopPropagation(); } catch(err) {} }
+    window.toggleDictationDirect = function() {
         const btnToggleMic = document.getElementById("btn-toggle-mic");
         const micStatusIndicator = document.getElementById("mic-status-indicator");
         const speechStatusText = document.getElementById("speech-status-text");
