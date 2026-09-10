@@ -98,15 +98,15 @@ def transcribe_whisper():
         # Magic byte header inspection to guarantee binary payload and extension match
         header = file_content[:64]
         
-        if header.startswith(b'\x1a\x45\xdf\xa3'):
+        if header.startswith(b'RIFF'):
+            clean_filename = 'speech.wav'
+            content_type = 'audio/wav'
+        elif header.startswith(b'\x1a\x45\xdf\xa3'):
             clean_filename = 'recording.webm'
             content_type = 'audio/webm'
         elif header.startswith(b'OggS'):
             clean_filename = 'recording.ogg'
             content_type = 'audio/ogg'
-        elif header.startswith(b'RIFF'):
-            clean_filename = 'recording.wav'
-            content_type = 'audio/wav'
         elif header.startswith(b'fLaC'):
             clean_filename = 'recording.flac'
             content_type = 'audio/flac'
@@ -121,21 +121,21 @@ def transcribe_whisper():
             if ';' in raw_mime:
                 raw_mime = raw_mime.split(';')[0].strip()
             
-            if 'mp4' in raw_mime or 'm4a' in raw_mime or 'aac' in raw_mime or raw_filename.endswith('.m4a') or raw_filename.endswith('.mp4'):
+            if 'wav' in raw_mime or raw_filename.endswith('.wav'):
+                clean_filename = 'speech.wav'
+                content_type = 'audio/wav'
+            elif 'mp4' in raw_mime or 'm4a' in raw_mime or 'aac' in raw_mime or raw_filename.endswith('.m4a') or raw_filename.endswith('.mp4'):
                 clean_filename = 'recording.m4a'
                 content_type = 'audio/mp4'
             elif 'ogg' in raw_mime or raw_filename.endswith('.ogg'):
                 clean_filename = 'recording.ogg'
                 content_type = 'audio/ogg'
-            elif 'wav' in raw_mime or raw_filename.endswith('.wav'):
-                clean_filename = 'recording.wav'
-                content_type = 'audio/wav'
             elif 'mp3' in raw_mime or raw_filename.endswith('.mp3'):
                 clean_filename = 'recording.mp3'
                 content_type = 'audio/mp3'
             else:
-                clean_filename = 'recording.webm'
-                content_type = 'audio/webm'
+                clean_filename = 'speech.wav'
+                content_type = 'audio/wav'
 
         files = {'file': (clean_filename, file_content, content_type)}
 
