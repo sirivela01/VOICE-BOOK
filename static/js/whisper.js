@@ -1,0 +1,103 @@
+// OpenAI Whisper AI MediaRecorder Audio Transcription Engine
+
+let mediaRecorder = null;
+let audioChunks = [];
+let isWhisperRecording = false;
+
+export function getStoredOpenAIKey() {
+    return localStorage.getItem("voice_book_openai_key") || "";
+}
+
+export function saveStoredOpenAIKey(key) {
+    if (key) {
+        localStorage.setItem("voice_book_openai_key", key.trim());
+    } else {
+        localStorage.removeItem("voice_book_openai_key");
+    }
+}
+
+export async function startWhisperRecording(onStatusChange) {
+    if (isWhisperRecording) return;
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunks = [];
+        const mimeType = getSupportedMimeType();
+        mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data && event.data.size > 0) {
+                audioChunks.push(event.data);
+            }
+        };
+
+        mediaRecorder.onstart = () => {
+            isWhisperRecording = true;
+            onStatusChange(true, "?? Whisper Recording... (Speak now)");
+        };
+
+        mediaRecorder.start(500);
+    } catch (err) {
+        console.error("Whisper recording error:", err);
+        onStatusChange(false, "Microphone permission denied or error.");
+    }
+}
+
+export function stopWhisperRecording(onStatusChange, onTranscribed, language = 'en') {
+    if (!mediaRecorder || !isWhisperRecording) return;
+
+    onStatusChange(true, "?? Transcribing with OpenAI Whisper AI...");
+    isWhisperRecording = false;
+
+    mediaRecorder.onstop = async () => {
+        const mimeType = getSupportedMimeType() || 'audio/webm';
+        const audioBlob = new Blob(audioChunks, { type: mimeType });
+        if (mediaRecorder.stream) {
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        }
+
+        const formData = new FormData();
+        formData.append("audio", audioBlob, "recording.webm");
+        formData.append("language", language);
+
+        const apiKey = getStoredOpenAIKey();
+        const headers = {};
+        if (apiKey) {
+            headers["X-OpenAI-Key"] = apiKey;
+        }
+
+        try {
+            const res = await fetch("/api/transcribe-whisper", {
+                method: "POST",
+                headers: headers,
+                body: formData
+            });
+
+            const data = await res.json();
+            if (res.ok && data.text) {
+                onTranscribed(data.text.trim());
+                onStatusChange(false, "Microphone Idle");
+            } else {
+                onStatusChange(false, data.error || "Whisper transcription failed.");
+                alert(data.error || "Whisper transcription failed. Please check your OpenAI API key.");
+            }
+        } catch (e) {
+            console.error("Whisper API error:", e);
+            onStatusChange(false, "Connection error during Whisper transcription.");
+        }
+    };
+
+    mediaRecorder.stop();
+}
+
+function getSupportedMimeType() {
+    if (typeof MediaRecorder === 'undefined') return '';
+    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) return 'audio/webm;codecs=opus';
+    if (MediaRecorder.isTypeSupported('audio/webm')) return 'audio/webm';
+    if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) return 'audio/ogg;codecs=opus';
+    if (MediaRecorder.isTypeSupported('audio/mp4')) return 'audio/mp4';
+    return '';
+}
+
+export function isWhisperActive() {
+    return isWhisperRecording;
+}

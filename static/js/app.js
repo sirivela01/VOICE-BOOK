@@ -1,7 +1,8 @@
 import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=54.0";
 import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=54.0";
 import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook, getBookFilledPages } from "./db.js?v=54.0";
-import { startListening, stopListening, isMicActive, isSpeechSupported, setSpeechLanguage } from "./speech.js?v=64.0";
+import { startListening, stopListening, isMicActive, isSpeechSupported, setSpeechLanguage } from "./speech.js?v=65.0";
+import { startWhisperRecording, stopWhisperRecording, isWhisperActive, getStoredOpenAIKey, saveStoredOpenAIKey } from "./whisper.js?v=65.0";
 import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection, eraseStrokesNearPoint } from "./renderer.js?v=54.0";
 import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet, getTodayFormattedDate } from "./utils.js?v=54.0";
 
@@ -595,11 +596,22 @@ async function loadActivePage() {
     }
 }
 
+let currentSpeechEngineMode = 'webspeech'; // 'webspeech' or 'whisper'
+
 /**
- * Integrates Web Speech API and Canvas rendering queue.
+ * Integrates Web Speech API and OpenAI Whisper AI transcription engine queue.
  */
 function setupSpeechRecognition() {
     const selectSpeechLang = document.getElementById("select-speech-lang");
+    const btnEngineWebspeech = document.getElementById("btn-engine-webspeech");
+    const btnEngineWhisper = document.getElementById("btn-engine-whisper");
+    const btnOpenWhisperKey = document.getElementById("btn-open-whisper-key");
+    const modalWhisperConfig = document.getElementById("modal-whisper-config");
+    const btnCloseWhisperConfig = document.getElementById("btn-close-whisper-config");
+    const btnCancelWhisperConfig = document.getElementById("btn-cancel-whisper-config");
+    const btnSaveWhisperConfig = document.getElementById("btn-save-whisper-config");
+    const inputOpenAiKey = document.getElementById("input-openai-key");
+
     if (selectSpeechLang) {
         setSpeechLanguage(selectSpeechLang.value);
         selectSpeechLang.addEventListener("change", (e) => {
@@ -609,44 +621,110 @@ function setupSpeechRecognition() {
         });
     }
 
+    if (btnEngineWebspeech && btnEngineWhisper) {
+        btnEngineWebspeech.addEventListener("click", () => {
+            if (isWhisperActive()) stopWhisperRecording(() => {}, () => {});
+            currentSpeechEngineMode = 'webspeech';
+            btnEngineWebspeech.classList.add("active");
+            btnEngineWhisper.classList.remove("active");
+            btnToggleMic.querySelector("span").innerText = "Start Dictation";
+            speechStatusText.innerText = "Browser Live Dictation Idle";
+            showToast("Switched to Browser Live Speech Engine", "info");
+        });
+
+        btnEngineWhisper.addEventListener("click", () => {
+            if (isMicActive()) stopListening();
+            currentSpeechEngineMode = 'whisper';
+            btnEngineWhisper.classList.add("active");
+            btnEngineWebspeech.classList.remove("active");
+            btnToggleMic.querySelector("span").innerText = "Start Whisper AI Recording";
+            speechStatusText.innerText = "OpenAI Whisper AI Idle";
+            showToast("Switched to OpenAI Whisper AI (99%+ Accuracy)", "info");
+        });
+    }
+
+    // Modal API Key Config Listeners
+    if (btnOpenWhisperKey && modalWhisperConfig) {
+        btnOpenWhisperKey.addEventListener("click", () => {
+            if (inputOpenAiKey) inputOpenAiKey.value = getStoredOpenAIKey();
+            modalWhisperConfig.classList.add("active");
+        });
+    }
+    const closeWhisperModal = () => {
+        if (modalWhisperConfig) modalWhisperConfig.classList.remove("active");
+    };
+    if (btnCloseWhisperConfig) btnCloseWhisperConfig.addEventListener("click", closeWhisperModal);
+    if (btnCancelWhisperConfig) btnCancelWhisperConfig.addEventListener("click", closeWhisperModal);
+    if (btnSaveWhisperConfig) {
+        btnSaveWhisperConfig.addEventListener("click", () => {
+            const val = inputOpenAiKey ? inputOpenAiKey.value : "";
+            saveStoredOpenAIKey(val);
+            closeWhisperModal();
+            showToast("OpenAI API Key saved successfully!", "success");
+        });
+    }
+
     btnToggleMic.addEventListener("click", () => {
-        if (isMicActive()) {
-            stopListening();
-        } else {
-            // Words final handler
-            const onWordsAdded = (newWords) => {
-                // Append text inside the canvas renderer
-                appendText(newWords, handlePageOverflow);
-                // Keep direct canvas editor in sync
-                if (directCanvasEditor) directCanvasEditor.value = getPlainText();
-                // Trigger auto-save
-                triggerAutosave();
-            };
-            
-            // Interim live results handler
-            const onInterimResult = (interimText) => {
-                if (interimText) {
-                    liveTranscriptBox.innerHTML = `<span class="interim">${interimText}...</span>`;
-                } else {
-                    liveTranscriptBox.innerHTML = `<span class="placeholder-text">Listening...</span>`;
-                }
-            };
-            
-            // Listening state toggler
-            const onStatusChange = (active, message) => {
+        if (currentSpeechEngineMode === 'whisper') {
+            const statusCallback = (active, message) => {
                 speechStatusText.innerText = message;
                 if (active) {
                     btnToggleMic.classList.add("active");
-                    btnToggleMic.querySelector("span").innerText = "Stop Dictation";
+                    btnToggleMic.querySelector("span").innerText = "Stop & Transcribe with Whisper";
                     micStatusIndicator.className = "mic-indicator listening";
+                    liveTranscriptBox.innerHTML = `<span class="interim">🤖 Audio Recording in Progress... Speak into mic.</span>`;
                 } else {
                     btnToggleMic.classList.remove("active");
-                    btnToggleMic.querySelector("span").innerText = "Start Dictation";
+                    btnToggleMic.querySelector("span").innerText = "Start Whisper AI Recording";
                     micStatusIndicator.className = "mic-indicator";
                 }
             };
-            
-            startListening(onWordsAdded, onInterimResult, onStatusChange);
+
+            if (isWhisperActive()) {
+                const lang = selectSpeechLang ? selectSpeechLang.value : 'en';
+                stopWhisperRecording(statusCallback, (transcribedText) => {
+                    if (transcribedText) {
+                        appendText(transcribedText, handlePageOverflow);
+                        if (directCanvasEditor) directCanvasEditor.value = getPlainText();
+                        triggerAutosave();
+                        liveTranscriptBox.innerHTML = `<span class="interim" style="color:#059669;">✓ Transcribed with Whisper: "${transcribedText}"</span>`;
+                        showToast("Whisper AI transcribed audio with high precision!", "success");
+                    }
+                }, lang);
+            } else {
+                startWhisperRecording(statusCallback);
+            }
+        } else {
+            // Web Speech Mode
+            if (isMicActive()) {
+                stopListening();
+            } else {
+                const onWordsAdded = (newWords) => {
+                    appendText(newWords, handlePageOverflow);
+                    if (directCanvasEditor) directCanvasEditor.value = getPlainText();
+                    triggerAutosave();
+                };
+                const onInterimResult = (interimText) => {
+                    if (interimText) {
+                        liveTranscriptBox.innerHTML = `<span class="interim">${interimText}...</span>`;
+                    } else {
+                        liveTranscriptBox.innerHTML = `<span class="placeholder-text">Listening...</span>`;
+                    }
+                };
+                const onStatusChange = (active, message) => {
+                    speechStatusText.innerText = message;
+                    if (active) {
+                        btnToggleMic.classList.add("active");
+                        btnToggleMic.querySelector("span").innerText = "Stop Dictation";
+                        micStatusIndicator.className = "mic-indicator listening";
+                    } else {
+                        btnToggleMic.classList.remove("active");
+                        btnToggleMic.querySelector("span").innerText = "Start Dictation";
+                        micStatusIndicator.className = "mic-indicator";
+                    }
+                };
+                startListening(onWordsAdded, onInterimResult, onStatusChange);
+            }
         }
     });
 }

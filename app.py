@@ -41,6 +41,9 @@ def google_verification():
 def index():
     return render_template('index.html')
 
+import requests
+from flask import request
+
 @app.route('/api/config', methods=['GET'])
 def get_config():
     # Return Firebase config variables from env, or blank if not defined
@@ -53,6 +56,59 @@ def get_config():
         "appId": os.environ.get("FIREBASE_APP_ID", "")
     }
     return jsonify(config)
+
+@app.route('/api/transcribe-whisper', methods=['POST'])
+def transcribe_whisper():
+    if 'audio' not in request.files:
+        return jsonify({"error": "No audio file provided in request"}), 400
+    
+    audio_file = request.files['audio']
+    openai_api_key = request.headers.get('X-OpenAI-Key') or os.environ.get("OPENAI_API_KEY", "")
+    groq_api_key = request.headers.get('X-Groq-Key') or os.environ.get("GROQ_API_KEY", "")
+    language = request.form.get('language', 'en')
+    
+    if not openai_api_key and not groq_api_key:
+        return jsonify({
+            "error": "No OpenAI API key configured. Please enter your OpenAI API key in the settings modal 🔧."
+        }), 400
+    
+    try:
+        filename = audio_file.filename or 'audio_recording.webm'
+        file_content = audio_file.read()
+        
+        # 1. Use OpenAI Whisper API if key is present
+        if openai_api_key:
+            headers = {"Authorization": f"Bearer {openai_api_key}"}
+            files = {
+                'file': (filename, file_content, audio_file.content_type or 'audio/webm'),
+                'model': (None, 'whisper-1'),
+                'language': (None, language.split('-')[0])
+            }
+            res = requests.post("https://api.openai.com/v1/audio/transcriptions", headers=headers, files=files, timeout=35)
+            if res.status_code == 200:
+                data = res.json()
+                return jsonify({"text": data.get("text", "")})
+            else:
+                return jsonify({"error": f"OpenAI Whisper API Error: {res.text}"}), res.status_code
+        
+        # 2. Fallback to Groq Whisper API
+        elif groq_api_key:
+            headers = {"Authorization": f"Bearer {groq_api_key}"}
+            files = {
+                'file': (filename, file_content, audio_file.content_type or 'audio/webm'),
+                'model': (None, 'whisper-large-v3-turbo'),
+                'language': (None, language.split('-')[0])
+            }
+            res = requests.post("https://api.groq.com/openai/v1/audio/transcriptions", headers=headers, files=files, timeout=35)
+            if res.status_code == 200:
+                data = res.json()
+                return jsonify({"text": data.get("text", "")})
+            else:
+                return jsonify({"error": f"Groq Whisper API Error: {res.text}"}), res.status_code
+
+    except Exception as e:
+        print("Whisper Transcription Exception:", e)
+        return jsonify({"error": f"Transcription Failed: {str(e)}"}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
