@@ -63,6 +63,9 @@ def transcribe_whisper():
         return jsonify({"error": "No audio file provided in request"}), 400
     
     audio_file = request.files['audio']
+    language = request.form.get('language', 'en')
+    lang_code = language.split('-')[0] if (language and '-' in language) else (language or 'en')
+    
     client_key = request.headers.get('X-OpenAI-Key') or request.headers.get('X-Groq-Key') or ""
     openai_api_key = os.environ.get("OPENAI_API_KEY", "")
     groq_api_key = os.environ.get("GROQ_API_KEY", "")
@@ -92,7 +95,7 @@ def transcribe_whisper():
             files = {
                 'file': (filename, file_content, audio_file.content_type or 'audio/webm'),
                 'model': (None, 'whisper-1'),
-                'language': (None, language.split('-')[0])
+                'language': (None, lang_code)
             }
             res = requests.post("https://api.openai.com/v1/audio/transcriptions", headers=headers, files=files, timeout=35)
             if res.status_code == 200:
@@ -107,7 +110,7 @@ def transcribe_whisper():
             files = {
                 'file': (filename, file_content, audio_file.content_type or 'audio/webm'),
                 'model': (None, 'whisper-large-v3-turbo'),
-                'language': (None, language.split('-')[0])
+                'language': (None, lang_code)
             }
             res = requests.post("https://api.groq.com/openai/v1/audio/transcriptions", headers=headers, files=files, timeout=35)
             if res.status_code == 200:
