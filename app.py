@@ -26,6 +26,10 @@ def add_header(response):
 def favicon():
     return '', 204
 
+@app.route('/google2a35372545172c1b.html')
+def google_verification():
+    return 'google-site-verification: google2a35372545172c1b.html'
+
 @app.route('/')
 def index():
     return render_template('index.html')
