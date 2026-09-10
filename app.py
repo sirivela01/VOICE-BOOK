@@ -28,7 +28,7 @@ def favicon():
 
 @app.route('/google2a35372545172c1b.html')
 def google_verification():
-    return send_from_directory('static', 'google2a35372545172c1b.html')
+    return 'google-site-verification: google2a35372545172c1b.html', 200, {'Content-Type': 'text/html'}
 
 @app.route('/')
 def index():
