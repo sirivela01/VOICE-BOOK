@@ -44,7 +44,7 @@ function stripColorTags(text) {
 /**
  * Main initialization entrypoint
  */
-document.addEventListener("DOMContentLoaded", async () => {
+async function initAppMain() {
     // Start 9-Second Title Splash Screen Timer
     initSplashScreen();
 
@@ -82,7 +82,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         console.warn("Firebase init notice:", e);
         setupAuthListener();
     }
-});
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initAppMain);
+} else {
+    initAppMain();
+}
 
 function cacheElements() {
     viewAuth = document.getElementById("view-auth");

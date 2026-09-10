@@ -58,7 +58,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Caveat:wght@400;700&family=Homemade+Apple&family=Reenie+Beanie&family=Architects+Daughter&family=Indie+Flower&family=Dancing+Script:wght@400;700&family=Shadows+Into+Light&family=Kalam:wght@300;400;700&family=Sacramento&display=swap" rel="stylesheet">
     <!-- Main Style -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='70.0') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='71.0') }}">
 </head>
 <body>
     <!-- ================= 9-SECOND PROFESSIONAL TITLE SPLASH SCREEN ================= -->
@@ -567,10 +567,58 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline" id="btn-cancel-whisper-config" onclick="window.closeWhisperModalDirect && window.closeWhisperModalDirect(event)">Cancel</button>
-                <button type="button" id="btn-save-whisper-config" class="btn btn-primary" style="background: linear-gradient(135deg, #ea580c 0%, #f97316 100%); border: none;">Save Key</button>
+                <button type="button" id="btn-save-whisper-config" class="btn btn-primary" style="background: linear-gradient(135deg, #ea580c 0%, #f97316 100%); border: none;" onclick="window.saveWhisperKeyDirect && window.saveWhisperKeyDirect(event)">Save Key</button>
             </div>
         </div>
     </div>
+
+    <!-- Inline Synchronous Bulletproof Modal Handlers (Executes instantly at DOM parse) -->
+    <script>
+        window.openWhisperModalDirect = function(e) {
+            if (e) { try { e.preventDefault(); e.stopPropagation(); } catch(err) {} }
+            var modal = document.getElementById("modal-whisper-config");
+            var inputKey = document.getElementById("input-openai-key");
+            if (inputKey && window.localStorage) {
+                inputKey.value = localStorage.getItem("voice_book_openai_key") || "";
+            }
+            if (modal) {
+                modal.style.display = "flex";
+                modal.style.opacity = "1";
+                modal.style.visibility = "visible";
+                modal.style.zIndex = "999999";
+                modal.classList.add("active", "active-modal");
+            }
+        };
+
+        window.closeWhisperModalDirect = function(e) {
+            if (e) { try { e.preventDefault(); e.stopPropagation(); } catch(err) {} }
+            var modal = document.getElementById("modal-whisper-config");
+            if (modal) {
+                modal.style.display = "none";
+                modal.classList.remove("active", "active-modal");
+            }
+        };
+
+        window.saveWhisperKeyDirect = function(e) {
+            if (e) { try { e.preventDefault(); e.stopPropagation(); } catch(err) {} }
+            var inputKey = document.getElementById("input-openai-key");
+            if (inputKey && window.localStorage) {
+                var val = inputKey.value ? inputKey.value.trim() : "";
+                if (val) {
+                    localStorage.setItem("voice_book_openai_key", val);
+                } else {
+                    localStorage.removeItem("voice_book_openai_key");
+                }
+            }
+            window.closeWhisperModalDirect(e);
+            var toast = document.getElementById("toast");
+            if (toast) {
+                toast.innerText = "API Key saved successfully!";
+                toast.className = "toast-notification success active";
+                setTimeout(function() { toast.classList.remove("active"); }, 3000);
+            }
+        };
+    </script>
 
     <!-- jsPDF Engine CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -587,6 +635,6 @@
     </script>
 
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='70.0') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='71.0') }}"></script>
 </body>
 </html>
