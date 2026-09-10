@@ -45,18 +45,36 @@ export async function startWhisperRecording(onStatusChange) {
 export function stopWhisperRecording(onStatusChange, onTranscribed, language = 'en') {
     if (!mediaRecorder || !isWhisperRecording) return;
 
-    onStatusChange(true, "?? Transcribing with OpenAI Whisper AI...");
+    onStatusChange(true, "🤖 Transcribing with Whisper AI...");
     isWhisperRecording = false;
 
     mediaRecorder.onstop = async () => {
-        const mimeType = getSupportedMimeType() || 'audio/webm';
-        const audioBlob = new Blob(audioChunks, { type: mimeType });
+        const rawMime = getSupportedMimeType() || 'audio/webm';
+        let ext = 'webm';
+        if (rawMime.includes('mp4') || rawMime.includes('m4a') || rawMime.includes('aac')) {
+            ext = 'm4a';
+        } else if (rawMime.includes('ogg')) {
+            ext = 'ogg';
+        } else if (rawMime.includes('wav')) {
+            ext = 'wav';
+        }
+
+        const cleanMime = rawMime.split(';')[0].trim();
+        const audioBlob = new Blob(audioChunks, { type: cleanMime });
+        
         if (mediaRecorder.stream) {
             mediaRecorder.stream.getTracks().forEach(track => track.stop());
         }
 
+        if (!audioBlob || audioBlob.size < 100) {
+            onStatusChange(false, "Recording too short. Speak longer before stopping.");
+            alert("Recording was too short. Please speak into your microphone for at least 1-2 seconds before stopping.");
+            return;
+        }
+
+        const filename = `recording.${ext}`;
         const formData = new FormData();
-        formData.append("audio", audioBlob, "recording.webm");
+        formData.append("audio", audioBlob, filename);
         formData.append("language", language);
 
         const apiKey = getStoredOpenAIKey();
@@ -78,7 +96,7 @@ export function stopWhisperRecording(onStatusChange, onTranscribed, language = '
                 onStatusChange(false, "Microphone Idle");
             } else {
                 onStatusChange(false, data.error || "Whisper transcription failed.");
-                alert(data.error || "Whisper transcription failed. Please check your OpenAI API key.");
+                alert(data.error || "Whisper transcription failed. Please check your API key.");
             }
         } catch (e) {
             console.error("Whisper API error:", e);

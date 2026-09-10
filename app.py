@@ -86,14 +86,34 @@ def transcribe_whisper():
         }), 400
     
     try:
-        filename = audio_file.filename or 'audio_recording.webm'
+        raw_filename = audio_file.filename or 'audio_recording.webm'
         file_content = audio_file.read()
         
+        if not file_content or len(file_content) < 100:
+            return jsonify({"error": "Audio recording was empty or too short. Please speak into your microphone for at least 1-2 seconds."}), 400
+
+        content_type = audio_file.content_type or 'audio/webm'
+        if ';' in content_type:
+            content_type = content_type.split(';')[0].strip()
+
+        if 'mp4' in content_type or 'm4a' in content_type or 'aac' in content_type or raw_filename.endswith('.m4a') or raw_filename.endswith('.mp4'):
+            clean_filename = 'recording.m4a'
+            content_type = 'audio/mp4'
+        elif 'ogg' in content_type or raw_filename.endswith('.ogg'):
+            clean_filename = 'recording.ogg'
+            content_type = 'audio/ogg'
+        elif 'wav' in content_type or raw_filename.endswith('.wav'):
+            clean_filename = 'recording.wav'
+            content_type = 'audio/wav'
+        else:
+            clean_filename = 'recording.webm'
+            content_type = 'audio/webm'
+
         # 1. Use OpenAI Whisper API if key is present
         if openai_api_key:
             headers = {"Authorization": f"Bearer {openai_api_key}"}
             files = {
-                'file': (filename, file_content, audio_file.content_type or 'audio/webm'),
+                'file': (clean_filename, file_content, content_type),
                 'model': (None, 'whisper-1'),
                 'language': (None, lang_code)
             }
@@ -108,7 +128,7 @@ def transcribe_whisper():
         elif groq_api_key:
             headers = {"Authorization": f"Bearer {groq_api_key}"}
             files = {
-                'file': (filename, file_content, audio_file.content_type or 'audio/webm'),
+                'file': (clean_filename, file_content, content_type),
                 'model': (None, 'whisper-large-v3-turbo'),
                 'language': (None, lang_code)
             }
