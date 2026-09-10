@@ -112,12 +112,11 @@ def transcribe_whisper():
         # 1. Use OpenAI Whisper API if key is present
         if openai_api_key:
             headers = {"Authorization": f"Bearer {openai_api_key}"}
-            files = {
-                'file': (clean_filename, file_content, content_type),
-                'model': (None, 'whisper-1'),
-                'language': (None, lang_code)
-            }
-            res = requests.post("https://api.openai.com/v1/audio/transcriptions", headers=headers, files=files, timeout=35)
+            payload_data = {'model': 'whisper-1', 'response_format': 'json'}
+            if lang_code:
+                payload_data['language'] = lang_code
+            files = {'file': (clean_filename, file_content, content_type)}
+            res = requests.post("https://api.openai.com/v1/audio/transcriptions", headers=headers, data=payload_data, files=files, timeout=35)
             if res.status_code == 200:
                 data = res.json()
                 return jsonify({"text": data.get("text", "")})
@@ -127,12 +126,11 @@ def transcribe_whisper():
         # 2. Fallback to Groq Whisper API
         elif groq_api_key:
             headers = {"Authorization": f"Bearer {groq_api_key}"}
-            files = {
-                'file': (clean_filename, file_content, content_type),
-                'model': (None, 'whisper-large-v3'),
-                'language': (None, lang_code)
-            }
-            res = requests.post("https://api.groq.com/openai/v1/audio/transcriptions", headers=headers, files=files, timeout=35)
+            payload_data = {'model': 'whisper-large-v3', 'response_format': 'json'}
+            if lang_code:
+                payload_data['language'] = lang_code
+            files = {'file': (clean_filename, file_content, content_type)}
+            res = requests.post("https://api.groq.com/openai/v1/audio/transcriptions", headers=headers, data=payload_data, files=files, timeout=35)
             if res.status_code == 200:
                 data = res.json()
                 return jsonify({"text": data.get("text", "")})

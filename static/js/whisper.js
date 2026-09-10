@@ -112,6 +112,11 @@ export function stopWhisperRecording(onStatusChange, onTranscribed, language = '
         }
     };
 
+    try {
+        if (mediaRecorder && mediaRecorder.state === "recording") {
+            mediaRecorder.requestData();
+        }
+    } catch(e) {}
     mediaRecorder.stop();
 }
 
