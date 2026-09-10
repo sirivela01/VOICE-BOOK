@@ -63,13 +63,23 @@ def transcribe_whisper():
         return jsonify({"error": "No audio file provided in request"}), 400
     
     audio_file = request.files['audio']
-    openai_api_key = request.headers.get('X-OpenAI-Key') or os.environ.get("OPENAI_API_KEY", "")
-    groq_api_key = request.headers.get('X-Groq-Key') or os.environ.get("GROQ_API_KEY", "")
-    language = request.form.get('language', 'en')
+    client_key = request.headers.get('X-OpenAI-Key') or request.headers.get('X-Groq-Key') or ""
+    openai_api_key = os.environ.get("OPENAI_API_KEY", "")
+    groq_api_key = os.environ.get("GROQ_API_KEY", "")
     
+    if client_key:
+        if client_key.startswith("gsk_"):
+            groq_api_key = client_key
+            openai_api_key = ""
+        elif client_key.startswith("sk-"):
+            openai_api_key = client_key
+            groq_api_key = ""
+        else:
+            groq_api_key = client_key
+            
     if not openai_api_key and not groq_api_key:
         return jsonify({
-            "error": "No OpenAI API key configured. Please enter your OpenAI API key in the settings modal 🔧."
+            "error": "No API key configured. Please enter your Groq (gsk_...) or OpenAI (sk-...) API key in settings ⚙️ Key."
         }), 400
     
     try:
