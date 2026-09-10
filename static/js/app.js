@@ -2,7 +2,7 @@ import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./fire
 import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, enableGuestMode } from "./auth.js?v=54.0";
 import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook, getBookFilledPages } from "./db.js?v=54.0";
 import { startListening, stopListening, isMicActive, isSpeechSupported, setSpeechLanguage } from "./speech.js?v=65.0";
-import { startWhisperRecording, stopWhisperRecording, isWhisperActive, getStoredOpenAIKey, saveStoredOpenAIKey } from "./whisper.js?v=110.0";
+import { startWhisperRecording, stopWhisperRecording, isWhisperActive, getStoredOpenAIKey, saveStoredOpenAIKey } from "./whisper.js?v=120.0";
 import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection, eraseStrokesNearPoint } from "./renderer.js?v=54.0";
 import { showToast, hashString, debounce, safeLocalStorageGet, safeLocalStorageSet, getTodayFormattedDate } from "./utils.js?v=54.0";
 

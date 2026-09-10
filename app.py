@@ -134,8 +134,8 @@ def transcribe_whisper():
                 clean_filename = 'recording.mp3'
                 content_type = 'audio/mp3'
             else:
-                clean_filename = 'speech.wav'
-                content_type = 'audio/wav'
+                clean_filename = 'recording.webm'
+                content_type = 'audio/webm'
 
         files = {'file': (clean_filename, file_content, content_type)}
 
