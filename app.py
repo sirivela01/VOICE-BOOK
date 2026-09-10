@@ -30,12 +30,6 @@ def favicon():
 def google_verification():
     return send_from_directory('static', 'google2a35372545172c1b.html')
 
-@app.route('/<filename>')
-def serve_root_files(filename):
-    if filename.startswith('google') and filename.endswith('.html'):
-        return send_from_directory('static', filename)
-    return '', 404
-
 @app.route('/')
 def index():
     return render_template('index.html')
