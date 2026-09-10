@@ -9,6 +9,23 @@ let latestInterimText = "";
 let restartAttempts = 0;
 let restartTimer = null;
 
+let selectedLanguage = 'en-IN';
+
+/**
+ * Sets the speech recognition dialect / language.
+ * @param {string} lang e.g. 'en-IN', 'en-US', 'hi-IN'
+ */
+export function setSpeechLanguage(lang) {
+    if (lang) {
+        selectedLanguage = lang;
+        if (recognition) {
+            try {
+                recognition.lang = lang;
+            } catch(e) {}
+        }
+    }
+}
+
 /**
  * Checks if Speech Recognition is supported by the user's browser.
  * @returns {boolean}
@@ -124,7 +141,7 @@ export function startListening(onWordsAdded, onInterimResult, onStatusChange) {
             
             recognition.continuous = !isMobile;
             recognition.interimResults = true;
-            recognition.lang = navigator.language || 'en-US';
+            recognition.lang = selectedLanguage || 'en-IN';
             recognition.maxAlternatives = 1;
 
             recognition.onstart = () => {

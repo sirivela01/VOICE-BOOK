@@ -320,10 +320,28 @@
 
                     <!-- CARD 3: Recording & Speech Card -->
                     <div class="prof-card voice-panel-card">
-                        <div class="voice-header" style="margin-bottom: 0.75rem;">
+                        <div class="voice-header" style="margin-bottom: 0.55rem;">
                             <div id="mic-status-indicator" class="mic-indicator"></div>
                             <span id="speech-status-text">Microphone Idle</span>
                         </div>
+
+                        <!-- Accent & Language Dialect Selector -->
+                        <div class="prof-form-group" style="margin-bottom: 0.65rem;">
+                            <div class="prof-select-wrapper">
+                                <select id="select-speech-lang" class="prof-select-input" style="padding-left: 0.7rem; font-size: 0.8rem;" title="Select Speech Accent / Language">
+                                    <option value="en-IN" selected>🇮🇳 English (India) - High Accent Accuracy</option>
+                                    <option value="en-US">🇺🇸 English (United States)</option>
+                                    <option value="en-GB">🇬🇧 English (United Kingdom)</option>
+                                    <option value="hi-IN">🇮🇳 Hindi (हिन्दी)</option>
+                                    <option value="te-IN">🇮🇳 Telugu (తెలుగు)</option>
+                                    <option value="ta-IN">🇮🇳 Tamil (தமிழ்)</option>
+                                    <option value="kn-IN">🇮🇳 Kannada (కన్నడ)</option>
+                                    <option value="ml-IN">🇮🇳 Malayalam (മലയാളം)</option>
+                                    <option value="bn-IN">🇮🇳 Bengali (বাংলা)</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <button id="btn-toggle-mic" class="prof-btn-pill-orange mic-pulse-btn">
                             <svg class="icon mic-icon" viewBox="0 0 24 24">
                                 <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
