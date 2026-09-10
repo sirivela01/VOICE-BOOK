@@ -58,7 +58,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Caveat:wght@400;700&family=Homemade+Apple&family=Reenie+Beanie&family=Architects+Daughter&family=Indie+Flower&family=Dancing+Script:wght@400;700&family=Shadows+Into+Light&family=Kalam:wght@300;400;700&family=Sacramento&display=swap" rel="stylesheet">
     <!-- Main Style -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='71.0') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='75.0') }}">
 </head>
 <body>
     <!-- ================= 9-SECOND PROFESSIONAL TITLE SPLASH SCREEN ================= -->
@@ -332,10 +332,10 @@
 
                         <!-- Speech Engine Segmented Switcher -->
                         <div class="prof-segmented-toggle" style="margin-bottom: 0.55rem;">
-                            <button type="button" id="btn-engine-webspeech" class="prof-seg-btn active" style="font-size: 0.74rem; padding: 0.35rem 0.45rem;">
+                            <button type="button" id="btn-engine-webspeech" class="prof-seg-btn active" style="font-size: 0.74rem; padding: 0.35rem 0.45rem;" onclick="window.setSpeechEngineModeDirect && window.setSpeechEngineModeDirect('webspeech', event)">
                                 <span>🎙️</span> Browser Live
                             </button>
-                            <button type="button" id="btn-engine-whisper" class="prof-seg-btn" style="font-size: 0.74rem; padding: 0.35rem 0.45rem;">
+                            <button type="button" id="btn-engine-whisper" class="prof-seg-btn" style="font-size: 0.74rem; padding: 0.35rem 0.45rem;" onclick="window.setSpeechEngineModeDirect && window.setSpeechEngineModeDirect('whisper', event)">
                                 <span>🤖</span> OpenAI Whisper AI
                             </button>
                         </div>
@@ -357,7 +357,7 @@
                             </div>
                         </div>
 
-                        <button id="btn-toggle-mic" class="prof-btn-pill-orange mic-pulse-btn">
+                        <button type="button" id="btn-toggle-mic" class="prof-btn-pill-orange mic-pulse-btn" onclick="window.toggleDictationDirect && window.toggleDictationDirect(event)">
                             <svg class="icon mic-icon" viewBox="0 0 24 24">
                                 <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
                             </svg>
@@ -635,6 +635,6 @@
     </script>
 
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='71.0') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='75.0') }}"></script>
 </body>
 </html>

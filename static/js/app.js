@@ -629,26 +629,46 @@ function setupSpeechRecognition() {
     }
 
     if (btnEngineWebspeech && btnEngineWhisper) {
-        btnEngineWebspeech.addEventListener("click", () => {
-            if (isWhisperActive()) stopWhisperRecording(() => {}, () => {});
-            currentSpeechEngineMode = 'webspeech';
-            btnEngineWebspeech.classList.add("active");
-            btnEngineWhisper.classList.remove("active");
-            btnToggleMic.querySelector("span").innerText = "Start Dictation";
-            speechStatusText.innerText = "Browser Live Dictation Idle";
-            showToast("Switched to Browser Live Speech Engine", "info");
+        btnEngineWebspeech.addEventListener("click", (e) => {
+            window.setSpeechEngineModeDirect('webspeech', e);
         });
 
-        btnEngineWhisper.addEventListener("click", () => {
-            if (isMicActive()) stopListening();
-            currentSpeechEngineMode = 'whisper';
-            btnEngineWhisper.classList.add("active");
-            btnEngineWebspeech.classList.remove("active");
-            btnToggleMic.querySelector("span").innerText = "Start Whisper AI Recording";
-            speechStatusText.innerText = "OpenAI Whisper AI Idle";
-            showToast("Switched to OpenAI Whisper AI (99%+ Accuracy)", "info");
+        btnEngineWhisper.addEventListener("click", (e) => {
+            window.setSpeechEngineModeDirect('whisper', e);
         });
     }
+
+    // Direct Speech Engine Switcher
+    window.setSpeechEngineModeDirect = function(mode, e) {
+        if (e) { try { e.preventDefault(); e.stopPropagation(); } catch(err) {} }
+        const btnEngineWebspeech = document.getElementById("btn-engine-webspeech");
+        const btnEngineWhisper = document.getElementById("btn-engine-whisper");
+        const btnToggleMic = document.getElementById("btn-toggle-mic");
+        const speechStatusText = document.getElementById("speech-status-text");
+
+        currentSpeechEngineMode = mode;
+        if (mode === 'whisper') {
+            if (isMicActive()) stopListening();
+            if (btnEngineWhisper) btnEngineWhisper.classList.add("active");
+            if (btnEngineWebspeech) btnEngineWebspeech.classList.remove("active");
+            if (btnToggleMic) {
+                const span = btnToggleMic.querySelector("span");
+                if (span) span.innerText = "Start Whisper AI Recording";
+            }
+            if (speechStatusText) speechStatusText.innerText = "OpenAI Whisper AI Idle";
+            showToast("Switched to OpenAI Whisper AI (99%+ Accuracy)", "info");
+        } else {
+            if (isWhisperActive()) stopWhisperRecording(() => {}, () => {});
+            if (btnEngineWebspeech) btnEngineWebspeech.classList.add("active");
+            if (btnEngineWhisper) btnEngineWhisper.classList.remove("active");
+            if (btnToggleMic) {
+                const span = btnToggleMic.querySelector("span");
+                if (span) span.innerText = "Start Dictation";
+            }
+            if (speechStatusText) speechStatusText.innerText = "Browser Live Dictation Idle";
+            showToast("Switched to Browser Live Speech Engine", "info");
+        }
+    };
 
     // Bulletproof Modal API Key Config Listeners
     window.openWhisperModalDirect = function(e) {
@@ -696,19 +716,33 @@ function setupSpeechRecognition() {
         });
     }
 
-    btnToggleMic.addEventListener("click", () => {
+    // Direct Microphone Toggle Handler
+    window.toggleDictationDirect = function(e) {
+        if (e) { try { e.preventDefault(); e.stopPropagation(); } catch(err) {} }
+        const btnToggleMic = document.getElementById("btn-toggle-mic");
+        const micStatusIndicator = document.getElementById("mic-status-indicator");
+        const speechStatusText = document.getElementById("speech-status-text");
+        const liveTranscriptBox = document.getElementById("live-transcript-box");
+        const selectSpeechLang = document.getElementById("select-speech-lang");
+
         if (currentSpeechEngineMode === 'whisper') {
             const statusCallback = (active, message) => {
-                speechStatusText.innerText = message;
+                if (speechStatusText) speechStatusText.innerText = message;
                 if (active) {
-                    btnToggleMic.classList.add("active");
-                    btnToggleMic.querySelector("span").innerText = "Stop & Transcribe with Whisper";
-                    micStatusIndicator.className = "mic-indicator listening";
-                    liveTranscriptBox.innerHTML = `<span class="interim">🤖 Audio Recording in Progress... Speak into mic.</span>`;
+                    if (btnToggleMic) {
+                        btnToggleMic.classList.add("active");
+                        const span = btnToggleMic.querySelector("span");
+                        if (span) span.innerText = "Stop & Transcribe with Whisper";
+                    }
+                    if (micStatusIndicator) micStatusIndicator.className = "mic-indicator listening";
+                    if (liveTranscriptBox) liveTranscriptBox.innerHTML = `<span class="interim">🤖 Audio Recording in Progress... Speak into mic.</span>`;
                 } else {
-                    btnToggleMic.classList.remove("active");
-                    btnToggleMic.querySelector("span").innerText = "Start Whisper AI Recording";
-                    micStatusIndicator.className = "mic-indicator";
+                    if (btnToggleMic) {
+                        btnToggleMic.classList.remove("active");
+                        const span = btnToggleMic.querySelector("span");
+                        if (span) span.innerText = "Start Whisper AI Recording";
+                    }
+                    if (micStatusIndicator) micStatusIndicator.className = "mic-indicator";
                 }
             };
 
@@ -717,9 +751,10 @@ function setupSpeechRecognition() {
                 stopWhisperRecording(statusCallback, (transcribedText) => {
                     if (transcribedText) {
                         appendText(transcribedText, handlePageOverflow);
+                        const directCanvasEditor = document.getElementById("direct-canvas-editor");
                         if (directCanvasEditor) directCanvasEditor.value = getPlainText();
                         triggerAutosave();
-                        liveTranscriptBox.innerHTML = `<span class="interim" style="color:#059669;">✓ Transcribed with Whisper: "${transcribedText}"</span>`;
+                        if (liveTranscriptBox) liveTranscriptBox.innerHTML = `<span class="interim" style="color:#059669;">✓ Transcribed with Whisper: "${transcribedText}"</span>`;
                         showToast("Whisper AI transcribed audio with high precision!", "success");
                     }
                 }, lang);
@@ -733,32 +768,48 @@ function setupSpeechRecognition() {
             } else {
                 const onWordsAdded = (newWords) => {
                     appendText(newWords, handlePageOverflow);
+                    const directCanvasEditor = document.getElementById("direct-canvas-editor");
                     if (directCanvasEditor) directCanvasEditor.value = getPlainText();
                     triggerAutosave();
                 };
                 const onInterimResult = (interimText) => {
-                    if (interimText) {
-                        liveTranscriptBox.innerHTML = `<span class="interim">${interimText}...</span>`;
-                    } else {
-                        liveTranscriptBox.innerHTML = `<span class="placeholder-text">Listening...</span>`;
+                    if (liveTranscriptBox) {
+                        if (interimText) {
+                            liveTranscriptBox.innerHTML = `<span class="interim">${interimText}...</span>`;
+                        } else {
+                            liveTranscriptBox.innerHTML = `<span class="placeholder-text">Listening...</span>`;
+                        }
                     }
                 };
                 const onStatusChange = (active, message) => {
-                    speechStatusText.innerText = message;
+                    if (speechStatusText) speechStatusText.innerText = message;
                     if (active) {
-                        btnToggleMic.classList.add("active");
-                        btnToggleMic.querySelector("span").innerText = "Stop Dictation";
-                        micStatusIndicator.className = "mic-indicator listening";
+                        if (btnToggleMic) {
+                            btnToggleMic.classList.add("active");
+                            const span = btnToggleMic.querySelector("span");
+                            if (span) span.innerText = "Stop Dictation";
+                        }
+                        if (micStatusIndicator) micStatusIndicator.className = "mic-indicator listening";
                     } else {
-                        btnToggleMic.classList.remove("active");
-                        btnToggleMic.querySelector("span").innerText = "Start Dictation";
-                        micStatusIndicator.className = "mic-indicator";
+                        if (btnToggleMic) {
+                            btnToggleMic.classList.remove("active");
+                            const span = btnToggleMic.querySelector("span");
+                            if (span) span.innerText = "Start Dictation";
+                        }
+                        if (micStatusIndicator) micStatusIndicator.className = "mic-indicator";
+                        if (liveTranscriptBox) liveTranscriptBox.innerHTML = `<span class="placeholder-text">Live speech transcript preview will appear here...</span>`;
                     }
                 };
                 startListening(onWordsAdded, onInterimResult, onStatusChange);
             }
         }
-    });
+    };
+
+    if (btnToggleMic) {
+        btnToggleMic.addEventListener("click", (e) => {
+            window.toggleDictationDirect(e);
+        });
+    }
 }
 
 /**
