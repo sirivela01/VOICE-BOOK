@@ -129,7 +129,7 @@ def transcribe_whisper():
             headers = {"Authorization": f"Bearer {groq_api_key}"}
             files = {
                 'file': (clean_filename, file_content, content_type),
-                'model': (None, 'whisper-large-v3-turbo'),
+                'model': (None, 'whisper-large-v3'),
                 'language': (None, lang_code)
             }
             res = requests.post("https://api.groq.com/openai/v1/audio/transcriptions", headers=headers, files=files, timeout=35)

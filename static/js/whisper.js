@@ -18,6 +18,7 @@ export function saveStoredOpenAIKey(key) {
 
 export async function startWhisperRecording(onStatusChange) {
     if (isWhisperRecording) return;
+    isWhisperRecording = true;
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         audioChunks = [];
@@ -31,14 +32,15 @@ export async function startWhisperRecording(onStatusChange) {
         };
 
         mediaRecorder.onstart = () => {
-            isWhisperRecording = true;
-            onStatusChange(true, "?? Whisper Recording... (Speak now)");
+            onStatusChange(true, "🎙️ Whisper Recording... (Speak now)");
         };
 
-        mediaRecorder.start(500);
+        mediaRecorder.start(250);
     } catch (err) {
         console.error("Whisper recording error:", err);
-        onStatusChange(false, "Microphone permission denied or error.");
+        isWhisperRecording = false;
+        onStatusChange(false, "Microphone permission denied or device error.");
+        alert("Microphone permission denied. Please allow microphone access in your browser address bar.");
     }
 }
 
@@ -91,9 +93,15 @@ export function stopWhisperRecording(onStatusChange, onTranscribed, language = '
             });
 
             const data = await res.json();
-            if (res.ok && data.text) {
-                onTranscribed(data.text.trim());
-                onStatusChange(false, "Microphone Idle");
+            if (res.ok) {
+                const text = data.text ? data.text.trim() : "";
+                if (text) {
+                    onTranscribed(text);
+                    onStatusChange(false, "Microphone Idle");
+                } else {
+                    onStatusChange(false, "No clear speech detected.");
+                    alert("No clear speech detected in recording. Please speak louder into your microphone.");
+                }
             } else {
                 onStatusChange(false, data.error || "Whisper transcription failed.");
                 alert(data.error || "Whisper transcription failed. Please check your API key.");
