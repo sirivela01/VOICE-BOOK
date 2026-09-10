@@ -1,5 +1,5 @@
 import os
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, send_from_directory
 from dotenv import load_dotenv
 
 # Load env variables from .env if present
@@ -28,7 +28,13 @@ def favicon():
 
 @app.route('/google2a35372545172c1b.html')
 def google_verification():
-    return 'google-site-verification: google2a35372545172c1b.html'
+    return send_from_directory('static', 'google2a35372545172c1b.html')
+
+@app.route('/<filename>')
+def serve_root_files(filename):
+    if filename.startswith('google') and filename.endswith('.html'):
+        return send_from_directory('static', filename)
+    return '', 404
 
 @app.route('/')
 def index():
