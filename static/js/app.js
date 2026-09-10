@@ -644,24 +644,49 @@ function setupSpeechRecognition() {
         });
     }
 
-    // Modal API Key Config Listeners
-    if (btnOpenWhisperKey && modalWhisperConfig) {
-        btnOpenWhisperKey.addEventListener("click", () => {
-            if (inputOpenAiKey) inputOpenAiKey.value = getStoredOpenAIKey();
-            modalWhisperConfig.classList.add("active", "active-modal");
-        });
-    }
-    const closeWhisperModal = () => {
-        if (modalWhisperConfig) modalWhisperConfig.classList.remove("active", "active-modal");
+    // Bulletproof Modal API Key Config Listeners
+    window.openWhisperModalDirect = function(e) {
+        if (e) { try { e.preventDefault(); e.stopPropagation(); } catch(err) {} }
+        const modal = document.getElementById("modal-whisper-config");
+        const inputKey = document.getElementById("input-openai-key");
+        if (inputKey) inputKey.value = getStoredOpenAIKey();
+        if (modal) {
+            modal.style.display = "flex";
+            modal.style.opacity = "1";
+            modal.style.visibility = "visible";
+            modal.style.zIndex = "999999";
+            modal.classList.add("active", "active-modal");
+        }
     };
-    if (btnCloseWhisperConfig) btnCloseWhisperConfig.addEventListener("click", closeWhisperModal);
-    if (btnCancelWhisperConfig) btnCancelWhisperConfig.addEventListener("click", closeWhisperModal);
+
+    window.closeWhisperModalDirect = function(e) {
+        if (e) { try { e.preventDefault(); e.stopPropagation(); } catch(err) {} }
+        const modal = document.getElementById("modal-whisper-config");
+        if (modal) {
+            modal.style.display = "none";
+            modal.classList.remove("active", "active-modal");
+        }
+    };
+
+    document.addEventListener("click", (e) => {
+        const keyBtn = e.target.closest("#btn-open-whisper-key");
+        if (keyBtn) {
+            window.openWhisperModalDirect(e);
+            return;
+        }
+        const closeBtn = e.target.closest("#btn-close-whisper-config") || e.target.closest("#btn-cancel-whisper-config");
+        if (closeBtn) {
+            window.closeWhisperModalDirect(e);
+            return;
+        }
+    });
+
     if (btnSaveWhisperConfig) {
-        btnSaveWhisperConfig.addEventListener("click", () => {
+        btnSaveWhisperConfig.addEventListener("click", (e) => {
             const val = inputOpenAiKey ? inputOpenAiKey.value : "";
             saveStoredOpenAIKey(val);
-            closeWhisperModal();
-            showToast("OpenAI API Key saved successfully!", "success");
+            window.closeWhisperModalDirect(e);
+            showToast("API Key saved successfully!", "success");
         });
     }
 

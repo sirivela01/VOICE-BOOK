@@ -58,7 +58,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Caveat:wght@400;700&family=Homemade+Apple&family=Reenie+Beanie&family=Architects+Daughter&family=Indie+Flower&family=Dancing+Script:wght@400;700&family=Shadows+Into+Light&family=Kalam:wght@300;400;700&family=Sacramento&display=swap" rel="stylesheet">
     <!-- Main Style -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='68.0') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='70.0') }}">
 </head>
 <body>
     <!-- ================= 9-SECOND PROFESSIONAL TITLE SPLASH SCREEN ================= -->
@@ -325,7 +325,7 @@
                                 <div id="mic-status-indicator" class="mic-indicator"></div>
                                 <span id="speech-status-text">Microphone Idle</span>
                             </div>
-                            <button type="button" id="btn-open-whisper-key" class="prof-outline-btn" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;" title="Configure OpenAI API Key">
+                            <button type="button" id="btn-open-whisper-key" class="prof-outline-btn" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;" title="Configure OpenAI API Key" onclick="window.openWhisperModalDirect && window.openWhisperModalDirect(event)">
                                 ⚙️ Key
                             </button>
                         </div>
@@ -549,22 +549,24 @@
                 <button type="button" id="btn-generate-pdf" class="btn btn-primary" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">Download PDF</button>
             </div>
         </div>
+    </div>
+
     <!-- ================= OPENAI WHISPER API KEY MODAL ================= -->
     <div id="modal-whisper-config" class="modal-overlay">
         <div class="modal-box modal-sm">
             <div class="modal-header">
                 <h3>🤖 OpenAI Whisper AI Settings</h3>
-                <button class="modal-close" id="btn-close-whisper-config">&times;</button>
+                <button class="modal-close" id="btn-close-whisper-config" onclick="window.closeWhisperModalDirect && window.closeWhisperModalDirect(event)">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="input-openai-key" style="font-size: 0.85rem; font-weight: 600; color: #334155;">OpenAI API Key (for 99%+ Speech Accuracy)</label>
-                    <input type="password" id="input-openai-key" placeholder="sk-proj-..." class="form-control" style="margin-top: 0.4rem; font-family: monospace; font-size: 0.85rem;">
-                    <span class="editor-hint" style="font-size: 0.75rem; color: #64748b; margin-top: 6px; display: block;">Your key is saved locally in your browser and used only for Whisper AI voice transcription.</span>
+                    <label for="input-openai-key" style="font-size: 0.85rem; font-weight: 600; color: #334155;">OpenAI / Groq API Key (for 99%+ Speech Accuracy)</label>
+                    <input type="password" id="input-openai-key" placeholder="sk-proj-... or gsk_..." class="form-control" style="margin-top: 0.4rem; font-family: monospace; font-size: 0.85rem;">
+                    <span class="editor-hint" style="font-size: 0.75rem; color: #64748b; margin-top: 6px; display: block;">Your key (Groq gsk_... or OpenAI sk-...) is stored safely in browser local storage and used only for voice transcription.</span>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline" id="btn-cancel-whisper-config">Cancel</button>
+                <button type="button" class="btn btn-outline" id="btn-cancel-whisper-config" onclick="window.closeWhisperModalDirect && window.closeWhisperModalDirect(event)">Cancel</button>
                 <button type="button" id="btn-save-whisper-config" class="btn btn-primary" style="background: linear-gradient(135deg, #ea580c 0%, #f97316 100%); border: none;">Save Key</button>
             </div>
         </div>
@@ -585,6 +587,6 @@
     </script>
 
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='68.0') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='70.0') }}"></script>
 </body>
 </html>
