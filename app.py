@@ -9,10 +9,9 @@ app = Flask(__name__, static_folder='static', template_folder='templates')
 
 @app.after_request
 def add_header(response):
-    # Disable browser caching for all responses (especially index.html)
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
+    # Only set no-cache on API responses, allow static assets & HTML previews to be cached by social media crawlers
+    if 'Cache-Control' not in response.headers:
+        response.headers['Cache-Control'] = 'public, max-age=3600'
     
     # Enterprise Security Headers
     response.headers['X-Content-Type-Options'] = 'nosniff'
@@ -24,7 +23,15 @@ def add_header(response):
 
 @app.route('/favicon.ico')
 def favicon():
-    return '', 204
+    return send_from_directory('static/images', 'logo.jpg')
+
+@app.route('/logo.jpg')
+@app.route('/logo.png')
+def root_logo():
+    res = send_from_directory('static/images', 'logo.jpg')
+    res.headers['Cache-Control'] = 'public, max-age=86400'
+    res.headers['Access-Control-Allow-Origin'] = '*'
+    return res
 
 @app.route('/google2a35372545172c1b.html')
 def google_verification():
