@@ -122,10 +122,17 @@ export function stopWhisperRecording(onStatusChange, onTranscribed, language = '
 
 function getSupportedMimeType() {
     if (typeof MediaRecorder === 'undefined') return '';
-    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) return 'audio/webm;codecs=opus';
-    if (MediaRecorder.isTypeSupported('audio/webm')) return 'audio/webm';
-    if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) return 'audio/ogg;codecs=opus';
-    if (MediaRecorder.isTypeSupported('audio/mp4')) return 'audio/mp4';
+    const types = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/mp4',
+        'audio/aac',
+        'audio/ogg;codecs=opus',
+        'audio/ogg'
+    ];
+    for (let i = 0; i < types.length; i++) {
+        if (MediaRecorder.isTypeSupported(types[i])) return types[i];
+    }
     return '';
 }
 
