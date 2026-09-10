@@ -1636,19 +1636,23 @@ canvas.notebook-canvas {
 @media(max-width: 1024px) {
     .notebook-layout {
         flex-direction: column-reverse;
+        overflow-y: auto;
     }
-    .notebook-sidebar {
-        width: 100%;
-        height: auto;
+    .notebook-sidebar, .notebook-sidebar.prof-sidebar {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        max-height: none !important;
         border-right: none;
         border-top: 1px solid var(--glass-border);
     }
     .notebook-workspace {
-        height: calc(100vh - 280px);
-        padding: 1rem;
+        height: auto;
+        min-height: 420px;
+        padding: 0.5rem;
     }
     #view-shelf {
-        padding: 2rem;
+        padding: 1rem;
     }
 }
 
