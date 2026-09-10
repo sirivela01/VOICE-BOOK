@@ -64,6 +64,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     // Bind event handlers IMMEDIATELY at startup
     setupEventListeners();
+    setupSpeechRecognition();
 
     // Check Speech Recognition capability
     if (!isSpeechSupported()) {
