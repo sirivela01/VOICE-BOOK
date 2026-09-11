@@ -58,7 +58,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Caveat:wght@400;700&family=Homemade+Apple&family=Reenie+Beanie&family=Architects+Daughter&family=Indie+Flower&family=Dancing+Script:wght@400;700&family=Shadows+Into+Light&family=Kalam:wght@300;400;700&family=Sacramento&display=swap" rel="stylesheet">
     <!-- Main Style -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='140.0') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='150.0') }}">
 </head>
 <body>
     <!-- ================= 9-SECOND PROFESSIONAL TITLE SPLASH SCREEN ================= -->
@@ -325,19 +325,6 @@
                                 <div id="mic-status-indicator" class="mic-indicator"></div>
                                 <span id="speech-status-text">Microphone Idle</span>
                             </div>
-                            <button type="button" id="btn-open-whisper-key" class="prof-outline-btn" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;" title="Configure OpenAI API Key" onclick="window.openWhisperModalDirect && window.openWhisperModalDirect()">
-                                ⚙️ Key
-                            </button>
-                        </div>
-
-                        <!-- Speech Engine Segmented Switcher -->
-                        <div class="prof-segmented-toggle" style="margin-bottom: 0.55rem;">
-                            <button type="button" id="btn-engine-webspeech" class="prof-seg-btn active" style="font-size: 0.74rem; padding: 0.35rem 0.45rem;" onclick="window.setSpeechEngineModeDirect && window.setSpeechEngineModeDirect('webspeech')">
-                                <span>🎙️</span> Browser Live
-                            </button>
-                            <button type="button" id="btn-engine-whisper" class="prof-seg-btn" style="font-size: 0.74rem; padding: 0.35rem 0.45rem;" onclick="window.setSpeechEngineModeDirect && window.setSpeechEngineModeDirect('whisper')">
-                                <span>🤖</span> OpenAI Whisper AI
-                            </button>
                         </div>
 
                         <!-- Accent & Language Dialect Selector -->
@@ -361,7 +348,7 @@
                             <svg class="icon mic-icon" viewBox="0 0 24 24">
                                 <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
                             </svg>
-                            <span id="mic-btn-text">Start Dictation</span>
+                            <span id="mic-btn-text">Start Live Dictation</span>
                         </button>
                         <div id="live-transcript-box" class="transcript-preview prof-transcript-box">
                             <span class="placeholder-text">Live speech transcript preview will appear here...</span>
@@ -551,71 +538,7 @@
         </div>
     </div>
 
-    <!-- ================= OPENAI WHISPER API KEY MODAL ================= -->
-    <div id="modal-whisper-config" class="modal-overlay">
-        <div class="modal-box modal-sm">
-            <div class="modal-header">
-                <h3>🤖 OpenAI Whisper AI Settings</h3>
-                <button class="modal-close" id="btn-close-whisper-config" onclick="window.closeWhisperModalDirect && window.closeWhisperModalDirect(event)">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="input-openai-key" style="font-size: 0.85rem; font-weight: 600; color: #334155;">OpenAI / Groq API Key (for 99%+ Speech Accuracy)</label>
-                    <input type="password" id="input-openai-key" placeholder="sk-proj-... or gsk_..." class="form-control" style="margin-top: 0.4rem; font-family: monospace; font-size: 0.85rem;">
-                    <span class="editor-hint" style="font-size: 0.75rem; color: #64748b; margin-top: 6px; display: block;">Your key (Groq gsk_... or OpenAI sk-...) is stored safely in browser local storage and used only for voice transcription.</span>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline" id="btn-cancel-whisper-config" onclick="window.closeWhisperModalDirect && window.closeWhisperModalDirect(event)">Cancel</button>
-                <button type="button" id="btn-save-whisper-config" class="btn btn-primary" style="background: linear-gradient(135deg, #ea580c 0%, #f97316 100%); border: none;" onclick="window.saveWhisperKeyDirect && window.saveWhisperKeyDirect(event)">Save Key</button>
-            </div>
-        </div>
-    </div>
 
-    <!-- Inline Synchronous Bulletproof Modal Handlers (Executes instantly at DOM parse) -->
-    <script>
-        window.openWhisperModalDirect = function() {
-            var modal = document.getElementById("modal-whisper-config");
-            var inputKey = document.getElementById("input-openai-key");
-            if (inputKey && window.localStorage) {
-                inputKey.value = localStorage.getItem("voice_book_openai_key") || "";
-            }
-            if (modal) {
-                modal.style.display = "flex";
-                modal.style.opacity = "1";
-                modal.style.visibility = "visible";
-                modal.style.zIndex = "999999";
-                modal.classList.add("active", "active-modal");
-            }
-        };
-
-        window.closeWhisperModalDirect = function() {
-            var modal = document.getElementById("modal-whisper-config");
-            if (modal) {
-                modal.style.display = "none";
-                modal.classList.remove("active", "active-modal");
-            }
-        };
-
-        window.saveWhisperKeyDirect = function() {
-            var inputKey = document.getElementById("input-openai-key");
-            if (inputKey && window.localStorage) {
-                var val = inputKey.value ? inputKey.value.trim() : "";
-                if (val) {
-                    localStorage.setItem("voice_book_openai_key", val);
-                } else {
-                    localStorage.removeItem("voice_book_openai_key");
-                }
-            }
-            window.closeWhisperModalDirect();
-            var toast = document.getElementById("toast");
-            if (toast) {
-                toast.innerText = "API Key saved successfully!";
-                toast.className = "toast-notification success active";
-                setTimeout(function() { toast.classList.remove("active"); }, 3000);
-            }
-        };
-    </script>
 
     <!-- jsPDF Engine CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -632,6 +555,6 @@
     </script>
 
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='140.0') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='150.0') }}"></script>
 </body>
 </html>
