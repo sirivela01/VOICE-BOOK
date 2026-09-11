@@ -83,19 +83,20 @@ export function setCursorIndex(index) {
 export function findClosestCharIndex(x, y) {
     if (!charPositions || charPositions.length === 0) return 0;
     
-    let closestIdx = charPositions.length;
+    let closestCodeUnit = 0;
     let minDistance = Infinity;
 
     for (let i = 0; i < charPositions.length; i++) {
         const cp = charPositions[i];
-        const dist = Math.hypot(cp.x - x, cp.y - y);
+        const charCenterX = cp.x + (cp.advanceWidth || 10) / 2;
+        const dist = Math.hypot(charCenterX - x, cp.y - y);
         if (dist < minDistance) {
             minDistance = dist;
-            closestIdx = (x > (cp.x + (cp.advanceWidth || 10) / 2)) ? (i + 1) : i;
+            closestCodeUnit = (x > charCenterX) ? (cp.codeUnitEnd !== undefined ? cp.codeUnitEnd : i + 1) : (cp.codeUnitStart !== undefined ? cp.codeUnitStart : i);
         }
     }
 
-    return closestIdx;
+    return closestCodeUnit;
 }
 
 /**
@@ -560,6 +561,7 @@ function recalculateLayout() {
         }
     }
 
+    let currentCodeUnitOffset = 0;
     let textProcessedLength = 0;
 
     for (let w = 0; w < wordsWithColor.length; w++) {
@@ -618,6 +620,7 @@ function recalculateLayout() {
 
         for (let c = 0; c < graphemes.length; c++) {
             const char = graphemes[c];
+            const charLen = char.length;
 
             if (char === '\n') {
                 layout.push({
@@ -630,9 +633,12 @@ function recalculateLayout() {
                     advanceWidth: 0,
                     color: color,
                     font: font,
-                    isNewline: true
+                    isNewline: true,
+                    codeUnitStart: currentCodeUnitOffset,
+                    codeUnitEnd: currentCodeUnitOffset + 1
                 });
 
+                currentCodeUnitOffset += 1;
                 lineIndex++;
                 if (lineIndex >= maxLines) {
                     isFull = true;
@@ -683,9 +689,12 @@ function recalculateLayout() {
                 charIndex: c,
                 advanceWidth: charWidth,
                 color: color,
-                font: font
+                font: font,
+                codeUnitStart: currentCodeUnitOffset,
+                codeUnitEnd: currentCodeUnitOffset + charLen
             });
 
+            currentCodeUnitOffset += charLen;
             const spacingJitter = (isComplex || char === " ") ? 0 : ((prng() - 0.5) * jitter.spacing);
             wordX += charWidth + spacingJitter;
         }
@@ -942,29 +951,57 @@ function drawPage() {
             ctx.fill();
         }
     } else if (isPageFocused && !isAnimating) {
-        // Draw Word-document style blinking text cursor | at exact currentCursorIndex
-        let targetIdx = (currentCursorIndex >= 0) ? currentCursorIndex : charPositions.length;
-        if (targetIdx > charPositions.length) targetIdx = charPositions.length;
+        // Draw Word-document style blinking text cursor | at exact currentCursorIndex (code unit index)
+        const targetCodeUnit = (currentCursorIndex >= 0) ? currentCursorIndex : Infinity;
 
         const startX = 112;
         let cursorX = startX;
         let cursorY = config.topMargin + (config.lineSpacing * 0.72);
 
-        if (targetIdx > 0 && charPositions.length >= targetIdx) {
-            const lastCharObj = charPositions[targetIdx - 1];
-            if (lastCharObj) {
-                if (lastCharObj.isNewline || lastCharObj.char === '\n') {
-                    const nextLineIdx = lastCharObj.lineIndex + 1;
-                    cursorX = startX;
-                    cursorY = config.topMargin + nextLineIdx * config.lineSpacing + (config.lineSpacing * 0.72);
-                } else {
-                    cursorX = lastCharObj.x + (lastCharObj.advanceWidth || 8);
-                    cursorY = lastCharObj.y;
+        if (charPositions && charPositions.length > 0) {
+            if (targetCodeUnit <= 0) {
+                cursorX = charPositions[0].x;
+                cursorY = charPositions[0].y;
+            } else {
+                let found = false;
+                for (let i = 0; i < charPositions.length; i++) {
+                    const cp = charPositions[i];
+                    const startUnit = cp.codeUnitStart !== undefined ? cp.codeUnitStart : i;
+                    const endUnit = cp.codeUnitEnd !== undefined ? cp.codeUnitEnd : i + 1;
+
+                    if (targetCodeUnit === startUnit) {
+                        cursorX = cp.x;
+                        cursorY = cp.y;
+                        found = true;
+                        break;
+                    } else if (targetCodeUnit <= endUnit) {
+                        if (cp.isNewline || cp.char === '\n') {
+                            const nextLineIdx = cp.lineIndex + 1;
+                            cursorX = startX;
+                            cursorY = config.topMargin + nextLineIdx * config.lineSpacing + (config.lineSpacing * 0.72);
+                        } else {
+                            cursorX = cp.x + cp.advanceWidth;
+                            cursorY = cp.y;
+                        }
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    const lastCp = charPositions[charPositions.length - 1];
+                    if (lastCp) {
+                        if (lastCp.isNewline || lastCp.char === '\n') {
+                            const nextLineIdx = lastCp.lineIndex + 1;
+                            cursorX = startX;
+                            cursorY = config.topMargin + nextLineIdx * config.lineSpacing + (config.lineSpacing * 0.72);
+                        } else {
+                            cursorX = lastCp.x + lastCp.advanceWidth;
+                            cursorY = lastCp.y;
+                        }
+                    }
                 }
             }
-        } else if (targetIdx === 0 && charPositions.length > 0) {
-            cursorX = charPositions[0].x;
-            cursorY = charPositions[0].y;
         }
 
         ctx.fillStyle = config.inkColor || "#1d3d84";
