@@ -574,7 +574,7 @@ function recalculateLayout() {
         // Segment word into grapheme clusters instead of raw code units
         const graphemes = getGraphemes(word);
 
-        // Measure word width
+        // Measure word width accurately with normalized space width (0.25 * currentFontSize)
         let wordWidth = 0;
         for (let i = 0; i < graphemes.length; i++) {
             const gr = graphemes[i];
@@ -585,11 +585,10 @@ function recalculateLayout() {
             } else {
                 ctx.font = `${currentFontSize}px "${font || currentFont}", "Segoe UI", sans-serif`;
             }
-            const chW = gr === " " ? Math.max(ctx.measureText(gr).width, currentFontSize * 0.32) : ctx.measureText(gr).width;
+            const chW = (gr === " " || gr === "\u00A0") ? (currentFontSize * 0.25) : ctx.measureText(gr).width;
             wordWidth += chW;
         }
-        const safetyPadding = isWhitespace ? 0 : (graphemes.length * 2.5 + 4.0);
-        const totalWordWidth = wordWidth + safetyPadding;
+        const totalWordWidth = wordWidth;
 
         // Measure before drawing: Check if word overflows right margin (720px)
         if (!isWhitespace && (cursorX + totalWordWidth > rightMargin)) {
@@ -653,8 +652,13 @@ function recalculateLayout() {
                 ctx.font = `${currentFontSize}px "${font || currentFont}", "Segoe UI", sans-serif`;
             }
 
-            const charWidth = char === " " ? Math.max(ctx.measureText(char).width, currentFontSize * 0.32) : ctx.measureText(char).width;
+            let charWidth = (char === " " || char === "\u00A0") ? (currentFontSize * 0.25) : ctx.measureText(char).width;
             
+            // If space character occurs at start of line after wrap, collapse its width
+            if (wordX === startX && (char === " " || char === "\u00A0")) {
+                charWidth = 0;
+            }
+
             // Character-level safety fallback: if single grapheme exceeds right margin, wrap line
             if (wordX + charWidth > rightMargin && wordX > startX) {
                 lineIndex++;
@@ -665,6 +669,9 @@ function recalculateLayout() {
                     break;
                 }
                 wordX = startX;
+                if (char === " " || char === "\u00A0") {
+                    charWidth = 0;
+                }
             }
 
             layout.push({
@@ -679,7 +686,7 @@ function recalculateLayout() {
                 font: font
             });
 
-            const spacingJitter = isComplex ? 0 : ((prng() - 0.5) * jitter.spacing);
+            const spacingJitter = (isComplex || char === " ") ? 0 : ((prng() - 0.5) * jitter.spacing);
             wordX += charWidth + spacingJitter;
         }
 
@@ -1075,14 +1082,22 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
 
         const isWhitespace = /^\s+$/.test(word);
 
+        const graphemes = getGraphemes(word);
+
         let wordWidth = 0;
-        for (let i = 0; i < word.length; i++) {
-            const ch = word[i];
-            const chW = ch === " " ? Math.max(staticCtx.measureText(ch).width, fontSize * 0.32) : staticCtx.measureText(ch).width;
+        for (let i = 0; i < graphemes.length; i++) {
+            const gr = graphemes[i];
+            if (gr === '\n') continue;
+            const isComplex = isNonLatinScript(gr);
+            if (isComplex) {
+                staticCtx.font = `${fontSize}px "Noto Sans Telugu", "Mandali", "Gidugu", "Noto Sans", "Segoe UI", sans-serif`;
+            } else {
+                staticCtx.font = `${fontSize}px "${font}", "Segoe UI", sans-serif`;
+            }
+            const chW = (gr === " " || gr === "\u00A0") ? (fontSize * 0.25) : staticCtx.measureText(gr).width;
             wordWidth += chW;
         }
-        const safetyPadding = isWhitespace ? 0 : (word.length * 2.5 + 4.0);
-        const totalWordWidth = wordWidth + safetyPadding;
+        const totalWordWidth = wordWidth;
 
         if (!isWhitespace && (cursorX + totalWordWidth > rightMargin)) {
             if (cursorX > startX) {
@@ -1107,14 +1122,28 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
         const seedStr = `${bookId}_${pageNum}_word_${w}`;
         const prng = getPRNG(seedStr);
 
-        for (let c = 0; c < word.length; c++) {
-            const char = word[c];
-            const charWidth = char === " " ? Math.max(staticCtx.measureText(char).width, fontSize * 0.32) : staticCtx.measureText(char).width;
+        for (let c = 0; c < graphemes.length; c++) {
+            const char = graphemes[c];
+            const isComplex = isNonLatinScript(char);
+            if (isComplex) {
+                staticCtx.font = `${fontSize}px "Noto Sans Telugu", "Mandali", "Gidugu", "Noto Sans", "Segoe UI", sans-serif`;
+            } else {
+                staticCtx.font = `${fontSize}px "${font}", "Segoe UI", sans-serif`;
+            }
+
+            let charWidth = (char === " " || char === "\u00A0") ? (fontSize * 0.25) : staticCtx.measureText(char).width;
             
+            if (wordX === startX && (char === " " || char === "\u00A0")) {
+                charWidth = 0;
+            }
+
             if (wordX + charWidth > rightMargin && wordX > startX) {
                 lineIndex++;
                 if (lineIndex >= maxLines) break;
                 wordX = startX;
+                if (char === " " || char === "\u00A0") {
+                    charWidth = 0;
+                }
             }
 
             const lineY = config.topMargin + lineIndex * config.lineSpacing + (config.lineSpacing * 0.72);
@@ -1122,20 +1151,20 @@ export function renderPageStatic(canvasElement, text, pageNum, options = {}) {
             const seedCharStr = `${bookId}_${pageNum}_char_${textProcessedLength + c}_${char}`;
             const prngChar = getPRNG(seedCharStr);
             
-            const rotJitter = (prngChar() - 0.5) * jitter.rotation * (Math.PI / 180);
-            const wobbleX = (prngChar() - 0.5) * jitter.wobble;
-            const wobbleY = (prngChar() - 0.5) * jitter.wobble;
-            const scaleJitter = 1.0 + (prngChar() - 0.5) * jitter.scale;
+            const rotJitter = isComplex ? 0 : ((prngChar() - 0.5) * jitter.rotation * (Math.PI / 180));
+            const wobbleX = isComplex ? 0 : ((prngChar() - 0.5) * jitter.wobble);
+            const wobbleY = isComplex ? 0 : ((prngChar() - 0.5) * jitter.wobble);
+            const scaleJitter = isComplex ? 1.0 : (1.0 + (prngChar() - 0.5) * jitter.scale);
             
             staticCtx.save();
             staticCtx.fillStyle = color || config.inkColor;
             staticCtx.translate(wordX + wobbleX, lineY + wobbleY);
-            staticCtx.rotate(rotJitter);
-            staticCtx.scale(scaleJitter, scaleJitter);
+            if (rotJitter !== 0) staticCtx.rotate(rotJitter);
+            if (scaleJitter !== 1.0) staticCtx.scale(scaleJitter, scaleJitter);
             staticCtx.fillText(char, 0, 0);
             staticCtx.restore();
 
-            const spacingJitter = (prng() - 0.5) * jitter.spacing;
+            const spacingJitter = (isComplex || char === " ") ? 0 : ((prng() - 0.5) * jitter.spacing);
             wordX += charWidth + spacingJitter;
         }
         cursorX = wordX;
