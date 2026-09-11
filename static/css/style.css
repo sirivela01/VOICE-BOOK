@@ -2446,4 +2446,48 @@ canvas.notebook-canvas {
     }
 }
 
+/* Mobile Screen Layout Responsive Adjustments */
+@media screen and (max-width: 768px) {
+    .notebook-layout {
+        flex-direction: column-reverse;
+        padding: 0.4rem;
+        gap: 0.5rem;
+        height: auto;
+        min-height: calc(100vh - 50px);
+    }
+    
+    .notebook-sidebar.prof-sidebar {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .notebook-workspace {
+        width: 100% !important;
+        padding: 0.35rem;
+        border-radius: 12px;
+        min-height: 58vh;
+    }
+
+    .notebook-paper-wrapper {
+        max-width: 100% !important;
+        aspect-ratio: 4 / 5.2;
+    }
+
+    .shelf-header {
+        padding: 0.6rem 0.9rem;
+    }
+
+    .auth-card {
+        width: 92vw;
+        max-width: 420px;
+        padding: 1.5rem;
+    }
+
+    .prof-header-title {
+        font-size: 1.1rem;
+    }
+}
+
 
