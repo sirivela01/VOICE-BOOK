@@ -24,6 +24,29 @@ const jitterSettings = {
     3: { rotation: 3.2, wobble: 2.8, scale: 0.08, spacing: 1.8 }   // High
 };
 
+/**
+ * Splits text into complete grapheme clusters (preventing Telugu/Indic combining vowels & sub-consonants from breaking apart).
+ */
+function getGraphemes(text) {
+    if (!text) return [];
+    if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+        try {
+            const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+            return Array.from(segmenter.segment(text), s => s.segment);
+        } catch(e) {}
+    }
+    const matches = text.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[\s\S][\u0300-\u036F\u0900-\u0D7F\u0E00-\u0E7F]*?/g);
+    return matches || text.split('');
+}
+
+/**
+ * Checks if string contains non-Latin complex scripts (Telugu, Hindi, Tamil, Kannada, Malayalam, Bengali, etc.)
+ */
+function isNonLatinScript(str) {
+    if (!str) return false;
+    return /[\u0C00-\u0C7F\u0900-\u097F\u0B80-\u0BFF\u0C80-\u0CFF\u0D00-\u0D7F\u0980-\u09FF\u0A80-\u0AFF\u0A00-\u0A7F\u0600-\u06FF\u3000-\u9FFF\uAC00-\uD7AF]/.test(str);
+}
+
 let currentJitterLevel = 2; // Default to Medium
 let currentFont = "Homemade Apple";
 let currentFontSize = 23;
@@ -548,15 +571,24 @@ function recalculateLayout() {
 
         const isWhitespace = /^\s+$/.test(word);
 
-        // Measure word width including glyph overhang and character jitter safety padding
+        // Segment word into grapheme clusters instead of raw code units
+        const graphemes = getGraphemes(word);
+
+        // Measure word width
         let wordWidth = 0;
-        for (let i = 0; i < word.length; i++) {
-            const ch = word[i];
-            if (ch === '\n') continue;
-            const chW = ch === " " ? Math.max(ctx.measureText(ch).width, currentFontSize * 0.32) : ctx.measureText(ch).width;
+        for (let i = 0; i < graphemes.length; i++) {
+            const gr = graphemes[i];
+            if (gr === '\n') continue;
+            const isComplex = isNonLatinScript(gr);
+            if (isComplex) {
+                ctx.font = `${currentFontSize}px "Noto Sans Telugu", "Mandali", "Gidugu", "Noto Sans", "Segoe UI", sans-serif`;
+            } else {
+                ctx.font = `${currentFontSize}px "${font || currentFont}", "Segoe UI", sans-serif`;
+            }
+            const chW = gr === " " ? Math.max(ctx.measureText(gr).width, currentFontSize * 0.32) : ctx.measureText(gr).width;
             wordWidth += chW;
         }
-        const safetyPadding = isWhitespace ? 0 : (word.length * 2.5 + 4.0);
+        const safetyPadding = isWhitespace ? 0 : (graphemes.length * 2.5 + 4.0);
         const totalWordWidth = wordWidth + safetyPadding;
 
         // Measure before drawing: Check if word overflows right margin (720px)
@@ -578,15 +610,15 @@ function recalculateLayout() {
             break;
         }
 
-        // Calculate positions for characters in this word
+        // Calculate positions for grapheme clusters in this word
         let wordX = cursorX;
 
         const seedStr = `${bookId}_${pageNumber}_word_${w}`;
         const prng = getPRNG(seedStr);
         const jitter = jitterSettings[currentJitterLevel];
 
-        for (let c = 0; c < word.length; c++) {
-            const char = word[c];
+        for (let c = 0; c < graphemes.length; c++) {
+            const char = graphemes[c];
 
             if (char === '\n') {
                 layout.push({
@@ -614,9 +646,16 @@ function recalculateLayout() {
                 continue;
             }
 
+            const isComplex = isNonLatinScript(char);
+            if (isComplex) {
+                ctx.font = `${currentFontSize}px "Noto Sans Telugu", "Mandali", "Gidugu", "Noto Sans", "Segoe UI", sans-serif`;
+            } else {
+                ctx.font = `${currentFontSize}px "${font || currentFont}", "Segoe UI", sans-serif`;
+            }
+
             const charWidth = char === " " ? Math.max(ctx.measureText(char).width, currentFontSize * 0.32) : ctx.measureText(char).width;
             
-            // Character-level safety fallback: if single character exceeds right margin, wrap line
+            // Character-level safety fallback: if single grapheme exceeds right margin, wrap line
             if (wordX + charWidth > rightMargin && wordX > startX) {
                 lineIndex++;
                 if (lineIndex >= maxLines) {
@@ -629,7 +668,7 @@ function recalculateLayout() {
             }
 
             layout.push({
-                char: char,
+                char: char, // Complete grapheme cluster (e.g. "తె")
                 x: wordX,
                 y: config.topMargin + lineIndex * config.lineSpacing + (config.lineSpacing * 0.72),
                 lineIndex: lineIndex,
@@ -640,7 +679,7 @@ function recalculateLayout() {
                 font: font
             });
 
-            const spacingJitter = (prng() - 0.5) * jitter.spacing;
+            const spacingJitter = isComplex ? 0 : ((prng() - 0.5) * jitter.spacing);
             wordX += charWidth + spacingJitter;
         }
 
@@ -854,28 +893,32 @@ function drawPage() {
         const cp = charPositions[i];
         if (!cp || cp.char === '\n') continue;
 
+        const isComplex = isNonLatinScript(cp.char);
+
         // Seeded PRNG for stable transformations
         const seedStr = `${bookId}_${pageNumber}_char_${i}_${cp.char}`;
         const prng = getPRNG(seedStr);
 
-        // Calculate jitters
-        const rotJitter = (prng() - 0.5) * jitter.rotation * (Math.PI / 180);
-        const wobbleX = (prng() - 0.5) * jitter.wobble;
-        const wobbleY = (prng() - 0.5) * jitter.wobble;
-        const scaleJitter = 1.0 + (prng() - 0.5) * jitter.scale;
+        // Calculate jitters (disable rotation & scale jitter for Indic complex scripts so diacritics stay 100% attached)
+        const rotJitter = isComplex ? 0 : ((prng() - 0.5) * jitter.rotation * (Math.PI / 180));
+        const wobbleX = isComplex ? 0 : ((prng() - 0.5) * jitter.wobble);
+        const wobbleY = isComplex ? 0 : ((prng() - 0.5) * jitter.wobble);
+        const scaleJitter = isComplex ? 1.0 : (1.0 + (prng() - 0.5) * jitter.scale);
 
         ctx.save();
-        ctx.font = `${currentFontSize}px "${cp.font || currentFont}"`;
+        if (isComplex) {
+            ctx.font = `${currentFontSize}px "Noto Sans Telugu", "Mandali", "Gidugu", "Noto Sans", "Segoe UI", sans-serif`;
+        } else {
+            ctx.font = `${currentFontSize}px "${cp.font || currentFont}", "Segoe UI", sans-serif`;
+        }
         ctx.fillStyle = cp.color || config.inkColor;
         
         // Translate to letter position + wobble
         ctx.translate(cp.x + wobbleX, cp.y + wobbleY);
-        // Rotate
-        ctx.rotate(rotJitter);
-        // Scale size slightly
-        ctx.scale(scaleJitter, scaleJitter);
+        if (rotJitter !== 0) ctx.rotate(rotJitter);
+        if (scaleJitter !== 1.0) ctx.scale(scaleJitter, scaleJitter);
         
-        // Render character
+        // Render complete grapheme cluster
         ctx.fillText(cp.char, 0, 0);
         
         ctx.restore();
