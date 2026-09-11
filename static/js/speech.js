@@ -10,6 +10,8 @@ let restartAttempts = 0;
 let restartTimer = null;
 
 let selectedLanguage = 'en-IN';
+let activeCallbacks = null;
+let restartActiveRecognition = null;
 
 /**
  * Sets the speech recognition dialect / language.
@@ -18,10 +20,8 @@ let selectedLanguage = 'en-IN';
 export function setSpeechLanguage(lang) {
     if (lang) {
         selectedLanguage = lang;
-        if (recognition) {
-            try {
-                recognition.lang = lang;
-            } catch(e) {}
+        if (isRecording && typeof restartActiveRecognition === 'function') {
+            restartActiveRecognition();
         }
     }
 }
@@ -57,48 +57,6 @@ function cleanDeduplicatedWords(str) {
 function getNewDeltaText(incomingText) {
     const cleanIncoming = incomingText.trim();
     if (!cleanIncoming) return "";
-
-    // 1. If exact match with last emitted reference, ignore
-    if (cleanIncoming.toLowerCase() === lastEmittedText.toLowerCase()) {
-        return "";
-    }
-
-    // 2. If incoming text starts with lastEmittedText, extract trailing delta
-    if (lastEmittedText && cleanIncoming.toLowerCase().startsWith(lastEmittedText.toLowerCase())) {
-        const delta = cleanIncoming.substring(lastEmittedText.length).trim();
-        if (delta) {
-            lastEmittedText = cleanIncoming;
-            return cleanDeduplicatedWords(delta);
-        }
-        return "";
-    }
-
-    // 3. Overlap matching for trailing/leading word sequences
-    const wordsIncoming = cleanIncoming.split(/\s+/);
-    const wordsLast = lastEmittedText.split(/\s+/);
-
-    let overlapCount = 0;
-    for (let k = Math.min(wordsLast.length, wordsIncoming.length); k > 0; k--) {
-        const lastTail = wordsLast.slice(wordsLast.length - k).join(" ").toLowerCase();
-        const incomingHead = wordsIncoming.slice(0, k).join(" ").toLowerCase();
-        if (lastTail === incomingHead) {
-            overlapCount = k;
-            break;
-        }
-    }
-
-    if (overlapCount > 0) {
-        const deltaWords = wordsIncoming.slice(overlapCount);
-        if (deltaWords.length > 0) {
-            const deltaStr = deltaWords.join(" ");
-            lastEmittedText = (lastEmittedText + " " + deltaStr).slice(-300);
-            return cleanDeduplicatedWords(deltaStr);
-        }
-        return "";
-    }
-
-    // 4. Brand new phrase
-    lastEmittedText = cleanIncoming.slice(-300);
     return cleanDeduplicatedWords(cleanIncoming);
 }
 
@@ -121,6 +79,7 @@ export function startListening(onWordsAdded, onInterimResult, onStatusChange) {
     lastEmittedText = "";
     latestInterimText = "";
     restartAttempts = 0;
+    activeCallbacks = { onWordsAdded, onInterimResult, onStatusChange };
 
     function createAndStartRecognition() {
         if (!isRecording) return;
@@ -147,7 +106,7 @@ export function startListening(onWordsAdded, onInterimResult, onStatusChange) {
 
             recognition.onstart = () => {
                 restartAttempts = 0;
-                onStatusChange(true, "Microphone Listening... (Speak now)");
+                onStatusChange(true, `Microphone Listening... (${selectedLanguage || 'en-IN'})`);
             };
 
             recognition.onerror = (event) => {
@@ -233,6 +192,7 @@ export function startListening(onWordsAdded, onInterimResult, onStatusChange) {
         }
     }
 
+    restartActiveRecognition = createAndStartRecognition;
     createAndStartRecognition();
 }
 
@@ -241,6 +201,8 @@ export function startListening(onWordsAdded, onInterimResult, onStatusChange) {
  */
 export function stopListening() {
     isRecording = false;
+    restartActiveRecognition = null;
+    activeCallbacks = null;
     lastEmittedText = "";
     latestInterimText = "";
     if (restartTimer) {
