@@ -2436,7 +2436,7 @@ canvas.notebook-canvas {
 :-ms-fullscreen {
     width: 100vw !important;
     height: 100vh !important;
-    overflow: hidden !important;
+    overflow: auto !important;
 }
 
 @media all and (display-mode: standalone) {
@@ -2446,28 +2446,60 @@ canvas.notebook-canvas {
     }
 }
 
-/* Mobile Screen Layout Responsive Adjustments */
+/* Custom Sleek Orange Mobile & Desktop Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 8px !important;
+    height: 8px !important;
+    display: block !important;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(254, 215, 170, 0.45) !important;
+    border-radius: 10px !important;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #ea580c 0%, #f97316 100%) !important;
+    border-radius: 10px !important;
+    border: 1.5px solid #ffffff !important;
+    box-shadow: 0 2px 6px rgba(234, 88, 12, 0.4) !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #c2410c !important;
+}
+
+/* Mobile Screen Layout Responsive & Touch Scrolling Adjustments */
 @media screen and (max-width: 768px) {
+    body, html, .app-container, .view-panel {
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
     .notebook-layout {
         flex-direction: column-reverse;
         padding: 0.4rem;
-        gap: 0.5rem;
+        gap: 0.6rem;
         height: auto;
         min-height: calc(100vh - 50px);
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
     }
     
     .notebook-sidebar.prof-sidebar {
         width: 100% !important;
         max-width: 100% !important;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: 0.6rem;
+        max-height: none !important;
+        overflow-y: visible !important;
     }
     
     .notebook-workspace {
         width: 100% !important;
         padding: 0.35rem;
         border-radius: 12px;
-        min-height: 58vh;
+        min-height: 55vh;
     }
 
     .notebook-paper-wrapper {
