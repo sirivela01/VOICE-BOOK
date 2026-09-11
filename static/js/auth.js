@@ -9,23 +9,17 @@ import {
 import { getFirebaseAuth } from "./firebase-init.js?v=40.0";
 
 let authObserverCallback = null;
-let isGuestActive = localStorage.getItem("guest_mode_active") === "true";
 
 export function enableGuestMode() {
-    isGuestActive = true;
-    localStorage.setItem("guest_mode_active", "true");
-    localStorage.removeItem("google_session_active");
-    if (authObserverCallback) {
-        authObserverCallback({ uid: "guest_user", email: "Guest User" });
-    }
+    // Guest mode disabled - Google account required
+    localStorage.removeItem("guest_mode_active");
 }
 
 export function isGuestMode() {
-    return isGuestActive;
+    return false;
 }
 
 export function disableGuestMode() {
-    isGuestActive = false;
     localStorage.removeItem("guest_mode_active");
 }
 
@@ -107,10 +101,7 @@ export function observeAuthState(callback) {
         return () => {};
     }
 
-    if (isGuestActive) {
-        callback({ uid: "guest_user", email: "Guest User" });
-        return () => {};
-    }
+    localStorage.removeItem("guest_mode_active");
 
     try {
         const auth = getFirebaseAuth();
@@ -146,9 +137,6 @@ export function getCurrentUser() {
         };
     }
 
-    if (isGuestActive) {
-        return { uid: "guest_user", email: "Guest User" };
-    }
     try {
         const auth = getFirebaseAuth();
         return auth ? auth.currentUser : null;
