@@ -137,6 +137,7 @@ export function startListening(onWordsAdded, onInterimResult, onStatusChange) {
             }
 
             recognition = new SpeechRecognition();
+            lastProcessedIndex = -1; // Reset index tracker for new recognition session!
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             
             recognition.continuous = !isMobile;
@@ -163,20 +164,17 @@ export function startListening(onWordsAdded, onInterimResult, onStatusChange) {
             };
 
             recognition.onend = () => {
-                // FLUSH PENDING INTERIM TEXT ON MOBILE BEFORE RESTARTING SO NO SPOKEN WORDS ARE EVER LOST!
+                // FLUSH ANY PENDING INTERIM TEXT BEFORE RESTARTING SO NO SPOKEN WORDS ARE EVER LOST!
                 if (latestInterimText && latestInterimText.trim()) {
                     const pendingText = latestInterimText.trim();
                     latestInterimText = "";
-                    const delta = getNewDeltaText(pendingText);
-                    if (delta) {
-                        onWordsAdded(delta);
-                    }
+                    onWordsAdded(pendingText);
                 }
                 onInterimResult("");
 
                 if (isRecording) {
                     restartAttempts++;
-                    if (restartAttempts > 5) {
+                    if (restartAttempts > 8) {
                         isRecording = false;
                         onStatusChange(false, "Microphone Idle. Tap Start Dictation to talk.");
                         return;
@@ -187,7 +185,7 @@ export function startListening(onWordsAdded, onInterimResult, onStatusChange) {
                         if (isRecording) {
                             createAndStartRecognition();
                         }
-                    }, isMobile ? 250 : 100);
+                    }, isMobile ? 200 : 80);
                 } else {
                     onStatusChange(false, "Microphone Idle");
                 }
@@ -195,28 +193,29 @@ export function startListening(onWordsAdded, onInterimResult, onStatusChange) {
 
             recognition.onresult = (event) => {
                 let interimTranscript = '';
-                let finalAccumulated = '';
+                let finalSpeechChunk = '';
 
                 for (let i = 0; i < event.results.length; ++i) {
-                    const transcript = event.results[i][0].transcript;
-                    if (event.results[i].isFinal) {
+                    const res = event.results[i];
+                    const transcript = res[0] ? res[0].transcript.trim() : '';
+
+                    if (res.isFinal) {
                         if (i > lastProcessedIndex) {
-                            finalAccumulated += (finalAccumulated ? ' ' : '') + transcript.trim();
                             lastProcessedIndex = i;
+                            if (transcript) {
+                                finalSpeechChunk += (finalSpeechChunk ? ' ' : '') + transcript;
+                            }
                         }
                     } else {
-                        interimTranscript += transcript;
+                        interimTranscript += (interimTranscript ? ' ' : '') + transcript;
                     }
                 }
 
                 latestInterimText = interimTranscript;
 
-                if (finalAccumulated) {
-                    const deltaText = getNewDeltaText(finalAccumulated);
-                    if (deltaText) {
-                        onWordsAdded(deltaText);
-                        latestInterimText = "";
-                    }
+                if (finalSpeechChunk) {
+                    onWordsAdded(finalSpeechChunk);
+                    latestInterimText = "";
                 }
 
                 onInterimResult(interimTranscript);
