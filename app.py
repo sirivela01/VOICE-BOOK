@@ -137,7 +137,7 @@ def transcribe_whisper():
                 clean_filename = 'recording.webm'
                 content_type = 'audio/webm'
 
-        files = {'file': (clean_filename, file_content, content_type)}
+        files = {'file': (clean_filename, file_content)}
 
         # 1. Use OpenAI Whisper API if key is present
         if openai_api_key:
@@ -154,16 +154,32 @@ def transcribe_whisper():
         
         # 2. Fallback to Groq Whisper API
         elif groq_api_key:
-            headers = {"Authorization": f"Bearer {groq_api_key}"}
-            payload_data = {'model': 'whisper-large-v3', 'response_format': 'json'}
-            if lang_code:
-                payload_data['language'] = lang_code
-            res = requests.post("https://api.groq.com/openai/v1/audio/transcriptions", headers=headers, data=payload_data, files=files, timeout=35)
-            if res.status_code == 200:
-                data = res.json()
-                return jsonify({"text": data.get("text", "")})
-            else:
-                return jsonify({"error": f"Groq Whisper API Error: {res.text}"}), res.status_code
+            try:
+                from groq import Groq
+                client = Groq(api_key=groq_api_key)
+                kwargs = {
+                    "file": (clean_filename, file_content),
+                    "model": "whisper-large-v3",
+                    "response_format": "json"
+                }
+                if lang_code:
+                    kwargs["language"] = lang_code
+                transcription = client.audio.transcriptions.create(**kwargs)
+                text_res = getattr(transcription, 'text', '') or ''
+                return jsonify({"text": text_res})
+            except Exception as sdk_err:
+                print("Groq SDK failed, falling back to direct requests:", sdk_err)
+                headers = {"Authorization": f"Bearer {groq_api_key}"}
+                payload_data = {'model': 'whisper-large-v3', 'response_format': 'json'}
+                if lang_code:
+                    payload_data['language'] = lang_code
+                files = {'file': (clean_filename, file_content)}
+                res = requests.post("https://api.groq.com/openai/v1/audio/transcriptions", headers=headers, data=payload_data, files=files, timeout=35)
+                if res.status_code == 200:
+                    data = res.json()
+                    return jsonify({"text": data.get("text", "")})
+                else:
+                    return jsonify({"error": f"Groq Whisper API Error: {res.text}"}), res.status_code
 
     except Exception as e:
         print("Whisper Transcription Exception:", e)
