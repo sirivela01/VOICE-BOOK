@@ -2,8 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>VoiceBook - Voice-to-Handwriting Digital Notebook</title>
+    
+    <!-- PWA Manifest & Fullscreen Meta Tags -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="VoiceBook">
+    <meta name="theme-color" content="#0284c7">
     
     <!-- Primary Search & Branding Meta Tags -->
     <meta name="google-site-verification" content="google2a35372545172c1b" />
@@ -126,6 +134,10 @@
                     <span class="shelf-title-badge">My Bookshelf</span>
                 </div>
                 <div class="header-user">
+                    <button type="button" id="btn-toggle-fullscreen" class="btn btn-outline btn-sm btn-fullscreen-toggle" title="Toggle Fullscreen Mode">
+                        <svg class="icon" viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor;"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                        <span class="fullscreen-btn-text">Fullscreen</span>
+                    </button>
                     <span id="user-display-email" class="user-email">user@example.com</span>
                     <button id="btn-logout" class="btn btn-outline btn-sm">Sign Out</button>
                 </div>
@@ -157,8 +169,13 @@
                     <span>Bookshelf</span>
                 </button>
                 <div class="prof-header-title">📖 Voice Book</div>
-                <div class="prof-header-icon" title="Bookshelf Library">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <button type="button" id="btn-toggle-fullscreen-notebook" class="btn-fullscreen-toggle-notebook" title="Toggle Fullscreen Mode">
+                        <svg class="icon" viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                    </button>
+                    <div class="prof-header-icon" title="Bookshelf Library">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
+                    </div>
                 </div>
             </div>
 
@@ -568,6 +585,6 @@
     </script>
 
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='210.0') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='220.0') }}"></script>
 </body>
 </html>

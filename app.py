@@ -37,6 +37,34 @@ def root_logo():
 def google_verification():
     return 'google-site-verification: google2a35372545172c1b.html', 200, {'Content-Type': 'text/html'}
 
+@app.route('/manifest.json')
+def web_manifest():
+    manifest_data = {
+        "name": "VoiceBook - Digital Voice Notebook",
+        "short_name": "VoiceBook",
+        "description": "Convert spoken words into realistic handwritten notebook pages instantly.",
+        "start_url": "/",
+        "display": "standalone",
+        "orientation": "any",
+        "background_color": "#0d1b2a",
+        "theme_color": "#0284c7",
+        "icons": [
+            {
+                "src": "/static/images/logo.png",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "any maskable"
+            },
+            {
+                "src": "/static/images/logo.png",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any maskable"
+            }
+        ]
+    }
+    return jsonify(manifest_data)
+
 @app.route('/')
 def index():
     return render_template('index.html')

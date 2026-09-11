@@ -722,6 +722,60 @@ async function handlePageOverflow(remainingText) {
 
 /* ================= 3. CORE UI EVENT BINDINGS ================= */
 function setupEventListeners() {
+    // Fullscreen Mode Toggle & Automatic Interaction Trigger
+    const toggleFullscreenMode = () => {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement && !document.msFullscreenElement) {
+            const doc = document.documentElement;
+            const request = doc.requestFullscreen || doc.webkitRequestFullscreen || doc.mozRequestFullScreen || doc.msRequestFullscreen;
+            if (request) {
+                request.call(doc).then(() => {
+                    safeLocalStorageSet("voice_book_fullscreen", "true");
+                    updateFullscreenUI(true);
+                }).catch(() => {});
+            }
+        } else {
+            const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+            if (exit) {
+                exit.call(document).then(() => {
+                    safeLocalStorageSet("voice_book_fullscreen", "false");
+                    updateFullscreenUI(false);
+                }).catch(() => {});
+            }
+        }
+    };
+
+    const updateFullscreenUI = (isFS) => {
+        const btns = document.querySelectorAll(".btn-fullscreen-toggle, .btn-fullscreen-toggle-notebook");
+        btns.forEach(btn => {
+            const span = btn.querySelector(".fullscreen-btn-text");
+            if (span) span.textContent = isFS ? "Exit Fullscreen" : "Fullscreen";
+            btn.setAttribute("title", isFS ? "Exit Fullscreen Mode" : "Enter Fullscreen Mode");
+        });
+    };
+
+    const btnFullscreen = document.getElementById("btn-toggle-fullscreen");
+    const btnFullscreenNotebook = document.getElementById("btn-toggle-fullscreen-notebook");
+    if (btnFullscreen) btnFullscreen.addEventListener("click", toggleFullscreenMode);
+    if (btnFullscreenNotebook) btnFullscreenNotebook.addEventListener("click", toggleFullscreenMode);
+
+    document.addEventListener("fullscreenchange", () => {
+        const isFS = !!(document.fullscreenElement || document.webkitFullscreenElement);
+        updateFullscreenUI(isFS);
+    });
+
+    // Auto-enter fullscreen on first user interaction (click / tap)
+    let hasAutoTriggeredFullscreen = false;
+    const triggerAutoFullscreenOnInteraction = () => {
+        if (hasAutoTriggeredFullscreen) return;
+        hasAutoTriggeredFullscreen = true;
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+            toggleFullscreenMode();
+        }
+    };
+
+    document.addEventListener("click", triggerAutoFullscreenOnInteraction, { once: true });
+    document.addEventListener("touchstart", triggerAutoFullscreenOnInteraction, { once: true });
+
     // Google Sign In
     let isGoogleLoginPending = false;
     const btnGoogleLogin = document.getElementById("btn-google-login");
