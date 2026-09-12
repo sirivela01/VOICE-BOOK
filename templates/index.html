@@ -581,6 +581,14 @@
         }
     </script>
 
+    <!-- Service Worker Registration for PWA & PWABuilder -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
+            });
+        }
+    </script>
     <!-- App Modules -->
     <script type="module" src="{{ url_for('static', filename='js/app.js', v='270.0') }}"></script>
 </body>

@@ -39,31 +39,20 @@ def google_verification():
 
 @app.route('/manifest.json')
 def web_manifest():
-    manifest_data = {
-        "name": "VoiceBook - Digital Voice Notebook",
-        "short_name": "VoiceBook",
-        "description": "Convert spoken words into realistic handwritten notebook pages instantly.",
-        "start_url": "/",
-        "display": "standalone",
-        "orientation": "any",
-        "background_color": "#0d1b2a",
-        "theme_color": "#0284c7",
-        "icons": [
-            {
-                "src": "/static/images/logo.png",
-                "sizes": "192x192",
-                "type": "image/png",
-                "purpose": "any maskable"
-            },
-            {
-                "src": "/static/images/logo.png",
-                "sizes": "512x512",
-                "type": "image/png",
-                "purpose": "any maskable"
-            }
-        ]
-    }
-    return jsonify(manifest_data)
+    res = send_from_directory('static', 'manifest.json')
+    res.headers['Content-Type'] = 'application/manifest+json; charset=utf-8'
+    res.headers['Access-Control-Allow-Origin'] = '*'
+    res.headers['Cache-Control'] = 'public, max-age=3600'
+    return res
+
+@app.route('/sw.js')
+@app.route('/service-worker.js')
+def service_worker():
+    res = send_from_directory('static', 'sw.js')
+    res.headers['Content-Type'] = 'application/javascript; charset=utf-8'
+    res.headers['Access-Control-Allow-Origin'] = '*'
+    res.headers['Cache-Control'] = 'no-cache'
+    return res
 
 @app.route('/')
 def index():
