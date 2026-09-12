@@ -13,7 +13,7 @@ import {
     updateDoc
 } from "firebase/firestore";
 import { getFirebaseDb } from "./firebase-init.js?v=46.0";
-import { getCurrentUser, isGuestMode } from "./auth.js?v=360.0";
+import { getCurrentUser, isGuestMode } from "./auth.js?v=370.0";
 import { isFirebaseInitialized } from "./firebase-init.js?v=46.0";
 import { sanitizeInput } from "./utils.js?v=46.0";
 
