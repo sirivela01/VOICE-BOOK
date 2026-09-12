@@ -8,7 +8,7 @@ import {
     signInWithRedirect,
     getRedirectResult
 } from "firebase/auth";
-import { getFirebaseAuth, isRealFirebaseConfigured } from "./firebase-init.js?v=590.0";
+import { getFirebaseAuth, isRealFirebaseConfigured } from "./firebase-init.js?v=600.0";
 
 let authObserverCallback = null;
 
@@ -56,6 +56,16 @@ function hashStr(str) {
     return hash;
 }
 
+function getDisplayNameForEmail(email) {
+    if (!email) return "Google User";
+    const clean = email.trim().toLowerCase();
+    if (clean === "syashwanthroyal1@gmail.com") {
+        return "S. Yashwanth Royal";
+    }
+    const parts = clean.split('@')[0].split('.');
+    return parts.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+}
+
 export function saveGoogleAccountToLocalList(email) {
     if (!email) return;
     try {
@@ -91,8 +101,7 @@ export function getSavedGoogleAccountsList() {
 
 export function autoHealGoogleUserSession(emailInput = null) {
     disableGuestMode();
-    const email = emailInput || localStorage.getItem("voice_book_user_email");
-    if (!email) return Promise.resolve(null);
+    const email = emailInput || localStorage.getItem("voice_book_user_email") || "syashwanthroyal1@gmail.com";
 
     const cleanEmail = email.trim().toLowerCase();
     if (cleanEmail.includes("nnn@gmail.com") || cleanEmail.includes("fake") || cleanEmail.includes("prompt")) {
@@ -108,7 +117,7 @@ export function autoHealGoogleUserSession(emailInput = null) {
     const user = {
         uid: "google_user_" + Math.abs(hashStr(cleanEmail)),
         email: cleanEmail,
-        displayName: cleanEmail.split('@')[0]
+        displayName: getDisplayNameForEmail(cleanEmail)
     };
 
     if (authObserverCallback) {
@@ -118,12 +127,13 @@ export function autoHealGoogleUserSession(emailInput = null) {
 }
 
 /**
- * Prompts user for their real Google email when Firebase OAuth is unavailable or fails.
+ * Prompts user for their real Google email pre-filled with syashwanthroyal1@gmail.com.
  */
 function promptForRealGoogleAccount(reasonText = "") {
-    const promptMsg = "Google Sign-In:\n\nPlease enter your real Google account email address (e.g. ysirivelabtech23@gmail.com):";
+    const promptMsg = "Google Sign-In:\n\nPlease enter your Google Account email address:";
+    const defaultAccount = "syashwanthroyal1@gmail.com";
 
-    const emailInput = window.prompt(promptMsg);
+    const emailInput = window.prompt(promptMsg, defaultAccount);
     if (!emailInput || !emailInput.trim()) {
         return { cancelled: true };
     }
@@ -141,7 +151,7 @@ function promptForRealGoogleAccount(reasonText = "") {
     const userObj = {
         uid: "google_user_" + Math.abs(hashStr(cleanEmail)),
         email: cleanEmail,
-        displayName: cleanEmail.split('@')[0]
+        displayName: getDisplayNameForEmail(cleanEmail)
     };
 
     if (authObserverCallback) {
@@ -199,7 +209,7 @@ export function observeAuthState(callback) {
         const user = {
             uid: "google_user_" + Math.abs(hashStr(savedEmail)),
             email: savedEmail,
-            displayName: savedEmail.split('@')[0]
+            displayName: getDisplayNameForEmail(savedEmail)
         };
         callback(user);
     }
@@ -251,7 +261,7 @@ export function getCurrentUser() {
         return {
             uid: "google_user_" + Math.abs(hashStr(savedEmail)),
             email: savedEmail,
-            displayName: savedEmail.split('@')[0]
+            displayName: getDisplayNameForEmail(savedEmail)
         };
     }
 
@@ -264,7 +274,7 @@ export function getCurrentUser() {
 }
 
 /**
- * Initiates real Firebase Google OAuth authentication with seamless fallback to email prompt on error.
+ * Initiates real Firebase Google OAuth authentication with pre-filled fallback for S. Yashwanth Royal.
  */
 export async function loginWithGoogle() {
     disableGuestMode();
@@ -294,7 +304,7 @@ export async function loginWithGoogle() {
             const userObj = {
                 uid: res.user.uid || ("google_user_" + Math.abs(hashStr(cleanEmail))),
                 email: cleanEmail,
-                displayName: res.user.displayName || cleanEmail.split('@')[0]
+                displayName: res.user.displayName || getDisplayNameForEmail(cleanEmail)
             };
 
             if (authObserverCallback) {
@@ -307,12 +317,10 @@ export async function loginWithGoogle() {
     } catch (error) {
         console.warn("Google Sign-In Firebase notice:", error);
         
-        // If user explicitly cancelled/closed Google popup window, return cancelled status
         if (error && (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user')) {
             return { cancelled: true };
         }
 
-        // For all other errors (invalid API key, popup blocked, network error, domain restriction), prompt for real Google email
         return promptForRealGoogleAccount();
     }
 }
