@@ -21,20 +21,7 @@ const DEFAULT_FIREBASE_CONFIG = {
  * @returns {Promise<Object>} Firebase configuration object
  */
 export async function fetchFirebaseConfig() {
-    // 1. Try backend
-    try {
-        const response = await fetch('/api/config');
-        if (response.ok) {
-            const backendConfig = await response.json();
-            if (backendConfig && backendConfig.apiKey && backendConfig.apiKey.trim() !== "") {
-                return backendConfig;
-            }
-        }
-    } catch (e) {
-        console.warn("Backend Firebase config check notice:", e);
-    }
-
-    // 2. Try localStorage
+    // 1. Try localStorage if user saved custom credentials locally
     try {
         const local = localStorage.getItem('firebase_config');
         if (local) {
@@ -43,11 +30,9 @@ export async function fetchFirebaseConfig() {
                 return parsed;
             }
         }
-    } catch (e) {
-        console.warn("Local storage config check notice:", e);
-    }
+    } catch (e) {}
 
-    // 3. Universal Fallback (Guarantees zero-error initialization)
+    // 2. Return built-in VoiceBook Firebase configuration instantly
     return DEFAULT_FIREBASE_CONFIG;
 }
 
