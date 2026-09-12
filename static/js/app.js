@@ -45,8 +45,8 @@ function stripColorTags(text) {
  * Main initialization entrypoint
  */
 async function initAppMain() {
-    // Start 9-Second Title Splash Screen Timer
-    initSplashScreen();
+    // Auto-Version Checker & Service Worker Update System
+    initAutoVersionChecker();
 
     // Global Error & Promise Rejection Shield (Zero-Error Architecture)
     window.addEventListener("error", (event) => {
@@ -1567,4 +1567,65 @@ function initSplashScreen() {
 
     // Auto fade-out after 1 second
     setTimeout(dismissSplash, DURATION_MS);
+}
+
+/* ================= AUTOMATIC REAL-TIME VERSION CHECKER & UPDATE SYSTEM ================= */
+function initAutoVersionChecker() {
+    const updateBanner = document.getElementById("update-toast-banner");
+    const btnApplyUpdate = document.getElementById("btn-apply-update");
+
+    if (!updateBanner || !btnApplyUpdate) return;
+
+    let currentVersion = localStorage.getItem("voice_book_app_version");
+
+    const promptForUpdate = (newVer) => {
+        updateBanner.classList.remove("hidden");
+        btnApplyUpdate.onclick = () => {
+            if (newVer) {
+                localStorage.setItem("voice_book_app_version", newVer);
+            }
+            if ('caches' in window) {
+                caches.keys().then((names) => {
+                    names.forEach(name => caches.delete(name));
+                });
+            }
+            window.location.reload(true);
+        };
+    };
+
+    // 1. Check version endpoint on load and every 45 seconds
+    const checkVersion = async () => {
+        try {
+            const res = await fetch("/api/version?t=" + Date.now());
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.version) {
+                    if (!currentVersion) {
+                        localStorage.setItem("voice_book_app_version", data.version);
+                    } else if (currentVersion !== data.version) {
+                        promptForUpdate(data.version);
+                    }
+                }
+            }
+        } catch (e) {}
+    };
+
+    setTimeout(checkVersion, 1500);
+    setInterval(checkVersion, 45000);
+
+    // 2. Listen to Service Worker updates
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then((registration) => {
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                if (newWorker) {
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            promptForUpdate();
+                        }
+                    });
+                }
+            });
+        }).catch(() => {});
+    }
 }

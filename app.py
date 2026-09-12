@@ -72,7 +72,17 @@ def get_config():
         "messagingSenderId": os.environ.get("FIREBASE_MESSAGING_SENDER_ID", ""),
         "appId": os.environ.get("FIREBASE_APP_ID", "")
     }
-    return jsonify(config)
+CURRENT_APP_VERSION = "v330.0"
+
+@app.route('/api/version', methods=['GET'])
+def get_app_version():
+    res = jsonify({
+        "version": CURRENT_APP_VERSION,
+        "commit": os.environ.get("RENDER_GIT_COMMIT", "latest")
+    })
+    res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    res.headers['Access-Control-Allow-Origin'] = '*'
+    return res
 
 @app.route('/api/transcribe-whisper', methods=['POST'])
 def transcribe_whisper():
