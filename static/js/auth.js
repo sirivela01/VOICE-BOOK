@@ -11,7 +11,6 @@ import { getFirebaseAuth } from "./firebase-init.js?v=40.0";
 let authObserverCallback = null;
 
 export function enableGuestMode() {
-    // Guest mode disabled - Google account required
     localStorage.removeItem("guest_mode_active");
 }
 
@@ -34,7 +33,9 @@ function hashStr(str) {
 
 export function autoHealGoogleUserSession(emailInput = null) {
     disableGuestMode();
-    const email = emailInput || localStorage.getItem("voice_book_user_email") || "syashwanthroyal1@gmail.com";
+    const email = emailInput || localStorage.getItem("voice_book_user_email");
+    if (!email) return Promise.resolve(null);
+
     localStorage.setItem("google_session_active", "true");
     localStorage.setItem("voice_book_user_email", email);
     
@@ -76,6 +77,7 @@ export function registerUser(email, password) {
 export function logoutUser() {
     disableGuestMode();
     localStorage.removeItem("google_session_active");
+    localStorage.removeItem("voice_book_user_email");
     try {
         const auth = getFirebaseAuth();
         if (auth) signOut(auth);
@@ -90,12 +92,14 @@ export function logoutUser() {
 export function observeAuthState(callback) {
     authObserverCallback = callback;
 
-    if (localStorage.getItem("google_session_active") === "true") {
-        const email = localStorage.getItem("voice_book_user_email") || "syashwanthroyal1@gmail.com";
+    const savedEmail = localStorage.getItem("voice_book_user_email");
+    const isGoogleSessionActive = localStorage.getItem("google_session_active") === "true";
+
+    if (isGoogleSessionActive && savedEmail) {
         const user = {
-            uid: "google_user_" + Math.abs(hashStr(email)),
-            email: email,
-            displayName: email.split('@')[0]
+            uid: "google_user_" + Math.abs(hashStr(savedEmail)),
+            email: savedEmail,
+            displayName: savedEmail.split('@')[0]
         };
         callback(user);
         return () => {};
@@ -107,10 +111,13 @@ export function observeAuthState(callback) {
         const auth = getFirebaseAuth();
         if (auth) {
             return onAuthStateChanged(auth, (user) => {
-                if (user) {
+                if (user && user.email) {
+                    localStorage.setItem("google_session_active", "true");
                     localStorage.setItem("voice_book_user_email", user.email);
                     callback(user);
                 } else {
+                    localStorage.removeItem("google_session_active");
+                    localStorage.removeItem("voice_book_user_email");
                     callback(null);
                 }
             });
@@ -128,12 +135,14 @@ export function observeAuthState(callback) {
  * Gets currently logged in user info.
  */
 export function getCurrentUser() {
-    if (localStorage.getItem("google_session_active") === "true") {
-        const email = localStorage.getItem("voice_book_user_email") || "syashwanthroyal1@gmail.com";
+    const savedEmail = localStorage.getItem("voice_book_user_email");
+    const isGoogleSessionActive = localStorage.getItem("google_session_active") === "true";
+
+    if (isGoogleSessionActive && savedEmail) {
         return {
-            uid: "google_user_" + Math.abs(hashStr(email)),
-            email: email,
-            displayName: email.split('@')[0]
+            uid: "google_user_" + Math.abs(hashStr(savedEmail)),
+            email: savedEmail,
+            displayName: savedEmail.split('@')[0]
         };
     }
 
@@ -148,22 +157,23 @@ export function getCurrentUser() {
 export async function loginWithGoogle() {
     disableGuestMode();
     const auth = getFirebaseAuth();
-    if (!auth) {
-        return autoHealGoogleUserSession();
-    }
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
-    try {
-        const res = await signInWithPopup(auth, provider);
-        if (res && res.user && res.user.email) {
-            localStorage.setItem("voice_book_user_email", res.user.email);
+
+    if (auth) {
+        try {
+            const res = await signInWithPopup(auth, provider);
+            if (res && res.user && res.user.email) {
+                localStorage.setItem("google_session_active", "true");
+                localStorage.setItem("voice_book_user_email", res.user.email);
+            }
+            return res;
+        } catch (error) {
+            console.warn("Google Auth notice:", error);
+            if (error && (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user')) {
+                return null;
+            }
         }
-        return res;
-    } catch (error) {
-        console.warn("Google Auth notice:", error);
-        if (error && (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user')) {
-            return null;
-        }
-        return autoHealGoogleUserSession();
     }
+    return null;
 }
