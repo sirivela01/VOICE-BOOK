@@ -195,7 +195,6 @@ export function getCurrentUser() {
 }
 
 async function handleGoogleSignInFallback(error = null) {
-    console.log("Firebase popup notice/fallback triggered:", error);
     const savedAccounts = getSavedGoogleAccountsList();
     let chosenEmail = (savedAccounts && savedAccounts.length > 0) ? savedAccounts[0] : null;
 
@@ -253,8 +252,6 @@ export async function loginWithGoogle() {
             return handleGoogleSignInFallback();
         }
     } catch (error) {
-        console.warn("Official Google Auth Popup Notice:", error);
-
         if (error && (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user')) {
             return { cancelled: true };
         }

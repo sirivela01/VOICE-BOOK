@@ -63,16 +63,19 @@ from flask import request
 
 @app.route('/api/config', methods=['GET'])
 def get_config():
-    # Return Firebase config variables from env, or blank if not defined
     config = {
-        "apiKey": os.environ.get("FIREBASE_API_KEY", ""),
-        "authDomain": os.environ.get("FIREBASE_AUTH_DOMAIN", ""),
-        "projectId": os.environ.get("FIREBASE_PROJECT_ID", ""),
-        "storageBucket": os.environ.get("FIREBASE_STORAGE_BUCKET", ""),
-        "messagingSenderId": os.environ.get("FIREBASE_MESSAGING_SENDER_ID", ""),
-        "appId": os.environ.get("FIREBASE_APP_ID", "")
+        "apiKey": os.environ.get("FIREBASE_API_KEY", "AIzaSyDe7EPi-p6b5gnWFTucVC2Mz-LVJTHiI4"),
+        "authDomain": os.environ.get("FIREBASE_AUTH_DOMAIN", "voice-book-5e5f0.firebaseapp.com"),
+        "projectId": os.environ.get("FIREBASE_PROJECT_ID", "voice-book-5e5f0"),
+        "storageBucket": os.environ.get("FIREBASE_STORAGE_BUCKET", "voice-book-5e5f0.firebasestorage.app"),
+        "messagingSenderId": os.environ.get("FIREBASE_MESSAGING_SENDER_ID", "684418710763"),
+        "appId": os.environ.get("FIREBASE_APP_ID", "1:684418710763:web:297972050bcab51a4092ae")
     }
-CURRENT_APP_VERSION = "v530.0"
+    res = jsonify(config)
+    res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    res.headers['Access-Control-Allow-Origin'] = '*'
+    return res
+CURRENT_APP_VERSION = "v540.0"
 
 @app.route('/api/version', methods=['GET'])
 def get_app_version():
