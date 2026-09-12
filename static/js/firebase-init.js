@@ -67,16 +67,22 @@ export function initFirebase(config) {
 }
 
 /**
- * Getter for Firebase Auth instance. Returns null if uninitialized.
+ * Getter for Firebase Auth instance. Auto-initializes if not ready.
  */
 export function getFirebaseAuth() {
+    if (!authInstance) {
+        initFirebase(DEFAULT_FIREBASE_CONFIG);
+    }
     return authInstance;
 }
 
 /**
- * Getter for Firestore database instance. Returns null if uninitialized.
+ * Getter for Firestore database instance. Auto-initializes if not ready.
  */
 export function getFirebaseDb() {
+    if (!dbInstance) {
+        initFirebase(DEFAULT_FIREBASE_CONFIG);
+    }
     return dbInstance;
 }
 
@@ -93,9 +99,19 @@ export function isFirebaseInitialized() {
  * @returns {boolean}
  */
 export function isRealFirebaseConfigured() {
-    if (!appInstance) return false;
+    if (!appInstance) {
+        initFirebase(DEFAULT_FIREBASE_CONFIG);
+    }
     const options = appInstance.options;
     if (!options || !options.apiKey) return false;
     if (options.apiKey.includes("UniversalKey") || options.apiKey.trim() === "") return false;
     return true;
 }
+
+// Immediate synchronous auto-initialization to guarantee zero delay for Auth
+try {
+    if (!appInstance) {
+        initFirebase(DEFAULT_FIREBASE_CONFIG);
+    }
+} catch (e) {}
+

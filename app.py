@@ -72,7 +72,7 @@ def get_config():
         "messagingSenderId": os.environ.get("FIREBASE_MESSAGING_SENDER_ID", ""),
         "appId": os.environ.get("FIREBASE_APP_ID", "")
     }
-CURRENT_APP_VERSION = "v460.0"
+CURRENT_APP_VERSION = "v470.0"
 
 @app.route('/api/version', methods=['GET'])
 def get_app_version():
