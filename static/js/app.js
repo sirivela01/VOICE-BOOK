@@ -447,23 +447,23 @@ async function openNotebook(bookId, name, pageNum) {
         void overlay.offsetWidth; // Force Reflow
         overlay.classList.add("active-overlay");
         
-        // Step 1: Closed book zooms on screen, then swings cover open
+        // Step 1: Fast 3D opening transition (80ms)
         setTimeout(() => {
             overlay.classList.add("opening");
-        }, 550);
+        }, 80);
         
-        // Step 2: Swap back workspace view and hide overlay
+        // Step 2: Swap back workspace view and hide overlay in 320ms (under 1 second!)
         setTimeout(async () => {
             showView("view-notebook");
             await loadActivePage();
             
-            // Fade out the overlay
+            // Fade out the overlay quickly
             overlay.classList.remove("active-overlay");
             setTimeout(() => {
                 overlay.classList.add("hidden");
                 overlay.classList.remove("opening");
-            }, 400);
-        }, 1350);
+            }, 120);
+        }, 320);
         
     } else {
         // Fallback if elements not found
@@ -1543,12 +1543,12 @@ window.addEventListener("beforeunload", () => {
     }
 });
 
-/* ================= 9-SECOND PROFESSIONAL TITLE SPLASH SCREEN TIMER ================= */
+/* ================= 1-SECOND FAST TITLE SPLASH SCREEN TIMER ================= */
 function initSplashScreen() {
     const splashOverlay = document.getElementById("splash-screen-overlay");
     if (!splashOverlay) return;
 
-    const DURATION_MS = 9000; // 9 Seconds
+    const DURATION_MS = 1000; // 1 Second
     let isDismissed = false;
 
     const dismissSplash = () => {
@@ -1559,12 +1559,12 @@ function initSplashScreen() {
             if (splashOverlay && splashOverlay.parentNode) {
                 splashOverlay.parentNode.removeChild(splashOverlay);
             }
-        }, 800);
+        }, 300);
     };
 
     // Click anywhere on splash screen to enter immediately
     splashOverlay.addEventListener("click", dismissSplash);
 
-    // Auto fade-out after 9 seconds
+    // Auto fade-out after 1 second
     setTimeout(dismissSplash, DURATION_MS);
 }
