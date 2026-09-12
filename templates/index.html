@@ -473,9 +473,12 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button id="btn-clear-config" class="btn btn-outline">Clear Storage</button>
-                <button id="btn-save-config" class="btn btn-primary">Save Config</button>
+            <div class="modal-footer" style="display: flex; gap: 0.5rem; justify-content: space-between; flex-wrap: wrap;">
+                <button id="btn-autofill-config" type="button" class="btn btn-secondary" style="background: #0284c7; color: #fff; border: none; font-weight: 600;">✨ Auto-Fill Defaults</button>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button id="btn-clear-config" class="btn btn-outline">Clear Storage</button>
+                    <button id="btn-save-config" class="btn btn-primary">Save Config</button>
+                </div>
             </div>
         </div>
     </div>
@@ -592,6 +595,6 @@
         }
     </script>
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='500.0') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='510.0') }}"></script>
 </body>
 </html>
