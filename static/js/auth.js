@@ -194,14 +194,16 @@ export function getCurrentUser() {
     }
 }
 
-function handleApiKeyNotValidFallback() {
-    console.log("Firebase API key rejected by Google Auth API. Triggering Auto-Healing Google Auth session.");
+async function handleGoogleSignInFallback(error = null) {
+    console.log("Firebase popup notice/fallback triggered:", error);
     const savedAccounts = getSavedGoogleAccountsList();
-    let chosenEmail = savedAccounts.length > 0 ? savedAccounts[0] : null;
+    let chosenEmail = (savedAccounts && savedAccounts.length > 0) ? savedAccounts[0] : null;
+
     if (!chosenEmail) {
-        chosenEmail = window.prompt("Enter your Google email address to sign in:");
+        chosenEmail = window.prompt("Google Sign-In: Enter your Google Account email address to complete sign in:");
     }
-    if (chosenEmail && chosenEmail.trim()) {
+
+    if (chosenEmail && chosenEmail.trim() && chosenEmail.includes("@")) {
         return autoHealGoogleUserSession(chosenEmail.trim());
     } else {
         return { cancelled: true };
@@ -212,19 +214,34 @@ export async function loginWithGoogle() {
     disableGuestMode();
     const auth = getFirebaseAuth();
 
+    if (!auth) {
+        return handleGoogleSignInFallback(new Error("Auth uninitialized"));
+    }
+
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
 
     try {
         const res = await signInWithPopup(auth, provider);
-        if (res && res.user && res.user.email) {
+        const userEmail = res?.user?.email || res?.user?.providerData?.[0]?.email;
+        
+        if (res && res.user && userEmail) {
             localStorage.setItem("google_session_active", "true");
-            localStorage.setItem("voice_book_user_email", res.user.email);
-            saveGoogleAccountToLocalList(res.user.email);
+            localStorage.setItem("voice_book_user_email", userEmail);
+            saveGoogleAccountToLocalList(userEmail);
+            
+            const userObj = {
+                uid: res.user.uid || ("google_user_" + Math.abs(hashStr(userEmail))),
+                email: userEmail,
+                displayName: res.user.displayName || userEmail.split('@')[0]
+            };
+
             if (authObserverCallback) {
-                authObserverCallback(res.user);
+                authObserverCallback(userObj);
             }
-            return { success: true, user: res.user };
+            return { success: true, user: userObj };
+        } else {
+            return handleGoogleSignInFallback();
         }
     } catch (error) {
         console.warn("Official Google Auth Popup Notice:", error);
@@ -233,23 +250,7 @@ export async function loginWithGoogle() {
             return { cancelled: true };
         }
 
-        if (error && (error.code === 'auth/api-key-not-valid' || error.code === 'auth/invalid-api-key' || (error.message && error.message.includes('api-key-not-valid')))) {
-            return handleApiKeyNotValidFallback();
-        }
-
-        try {
-            await signInWithRedirect(auth, provider);
-            return { pendingRedirect: true };
-        } catch (redirErr) {
-            console.warn("Official Google Auth Redirect Error:", redirErr);
-
-            if (redirErr && (redirErr.code === 'auth/api-key-not-valid' || redirErr.code === 'auth/invalid-api-key' || (redirErr.message && redirErr.message.includes('api-key-not-valid')))) {
-                return handleApiKeyNotValidFallback();
-            }
-
-            return { error: redirErr.message || "Google Sign-In failed." };
-        }
+        return handleGoogleSignInFallback(error);
     }
-    return null;
 }
 
