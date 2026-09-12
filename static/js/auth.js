@@ -8,7 +8,7 @@ import {
     signInWithRedirect,
     getRedirectResult
 } from "firebase/auth";
-import { getFirebaseAuth } from "./firebase-init.js?v=40.0";
+import { getFirebaseAuth, isRealFirebaseConfigured } from "./firebase-init.js?v=54.0";
 
 let authObserverCallback = null;
 
@@ -304,11 +304,11 @@ export function showGoogleAccountPickerModal() {
 export async function loginWithGoogle() {
     disableGuestMode();
     const auth = getFirebaseAuth();
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
 
-    if (auth) {
+    if (auth && isRealFirebaseConfigured()) {
         try {
+            const provider = new GoogleAuthProvider();
+            provider.setCustomParameters({ prompt: 'select_account' });
             const res = await signInWithPopup(auth, provider);
             if (res && res.user && res.user.email) {
                 localStorage.setItem("google_session_active", "true");
@@ -326,6 +326,7 @@ export async function loginWithGoogle() {
             }
             try {
                 if (error && (error.code === 'auth/popup-blocked' || error.code === 'auth/operation-not-allowed')) {
+                    const provider = new GoogleAuthProvider();
                     await signInWithRedirect(auth, provider);
                     return null;
                 }

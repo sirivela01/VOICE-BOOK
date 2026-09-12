@@ -87,3 +87,15 @@ export function getFirebaseDb() {
 export function isFirebaseInitialized() {
     return appInstance !== null;
 }
+
+/**
+ * Checks if a real, valid Firebase API key is loaded.
+ * @returns {boolean}
+ */
+export function isRealFirebaseConfigured() {
+    if (!appInstance) return false;
+    const options = appInstance.options;
+    if (!options || !options.apiKey) return false;
+    if (options.apiKey.includes("UniversalKey") || options.apiKey.trim() === "") return false;
+    return true;
+}
