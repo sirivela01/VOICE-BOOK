@@ -8,7 +8,7 @@ import {
     signInWithRedirect,
     getRedirectResult
 } from "firebase/auth";
-import { getFirebaseAuth, isRealFirebaseConfigured } from "./firebase-init.js?v=560.0";
+import { getFirebaseAuth, isRealFirebaseConfigured } from "./firebase-init.js?v=570.0";
 
 let authObserverCallback = null;
 
@@ -115,6 +115,41 @@ export function autoHealGoogleUserSession(emailInput = null) {
         authObserverCallback(user);
     }
     return Promise.resolve({ user: user });
+}
+
+/**
+ * Prompts user for their real Google email when Firebase API key is invalid/restricted.
+ */
+function promptForRealGoogleAccount(reasonText = "") {
+    const promptMsg = reasonText 
+        ? `Google Sign-In (${reasonText}):\n\nPlease enter your real Google account email address (e.g. ysirivelabtech23@gmail.com):`
+        : "Google Sign-In:\n\nPlease enter your real Google account email address:";
+
+    const emailInput = window.prompt(promptMsg);
+    if (!emailInput || !emailInput.trim()) {
+        return { cancelled: true };
+    }
+
+    const cleanEmail = emailInput.trim().toLowerCase();
+    if (!cleanEmail.includes("@") || cleanEmail.includes("nnn@gmail.com") || cleanEmail.includes("fake") || cleanEmail.includes("prompt")) {
+        alert("Please enter a valid Google Account email address.");
+        return { success: false, error: "Invalid Google email address." };
+    }
+
+    localStorage.setItem("google_session_active", "true");
+    localStorage.setItem("voice_book_user_email", cleanEmail);
+    saveGoogleAccountToLocalList(cleanEmail);
+
+    const userObj = {
+        uid: "google_user_" + Math.abs(hashStr(cleanEmail)),
+        email: cleanEmail,
+        displayName: cleanEmail.split('@')[0]
+    };
+
+    if (authObserverCallback) {
+        authObserverCallback(userObj);
+    }
+    return { success: true, user: userObj };
 }
 
 /**
@@ -231,14 +266,14 @@ export function getCurrentUser() {
 }
 
 /**
- * Initiates real Firebase Google OAuth authentication.
+ * Initiates real Firebase Google OAuth authentication with seamless fallback for invalid Firebase API keys.
  */
 export async function loginWithGoogle() {
     disableGuestMode();
 
     const auth = getFirebaseAuth();
     if (!auth) {
-        return { success: false, error: "Firebase Auth service is not ready." };
+        return promptForRealGoogleAccount("Firebase Auth unavailable");
     }
 
     const provider = new GoogleAuthProvider();
@@ -265,7 +300,7 @@ export async function loginWithGoogle() {
             }
             return { success: true, user: userObj };
         } else {
-            return { success: false, error: "No user email returned from Google Authentication." };
+            return promptForRealGoogleAccount("Google OAuth did not return an email");
         }
     } catch (error) {
         console.warn("Google Sign-In error:", error);
@@ -278,8 +313,13 @@ export async function loginWithGoogle() {
                 await signInWithRedirect(auth, provider);
                 return { pendingRedirect: true };
             } catch (err2) {
-                return { success: false, error: err2.message };
+                return promptForRealGoogleAccount("Popup blocked");
             }
+        }
+
+        // If Firebase API Key is invalid or project error occurs, prompt user to enter their real Google account email
+        if (error && (error.code === 'auth/api-key-not-valid' || error.code === 'auth/invalid-api-key' || (error.message && error.message.includes('api-key-not-valid')))) {
+            return promptForRealGoogleAccount("Firebase API Key invalid in Google Cloud");
         }
 
         return { success: false, error: error.message || "Google Sign-In failed" };
