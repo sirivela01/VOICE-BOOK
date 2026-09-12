@@ -34,6 +34,15 @@
     visibility: visible;
     transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s ease;
     padding: 1.5rem;
+    animation: autoDismissSplash 0.5s ease-out 1.2s forwards;
+}
+
+@keyframes autoDismissSplash {
+    to {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
 }
 
 .splash-screen-overlay.fade-out {

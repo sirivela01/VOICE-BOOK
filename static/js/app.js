@@ -45,6 +45,9 @@ function stripColorTags(text) {
  * Main initialization entrypoint
  */
 async function initAppMain() {
+    // Start Title Splash Screen Timer (Auto-dismisses in 1 second)
+    initSplashScreen();
+
     // Auto-Version Checker & Service Worker Update System
     initAutoVersionChecker();
 
