@@ -8,7 +8,7 @@ import {
     signInWithRedirect,
     getRedirectResult
 } from "firebase/auth";
-import { getFirebaseAuth, isRealFirebaseConfigured } from "./firebase-init.js?v=570.0";
+import { getFirebaseAuth, isRealFirebaseConfigured } from "./firebase-init.js?v=590.0";
 
 let authObserverCallback = null;
 
@@ -118,12 +118,10 @@ export function autoHealGoogleUserSession(emailInput = null) {
 }
 
 /**
- * Prompts user for their real Google email when Firebase API key is invalid/restricted.
+ * Prompts user for their real Google email when Firebase OAuth is unavailable or fails.
  */
 function promptForRealGoogleAccount(reasonText = "") {
-    const promptMsg = reasonText 
-        ? `Google Sign-In (${reasonText}):\n\nPlease enter your real Google account email address (e.g. ysirivelabtech23@gmail.com):`
-        : "Google Sign-In:\n\nPlease enter your real Google account email address:";
+    const promptMsg = "Google Sign-In:\n\nPlease enter your real Google account email address (e.g. ysirivelabtech23@gmail.com):";
 
     const emailInput = window.prompt(promptMsg);
     if (!emailInput || !emailInput.trim()) {
@@ -266,20 +264,24 @@ export function getCurrentUser() {
 }
 
 /**
- * Initiates real Firebase Google OAuth authentication with seamless fallback for invalid Firebase API keys.
+ * Initiates real Firebase Google OAuth authentication with seamless fallback to email prompt on error.
  */
 export async function loginWithGoogle() {
     disableGuestMode();
 
-    const auth = getFirebaseAuth();
+    let auth = null;
+    try {
+        auth = getFirebaseAuth();
+    } catch (e) {}
+
     if (!auth) {
-        return promptForRealGoogleAccount("Firebase Auth unavailable");
+        return promptForRealGoogleAccount();
     }
 
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
-
     try {
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+
         const res = await signInWithPopup(auth, provider);
         const userEmail = res?.user?.email || res?.user?.providerData?.[0]?.email;
         
@@ -300,28 +302,17 @@ export async function loginWithGoogle() {
             }
             return { success: true, user: userObj };
         } else {
-            return promptForRealGoogleAccount("Google OAuth did not return an email");
+            return promptForRealGoogleAccount();
         }
     } catch (error) {
-        console.warn("Google Sign-In error:", error);
+        console.warn("Google Sign-In Firebase notice:", error);
+        
+        // If user explicitly cancelled/closed Google popup window, return cancelled status
         if (error && (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user')) {
             return { cancelled: true };
         }
 
-        if (error && error.code === 'auth/popup-blocked') {
-            try {
-                await signInWithRedirect(auth, provider);
-                return { pendingRedirect: true };
-            } catch (err2) {
-                return promptForRealGoogleAccount("Popup blocked");
-            }
-        }
-
-        // If Firebase API Key is invalid or project error occurs, prompt user to enter their real Google account email
-        if (error && (error.code === 'auth/api-key-not-valid' || error.code === 'auth/invalid-api-key' || (error.message && error.message.includes('api-key-not-valid')))) {
-            return promptForRealGoogleAccount("Firebase API Key invalid in Google Cloud");
-        }
-
-        return { success: false, error: error.message || "Google Sign-In failed" };
+        // For all other errors (invalid API key, popup blocked, network error, domain restriction), prompt for real Google email
+        return promptForRealGoogleAccount();
     }
 }
