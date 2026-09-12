@@ -5,12 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>VoiceBook - Voice-to-Handwriting Digital Notebook</title>
     
-    <!-- PWA Manifest & Fullscreen Meta Tags -->
-    <link rel="manifest" href="/manifest.json">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="VoiceBook">
     <meta name="theme-color" content="#0284c7">
     
     <!-- Primary Search & Branding Meta Tags -->
@@ -586,15 +580,17 @@
 
 
 
-    <!-- Service Worker Registration for PWA & PWABuilder -->
+    <!-- Web Application - Unregister any legacy Service Worker -->
     <script>
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').catch(() => {});
+            navigator.serviceWorker.getRegistrations().then((registrations) => {
+                for (let registration of registrations) {
+                    registration.unregister();
+                }
             });
         }
     </script>
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='570.0') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='580.0') }}"></script>
 </body>
 </html>

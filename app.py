@@ -37,21 +37,14 @@ def root_logo():
 def google_verification():
     return 'google-site-verification: google2a35372545172c1b.html', 200, {'Content-Type': 'text/html'}
 
-@app.route('/manifest.json')
-def web_manifest():
-    res = send_from_directory('static', 'manifest.json')
-    res.headers['Content-Type'] = 'application/manifest+json; charset=utf-8'
-    res.headers['Access-Control-Allow-Origin'] = '*'
-    res.headers['Cache-Control'] = 'public, max-age=3600'
-    return res
-
 @app.route('/sw.js')
 @app.route('/service-worker.js')
 def service_worker():
-    res = send_from_directory('static', 'sw.js')
-    res.headers['Content-Type'] = 'application/javascript; charset=utf-8'
+    # Return self-unregistering script to ensure pure web app behavior
+    unregister_code = "self.addEventListener('install', () => self.skipWaiting()); self.addEventListener('activate', (e) => e.waitUntil(self.registration.unregister()));"
+    res = app.response_class(response=unregister_code, status=200, mimetype='application/javascript')
+    res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     res.headers['Access-Control-Allow-Origin'] = '*'
-    res.headers['Cache-Control'] = 'no-cache'
     return res
 
 @app.route('/')
@@ -75,7 +68,7 @@ def get_config():
     res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     res.headers['Access-Control-Allow-Origin'] = '*'
     return res
-CURRENT_APP_VERSION = "v570.0"
+CURRENT_APP_VERSION = "v580.0"
 
 @app.route('/api/version', methods=['GET'])
 def get_app_version():
