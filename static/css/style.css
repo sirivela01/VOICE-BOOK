@@ -420,6 +420,26 @@ body {
     background: rgba(255, 255, 255, 0.08);
 }
 
+/* Google Account Chooser Input Text Color Fix */
+#input-google-account-email {
+    color: #0f172a !important;
+    background-color: #ffffff !important;
+    caret-color: #2563eb !important;
+    -webkit-text-fill-color: #0f172a !important;
+}
+#input-google-account-email::placeholder {
+    color: #94a3b8 !important;
+    opacity: 1 !important;
+    -webkit-text-fill-color: #94a3b8 !important;
+}
+#input-google-account-email:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+}
+
 /* Custom Styled Select Dropdown & Options for Dark Theme */
 select.form-control {
     background-color: #1e293b !important;
