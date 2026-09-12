@@ -1939,6 +1939,10 @@ canvas.notebook-canvas {
     transition: all 0.2s ease;
 }
 
+.pdf-btn-text-mobile {
+    display: none;
+}
+
 .prof-back-btn:hover {
     background: rgba(255, 255, 255, 0.35);
     transform: translateY(-1px);
@@ -2542,11 +2546,28 @@ canvas.notebook-canvas {
         font-size: 0.65rem !important;
     }
 
+    .pdf-btn-text-desktop {
+        display: none !important;
+    }
+
+    .pdf-btn-text-mobile {
+        display: inline !important;
+        white-space: nowrap !important;
+    }
+
     .btn-export-pdf-trigger {
-        padding: 0.25rem 0.55rem !important;
-        font-size: 0.72rem !important;
-        height: 28px !important;
+        padding: 0.35rem 0.65rem !important;
+        font-size: 0.74rem !important;
+        height: auto !important;
+        min-height: 30px !important;
         width: auto !important;
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 0.35rem !important;
+        border-radius: 20px !important;
+        box-sizing: border-box !important;
     }
 
     /* Ultra Compact Cards on Mobile */
