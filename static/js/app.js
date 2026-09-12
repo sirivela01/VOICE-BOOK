@@ -1,5 +1,5 @@
 import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=54.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=270.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=360.0";
 import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook, getBookFilledPages } from "./db.js?v=54.0";
 import { startListening, stopListening, isMicActive, isSpeechSupported, setSpeechLanguage } from "./speech.js?v=210.0";
 
@@ -790,11 +790,12 @@ function setupEventListeners() {
                 isGoogleLoginPending = true;
                 btnGoogleLogin.disabled = true;
                 const result = await loginWithGoogle();
-                if (result) {
-                    showToast("Signed in successfully!", "success");
+                if (result && result.user) {
+                    showToast(`Signed in successfully as ${result.user.email || 'Google User'}!`, "success");
                 }
             } catch (err) {
-                console.warn("Google Auth notice:", err);
+                console.warn("Google Auth error:", err);
+                showToast("Google sign in failed. Please try again.", "error");
             } finally {
                 isGoogleLoginPending = false;
                 btnGoogleLogin.disabled = false;

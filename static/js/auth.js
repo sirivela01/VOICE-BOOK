@@ -166,14 +166,30 @@ export async function loginWithGoogle() {
             if (res && res.user && res.user.email) {
                 localStorage.setItem("google_session_active", "true");
                 localStorage.setItem("voice_book_user_email", res.user.email);
+                if (authObserverCallback) {
+                    authObserverCallback(res.user);
+                }
+                return res;
             }
-            return res;
         } catch (error) {
-            console.warn("Google Auth notice:", error);
+            console.warn("Google Auth notice (Popup attempt failed, switching to email fallback):", error);
             if (error && (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user')) {
                 return null;
             }
         }
     }
-    return null;
+
+    // Fallback if popup authentication fails, popup is blocked, or API key is unconfigured:
+    const inputEmail = window.prompt("Sign in with Google:\n\nPlease enter your Google email address:");
+    if (!inputEmail || !inputEmail.trim()) {
+        return null;
+    }
+    const cleanEmail = inputEmail.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+        alert("Please enter a valid Google email address.");
+        return null;
+    }
+
+    return autoHealGoogleUserSession(cleanEmail);
 }
