@@ -188,151 +188,49 @@ export function getCurrentUser() {
     }
 }
 
-export function showGoogleAccountPickerModal() {
-    return new Promise((resolve) => {
-        const modal = document.getElementById("modal-google-account-chooser");
-        const listEl = document.getElementById("google-accounts-list");
-        const btnToggleAdd = document.getElementById("btn-toggle-add-google-account");
-        const formAdd = document.getElementById("google-new-account-form");
-        const inputEmail = document.getElementById("input-google-account-email");
-        const btnSubmit = document.getElementById("btn-submit-google-account");
-        const btnCancel = document.getElementById("btn-cancel-google-account-chooser");
-        const errorMsg = document.getElementById("google-account-error-msg");
-
-        if (!modal) {
-            resolve(null);
-            return;
-        }
-
-        if (errorMsg) errorMsg.style.display = "none";
-        if (inputEmail) inputEmail.value = "";
-        if (formAdd) formAdd.style.display = "none";
-
-        const savedAccounts = getSavedGoogleAccountsList();
-
-        const closeModal = () => {
-            modal.style.display = "none";
-        };
-
-        const selectAccount = (email) => {
-            closeModal();
-            saveGoogleAccountToLocalList(email);
-            autoHealGoogleUserSession(email).then(res => resolve(res));
-        };
-
-        if (listEl) {
-            listEl.innerHTML = "";
-            if (savedAccounts.length > 0) {
-                listEl.style.display = "flex";
-                savedAccounts.forEach((email) => {
-                    const item = document.createElement("div");
-                    item.className = "google-account-picker-item";
-                    item.style.cssText = "display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.85rem; border-radius: 10px; cursor: pointer; transition: all 0.15s ease; border: 1px solid #e2e8f0; background: #ffffff;";
-                    
-                    item.onmouseenter = () => { item.style.background = "#f1f5f9"; item.style.borderColor = "#cbd5e1"; };
-                    item.onmouseleave = () => { item.style.background = "#ffffff"; item.style.borderColor = "#e2e8f0"; };
-
-                    const firstChar = email.charAt(0).toUpperCase();
-                    const username = email.split('@')[0];
-
-                    item.innerHTML = `
-                        <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #4285F4 0%, #1a73e8 100%); color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0; box-shadow: 0 2px 4px rgba(66,133,244,0.3);">
-                            ${firstChar}
-                        </div>
-                        <div style="flex: 1; min-width: 0;">
-                            <div style="font-size: 0.875rem; font-weight: 600; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${username}</div>
-                            <div style="font-size: 0.78rem; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${email}</div>
-                        </div>
-                        <svg style="width: 18px; height: 18px; fill: #94a3b8; flex-shrink: 0;" viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
-                    `;
-
-                    item.addEventListener("click", () => selectAccount(email));
-                    listEl.appendChild(item);
-                });
-            } else {
-                listEl.style.display = "none";
-                if (formAdd) formAdd.style.display = "block";
-            }
-        }
-
-        const handleCancel = () => {
-            closeModal();
-            resolve(null);
-        };
-
-        const handleAddToggle = () => {
-            if (formAdd) {
-                const isHidden = formAdd.style.display === "none";
-                formAdd.style.display = isHidden ? "block" : "none";
-                if (isHidden && inputEmail) inputEmail.focus();
-            }
-        };
-
-        const handleSubmit = () => {
-            if (!inputEmail) return;
-            const emailVal = inputEmail.value.trim().toLowerCase();
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-            if (!emailVal || !emailRegex.test(emailVal)) {
-                if (errorMsg) {
-                    errorMsg.textContent = "Please enter a valid Google email address.";
-                    errorMsg.style.display = "block";
-                }
-                return;
-            }
-
-            selectAccount(emailVal);
-        };
-
-        if (btnCancel) btnCancel.onclick = handleCancel;
-        if (btnToggleAdd) btnToggleAdd.onclick = handleAddToggle;
-        if (btnSubmit) btnSubmit.onclick = handleSubmit;
-
-        if (inputEmail) {
-            inputEmail.onkeydown = (e) => {
-                if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleSubmit();
-                }
-            };
-        }
-
-        modal.style.display = "flex";
-    });
-}
-
 export async function loginWithGoogle() {
     disableGuestMode();
     const auth = getFirebaseAuth();
-
-    if (auth && isRealFirebaseConfigured()) {
-        try {
-            const provider = new GoogleAuthProvider();
-            provider.setCustomParameters({ prompt: 'select_account' });
-            const res = await signInWithPopup(auth, provider);
-            if (res && res.user && res.user.email) {
-                localStorage.setItem("google_session_active", "true");
-                localStorage.setItem("voice_book_user_email", res.user.email);
-                saveGoogleAccountToLocalList(res.user.email);
-                if (authObserverCallback) {
-                    authObserverCallback(res.user);
-                }
-                return res;
-            }
-        } catch (error) {
-            console.warn("Google Auth popup notice:", error);
-            if (error && (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user')) {
-                return null;
-            }
-            try {
-                if (error && (error.code === 'auth/popup-blocked' || error.code === 'auth/operation-not-allowed')) {
-                    const provider = new GoogleAuthProvider();
-                    await signInWithRedirect(auth, provider);
-                    return null;
-                }
-            } catch (e2) {}
-        }
+    if (!auth) {
+        return { error: "Firebase Auth is uninitialized." };
     }
 
-    return showGoogleAccountPickerModal();
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+
+    try {
+        // 1. Try real Firebase Google OAuth Popup
+        const res = await signInWithPopup(auth, provider);
+        if (res && res.user && res.user.email) {
+            localStorage.setItem("google_session_active", "true");
+            localStorage.setItem("voice_book_user_email", res.user.email);
+            if (authObserverCallback) {
+                authObserverCallback(res.user);
+            }
+            return { user: res.user };
+        }
+    } catch (error) {
+        console.warn("Google Auth popup notice:", error);
+        
+        // If user cancelled/closed Google OAuth popup window
+        if (error && (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user')) {
+            return null;
+        }
+
+        // 2. If popup is blocked by mobile browser, try real Firebase Google OAuth Redirect
+        if (error && (error.code === 'auth/popup-blocked' || error.code === 'auth/operation-not-allowed')) {
+            try {
+                await signInWithRedirect(auth, provider);
+                return null;
+            } catch (redirError) {
+                console.error("Google Auth redirect error:", redirError);
+                return { error: redirError.message || "Google Sign-In failed." };
+            }
+        }
+
+        // API Key unconfigured / invalid credential error
+        return { error: error.message || "Google OAuth API key unconfigured." };
+    }
+
+    return null;
 }

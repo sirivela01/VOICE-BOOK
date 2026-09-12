@@ -1,5 +1,5 @@
 import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=54.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=390.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=400.0";
 import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook, getBookFilledPages } from "./db.js?v=54.0";
 import { startListening, stopListening, isMicActive, isSpeechSupported, setSpeechLanguage } from "./speech.js?v=210.0";
 
@@ -791,7 +791,11 @@ function setupEventListeners() {
                 btnGoogleLogin.disabled = true;
                 const result = await loginWithGoogle();
                 if (result && result.user) {
-                    showToast(`Signed in successfully as ${result.user.email || 'Google User'}!`, "success");
+                    showToast(`Signed in successfully as ${result.user.email}!`, "success");
+                } else if (result && result.error) {
+                    showToast("Google OAuth Error: Please configure your Firebase API Key.", "error");
+                    const modalConfig = document.getElementById("modal-config");
+                    if (modalConfig) modalConfig.style.display = "flex";
                 }
             } catch (err) {
                 console.warn("Google Auth error:", err);
