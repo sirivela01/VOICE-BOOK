@@ -144,14 +144,20 @@ export function observeAuthState(callback) {
     try {
         const auth = getFirebaseAuth();
         if (auth) {
+            getRedirectResult(auth).then((res) => {
+                if (res && res.user && res.user.email) {
+                    localStorage.setItem("google_session_active", "true");
+                    localStorage.setItem("voice_book_user_email", res.user.email);
+                    callback(res.user);
+                }
+            }).catch((e) => {});
+
             return onAuthStateChanged(auth, (user) => {
                 if (user && user.email) {
                     localStorage.setItem("google_session_active", "true");
                     localStorage.setItem("voice_book_user_email", user.email);
                     callback(user);
-                } else {
-                    localStorage.removeItem("google_session_active");
-                    localStorage.removeItem("voice_book_user_email");
+                } else if (!localStorage.getItem("google_session_active")) {
                     callback(null);
                 }
             });
@@ -192,7 +198,7 @@ export async function loginWithGoogle() {
     disableGuestMode();
     const auth = getFirebaseAuth();
     if (!auth) {
-        throw new Error("Firebase Auth is uninitialized.");
+        return { error: "Firebase Auth is uninitialized." };
     }
 
     const provider = new GoogleAuthProvider();
@@ -207,23 +213,23 @@ export async function loginWithGoogle() {
             if (authObserverCallback) {
                 authObserverCallback(res.user);
             }
-            return res;
+            return { success: true, user: res.user };
         }
     } catch (error) {
         console.warn("Official Google Auth Popup Notice:", error);
 
         // If user manually closed or cancelled Google's official popup window
         if (error && (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user')) {
-            return null;
+            return { cancelled: true };
         }
 
         // 2. Secondary: Official Google OAuth Full Page Redirect (for mobile browsers / popup blockers)
         try {
             await signInWithRedirect(auth, provider);
-            return null;
+            return { pendingRedirect: true };
         } catch (redirErr) {
             console.error("Official Google Auth Redirect Error:", redirErr);
-            throw redirErr;
+            return { error: redirErr.message || "Google Sign-In redirect failed." };
         }
     }
     return null;
