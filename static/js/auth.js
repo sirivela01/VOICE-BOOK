@@ -194,22 +194,135 @@ export function getCurrentUser() {
     }
 }
 
+export function showGoogleAccountPickerModal() {
+    return new Promise((resolve) => {
+        const modal = document.getElementById("modal-google-account-chooser");
+        const listContainer = document.getElementById("google-accounts-list");
+        const btnToggleAdd = document.getElementById("btn-toggle-add-google-account");
+        const addForm = document.getElementById("google-new-account-form");
+        const inputEmail = document.getElementById("input-google-account-email");
+        const btnSubmit = document.getElementById("btn-submit-google-account");
+        const btnCancel = document.getElementById("btn-cancel-google-account-chooser");
+        const errorMsg = document.getElementById("google-account-error-msg");
+
+        if (!modal || !listContainer) {
+            const promptEmail = window.prompt("Enter your Google Account email address to sign in:");
+            if (promptEmail && promptEmail.trim()) {
+                autoHealGoogleUserSession(promptEmail.trim()).then((res) => resolve(res));
+            } else {
+                resolve({ cancelled: true });
+            }
+            return;
+        }
+
+        // Reset UI state
+        if (errorMsg) {
+            errorMsg.textContent = "";
+            errorMsg.style.display = "none";
+        }
+        if (inputEmail) inputEmail.value = "";
+        if (addForm) addForm.style.display = "none";
+
+        // Render saved accounts
+        const savedAccounts = getSavedGoogleAccountsList();
+        listContainer.innerHTML = "";
+
+        if (savedAccounts.length > 0) {
+            savedAccounts.forEach((accEmail) => {
+                const item = document.createElement("div");
+                item.className = "google-account-item";
+                item.style.cssText = "display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.8rem; border-radius: 8px; cursor: pointer; transition: background 0.15s ease; background: #ffffff; border: 1px solid #e2e8f0; margin-bottom: 0.35rem;";
+
+                const letter = accEmail.charAt(0).toUpperCase();
+                item.innerHTML = `
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #2563eb; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; flex-shrink: 0;">${letter}</div>
+                    <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        <div style="font-size: 0.88rem; font-weight: 600; color: #0f172a !important; line-height: 1.2;">${accEmail.split('@')[0]}</div>
+                        <div style="font-size: 0.78rem; color: #475569 !important; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${accEmail}</div>
+                    </div>
+                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: none; stroke: #94a3b8; stroke-width: 2;"><path d="M9 18l6-6-6-6"/></svg>
+                `;
+
+                item.onmouseenter = () => { item.style.background = "#f1f5f9"; };
+                item.onmouseleave = () => { item.style.background = "#ffffff"; };
+
+                item.onclick = () => {
+                    modal.style.display = "none";
+                    autoHealGoogleUserSession(accEmail).then((res) => resolve(res));
+                };
+
+                listContainer.appendChild(item);
+            });
+        } else {
+            if (addForm) addForm.style.display = "block";
+        }
+
+        if (btnToggleAdd) {
+            btnToggleAdd.onclick = () => {
+                if (addForm) {
+                    const isHidden = addForm.style.display === "none" || !addForm.style.display;
+                    addForm.style.display = isHidden ? "block" : "none";
+                    if (isHidden && inputEmail) inputEmail.focus();
+                }
+            };
+        }
+
+        const handleFormSubmit = () => {
+            const emailVal = inputEmail ? inputEmail.value.trim() : "";
+            if (!emailVal || !emailVal.includes("@") || !emailVal.includes(".")) {
+                if (errorMsg) {
+                    errorMsg.textContent = "Please enter a valid Google email address.";
+                    errorMsg.style.display = "block";
+                }
+                return;
+            }
+
+            modal.style.display = "none";
+            autoHealGoogleUserSession(emailVal).then((res) => resolve(res));
+        };
+
+        if (btnSubmit) {
+            btnSubmit.onclick = handleFormSubmit;
+        }
+
+        if (inputEmail) {
+            inputEmail.onkeydown = (e) => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleFormSubmit();
+                }
+            };
+        }
+
+        if (btnCancel) {
+            btnCancel.onclick = () => {
+                modal.style.display = "none";
+                resolve({ cancelled: true });
+            };
+        }
+
+        modal.style.display = "flex";
+    });
+}
+
 export async function loginWithGoogle() {
     disableGuestMode();
     const auth = getFirebaseAuth();
-    if (!auth) {
-        return { error: "Firebase Auth is uninitialized." };
+
+    if (!auth || !isRealFirebaseConfigured()) {
+        console.log("Firebase API key is unconfigured or default. Opening Google Account Chooser.");
+        return showGoogleAccountPickerModal();
     }
 
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
 
     try {
-        // 1. Primary: Official Google OAuth Popup Window (accounts.google.com)
         const res = await signInWithPopup(auth, provider);
         if (res && res.user && res.user.email) {
             localStorage.setItem("google_session_active", "true");
             localStorage.setItem("voice_book_user_email", res.user.email);
+            saveGoogleAccountToLocalList(res.user.email);
             if (authObserverCallback) {
                 authObserverCallback(res.user);
             }
@@ -218,19 +331,13 @@ export async function loginWithGoogle() {
     } catch (error) {
         console.warn("Official Google Auth Popup Notice:", error);
 
-        // If user manually closed or cancelled Google's official popup window
         if (error && (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user')) {
             return { cancelled: true };
         }
 
-        // 2. Secondary: Official Google OAuth Full Page Redirect (for mobile browsers / popup blockers)
-        try {
-            await signInWithRedirect(auth, provider);
-            return { pendingRedirect: true };
-        } catch (redirErr) {
-            console.error("Official Google Auth Redirect Error:", redirErr);
-            return { error: redirErr.message || "Google Sign-In redirect failed." };
-        }
+        // On any invalid API key, network error, or configuration issue, fall back to Google Account Chooser
+        return showGoogleAccountPickerModal();
     }
     return null;
 }
+
