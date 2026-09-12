@@ -447,23 +447,23 @@ async function openNotebook(bookId, name, pageNum) {
         void overlay.offsetWidth; // Force Reflow
         overlay.classList.add("active-overlay");
         
-        // Step 1: Fast 3D opening transition (80ms)
+        // Step 1: 3D book zoom & cover swing (800ms)
         setTimeout(() => {
             overlay.classList.add("opening");
-        }, 80);
+        }, 800);
         
-        // Step 2: Swap back workspace view and hide overlay in 320ms (under 1 second!)
+        // Step 2: Swap back workspace view and hide overlay (2.2 seconds total duration)
         setTimeout(async () => {
             showView("view-notebook");
             await loadActivePage();
             
-            // Fade out the overlay quickly
+            // Smooth fade out of overlay
             overlay.classList.remove("active-overlay");
             setTimeout(() => {
                 overlay.classList.add("hidden");
                 overlay.classList.remove("opening");
-            }, 120);
-        }, 320);
+            }, 600);
+        }, 2200);
         
     } else {
         // Fallback if elements not found

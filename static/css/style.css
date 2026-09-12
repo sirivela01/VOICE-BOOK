@@ -1786,7 +1786,7 @@ canvas.notebook-canvas {
     transform-style: preserve-3d;
     transform: rotateX(25deg) rotateY(-25deg) translateZ(-100px) scale(0.7);
     opacity: 0;
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease-out;
+    transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease-out;
 }
 
 .book-opening-overlay.active-overlay .book-3d {
@@ -1810,7 +1810,7 @@ canvas.notebook-canvas {
     box-shadow: 10px 15px 35px rgba(0,0,0,0.5);
     transform-origin: left center;
     transform: rotateY(0deg);
-    transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+    transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
     z-index: 5;
     backface-visibility: hidden;
     border: 1px solid rgba(255,255,255,0.08);
