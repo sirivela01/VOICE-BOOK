@@ -1577,31 +1577,24 @@ function initSplashScreen() {
     setTimeout(dismissSplash, DURATION_MS);
 }
 
-/* ================= AUTOMATIC REAL-TIME VERSION CHECKER & UPDATE SYSTEM ================= */
+/* ================= AUTOMATIC SILENT REAL-TIME VERSION UPDATER ================= */
 function initAutoVersionChecker() {
-    const updateBanner = document.getElementById("update-toast-banner");
-    const btnApplyUpdate = document.getElementById("btn-apply-update");
-
-    if (!updateBanner || !btnApplyUpdate) return;
-
     let currentVersion = localStorage.getItem("voice_book_app_version");
 
-    const promptForUpdate = (newVer) => {
-        updateBanner.classList.remove("hidden");
-        btnApplyUpdate.onclick = () => {
-            if (newVer) {
-                localStorage.setItem("voice_book_app_version", newVer);
-            }
-            if ('caches' in window) {
-                caches.keys().then((names) => {
-                    names.forEach(name => caches.delete(name));
-                });
-            }
-            window.location.reload(true);
-        };
+    const silentAutoUpdate = (newVer) => {
+        if (newVer) {
+            localStorage.setItem("voice_book_app_version", newVer);
+        }
+        if ('caches' in window) {
+            caches.keys().then((names) => {
+                names.forEach(name => caches.delete(name));
+            });
+        }
+        console.log("Silent auto-update applying new version:", newVer);
+        window.location.reload(true);
     };
 
-    // 1. Check version endpoint on load and every 45 seconds
+    // Check version endpoint on load and every 25 seconds
     const checkVersion = async () => {
         try {
             const res = await fetch("/api/version?t=" + Date.now());
@@ -1610,18 +1603,20 @@ function initAutoVersionChecker() {
                 if (data && data.version) {
                     if (!currentVersion) {
                         localStorage.setItem("voice_book_app_version", data.version);
+                        currentVersion = data.version;
                     } else if (currentVersion !== data.version) {
-                        promptForUpdate(data.version);
+                        console.log(`New version detected on Render (${currentVersion} -> ${data.version}). Updating automatically...`);
+                        silentAutoUpdate(data.version);
                     }
                 }
             }
         } catch (e) {}
     };
 
-    setTimeout(checkVersion, 1500);
-    setInterval(checkVersion, 45000);
+    setTimeout(checkVersion, 1000);
+    setInterval(checkVersion, 25000);
 
-    // 2. Listen to Service Worker updates
+    // Listen to Service Worker updates
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.ready.then((registration) => {
             registration.addEventListener('updatefound', () => {
@@ -1629,7 +1624,7 @@ function initAutoVersionChecker() {
                 if (newWorker) {
                     newWorker.addEventListener('statechange', () => {
                         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            promptForUpdate();
+                            silentAutoUpdate();
                         }
                     });
                 }
@@ -1637,3 +1632,4 @@ function initAutoVersionChecker() {
         }).catch(() => {});
     }
 }
+
