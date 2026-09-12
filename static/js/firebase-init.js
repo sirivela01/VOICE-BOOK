@@ -7,12 +7,12 @@ let authInstance = null;
 let dbInstance = null;
 
 const DEFAULT_FIREBASE_CONFIG = {
-    apiKey: "AIzaSyBv9xK0_VoiceBook_UniversalKey",
+    apiKey: "AIzaSyDe7EPi-p6b5gnWFTucVC2Mz-LVJTHiI4",
     authDomain: "voice-book-5e5f0.firebaseapp.com",
     projectId: "voice-book-5e5f0",
-    storageBucket: "voice-book-5e5f0.appspot.com",
-    messagingSenderId: "109823478912",
-    appId: "1:109823478912:web:a1b2c3d4e5f6g7h8"
+    storageBucket: "voice-book-5e5f0.firebasestorage.app",
+    messagingSenderId: "684418710763",
+    appId: "1:684418710763:web:297972050bcab51a4092ae"
 };
 
 /**
