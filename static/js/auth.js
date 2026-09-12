@@ -212,8 +212,17 @@ async function handleGoogleSignInFallback(error = null) {
 
 export async function loginWithGoogle() {
     disableGuestMode();
-    const auth = getFirebaseAuth();
 
+    // 1. If user is already signed in, return active user immediately without launching any popup
+    const activeUser = getCurrentUser();
+    if (activeUser && activeUser.email) {
+        if (authObserverCallback) {
+            authObserverCallback(activeUser);
+        }
+        return { success: true, user: activeUser };
+    }
+
+    const auth = getFirebaseAuth();
     if (!auth) {
         return handleGoogleSignInFallback(new Error("Auth uninitialized"));
     }
