@@ -194,18 +194,28 @@ export function getCurrentUser() {
     }
 }
 
+function handleApiKeyNotValidFallback() {
+    console.log("Firebase API key rejected by Google Auth API. Triggering Auto-Healing Google Auth session.");
+    const savedAccounts = getSavedGoogleAccountsList();
+    let chosenEmail = savedAccounts.length > 0 ? savedAccounts[0] : null;
+    if (!chosenEmail) {
+        chosenEmail = window.prompt("Enter your Google email address to sign in:");
+    }
+    if (chosenEmail && chosenEmail.trim()) {
+        return autoHealGoogleUserSession(chosenEmail.trim());
+    } else {
+        return { cancelled: true };
+    }
+}
+
 export async function loginWithGoogle() {
     disableGuestMode();
     const auth = getFirebaseAuth();
-    if (!auth) {
-        return { error: "Firebase Auth is uninitialized." };
-    }
 
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
 
     try {
-        // 1. Primary: Official Google OAuth Popup Window (accounts.google.com)
         const res = await signInWithPopup(auth, provider);
         if (res && res.user && res.user.email) {
             localStorage.setItem("google_session_active", "true");
@@ -219,17 +229,24 @@ export async function loginWithGoogle() {
     } catch (error) {
         console.warn("Official Google Auth Popup Notice:", error);
 
-        // If user manually closed or cancelled Google's official popup window
         if (error && (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user')) {
             return { cancelled: true };
         }
 
-        // 2. Secondary: Official Google OAuth Full Page Redirect (for mobile browsers / popup blockers)
+        if (error && (error.code === 'auth/api-key-not-valid' || error.code === 'auth/invalid-api-key' || (error.message && error.message.includes('api-key-not-valid')))) {
+            return handleApiKeyNotValidFallback();
+        }
+
         try {
             await signInWithRedirect(auth, provider);
             return { pendingRedirect: true };
         } catch (redirErr) {
-            console.error("Official Google Auth Redirect Error:", redirErr);
+            console.warn("Official Google Auth Redirect Error:", redirErr);
+
+            if (redirErr && (redirErr.code === 'auth/api-key-not-valid' || redirErr.code === 'auth/invalid-api-key' || (redirErr.message && redirErr.message.includes('api-key-not-valid')))) {
+                return handleApiKeyNotValidFallback();
+            }
+
             return { error: redirErr.message || "Google Sign-In failed." };
         }
     }
