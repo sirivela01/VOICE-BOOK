@@ -1352,11 +1352,11 @@ select.form-control option:checked {
 }
 
 .notebook-paper-wrapper.flip-forward {
-    animation: singlePageFlipForward 0.5s ease-in-out forwards;
+    animation: singlePageFlipForward 0.22s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
 .notebook-paper-wrapper.flip-backward {
-    animation: singlePageFlipBackward 0.5s ease-in-out forwards;
+    animation: singlePageFlipBackward 0.22s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
 @keyframes singlePageFlipForward {
@@ -1442,11 +1442,11 @@ select.form-control option:checked {
 
 /* Book Flip Animations */
 .notebook-book-spread.flip-forward {
-    animation: bookFlipForward 0.6s ease-in-out forwards;
+    animation: bookFlipForward 0.22s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
 .notebook-book-spread.flip-backward {
-    animation: bookFlipBackward 0.6s ease-in-out forwards;
+    animation: bookFlipBackward 0.22s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
 @keyframes bookFlipForward {
@@ -1815,7 +1815,7 @@ canvas.notebook-canvas {
     transform-style: preserve-3d;
     transform: rotateX(25deg) rotateY(-25deg) translateZ(-100px) scale(0.7);
     opacity: 0;
-    transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease-out;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease-out;
 }
 
 .book-opening-overlay.active-overlay .book-3d {
@@ -1839,7 +1839,7 @@ canvas.notebook-canvas {
     box-shadow: 10px 15px 35px rgba(0,0,0,0.5);
     transform-origin: left center;
     transform: rotateY(0deg);
-    transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     z-index: 5;
     backface-visibility: hidden;
     border: 1px solid rgba(255,255,255,0.08);

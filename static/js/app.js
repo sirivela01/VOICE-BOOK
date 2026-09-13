@@ -1,6 +1,6 @@
 import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=57.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=700.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook, getBookFilledPages } from "./db.js?v=700.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=710.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook, getBookFilledPages } from "./db.js?v=710.0";
 import { startListening, stopListening, isMicActive, isSpeechSupported, setSpeechLanguage } from "./speech.js?v=210.0";
 
 import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection, eraseStrokesNearPoint } from "./renderer.js?v=190.0";
@@ -458,12 +458,12 @@ async function openNotebook(bookId, name, pageNum) {
         void overlay.offsetWidth; // Force Reflow
         overlay.classList.add("active-overlay");
         
-        // Step 1: 3D book zoom & cover swing (800ms)
+        // Step 1: 3D book zoom & cover swing (300ms)
         setTimeout(() => {
             overlay.classList.add("opening");
-        }, 800);
+        }, 300);
         
-        // Step 2: Swap back workspace view and hide overlay (2.2 seconds total duration)
+        // Step 2: Swap back workspace view and hide overlay (750ms total duration)
         setTimeout(async () => {
             showView("view-notebook");
             await loadActivePage();
@@ -473,8 +473,8 @@ async function openNotebook(bookId, name, pageNum) {
             setTimeout(() => {
                 overlay.classList.add("hidden");
                 overlay.classList.remove("opening");
-            }, 600);
-        }, 2200);
+            }, 250);
+        }, 750);
         
     } else {
         // Fallback if elements not found
@@ -505,10 +505,10 @@ async function turnPage(direction) {
         setTimeout(async () => {
             activePageNumber = targetPage;
             await loadActivePage();
-        }, 250);
+        }, 100);
         setTimeout(() => {
             if (paperWrapper) paperWrapper.classList.remove("flip-forward");
-        }, 500);
+        }, 220);
     } else {
         if (activePageNumber <= 1) return;
         const targetPage = activePageNumber - 1;
@@ -516,10 +516,10 @@ async function turnPage(direction) {
         setTimeout(async () => {
             activePageNumber = targetPage;
             await loadActivePage();
-        }, 250);
+        }, 100);
         setTimeout(() => {
             if (paperWrapper) paperWrapper.classList.remove("flip-backward");
-        }, 500);
+        }, 220);
     }
 }
 
@@ -541,10 +541,10 @@ async function goToPage(targetPage) {
     setTimeout(async () => {
         activePageNumber = targetPage;
         await loadActivePage();
-    }, 250);
+    }, 100);
     setTimeout(() => {
         if (paperWrapper) paperWrapper.classList.remove("flip-forward", "flip-backward");
-    }, 500);
+    }, 220);
 }
 
 async function loadActivePage() {
@@ -724,11 +724,11 @@ async function handlePageOverflow(remainingText) {
         pageDisplayCounter.innerText = `Page ${activePageNumber} of 100`;
         await saveActivePageData();
         await updateCurrentPage(activeBookId, activePageNumber);
-    }, 250);
+    }, 100);
     
     setTimeout(() => {
         if (wrapper) wrapper.classList.remove("flip-forward");
-    }, 500);
+    }, 220);
 }
 
 /* ================= 3. CORE UI EVENT BINDINGS ================= */
