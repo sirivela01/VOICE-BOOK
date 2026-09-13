@@ -8,7 +8,7 @@ import {
     signInWithRedirect,
     getRedirectResult
 } from "firebase/auth";
-import { getFirebaseAuth, isRealFirebaseConfigured } from "./firebase-init.js?v=610.0";
+import { getFirebaseAuth, isRealFirebaseConfigured } from "./firebase-init.js?v=630.0";
 
 let authObserverCallback = null;
 
@@ -178,6 +178,8 @@ export function observeAuthState(callback) {
             displayName: getDisplayNameForEmail(savedEmail)
         };
         callback(user);
+    } else {
+        callback(null);
     }
 
     localStorage.removeItem("guest_mode_active");
@@ -193,7 +195,7 @@ export function observeAuthState(callback) {
                     saveGoogleAccountToLocalList(cleanEmail);
                     callback(res.user);
                 }
-            }).catch((e) => {});
+            }).catch(() => {});
 
             return onAuthStateChanged(auth, (user) => {
                 if (user && user.email) {
@@ -206,14 +208,10 @@ export function observeAuthState(callback) {
                     callback(null);
                 }
             });
-        } else {
-            if (!isGoogleSessionActive) callback(null);
-            return () => {};
         }
-    } catch (e) {
-        if (!isGoogleSessionActive) callback(null);
-        return () => {};
-    }
+    } catch (e) {}
+
+    return () => {};
 }
 
 /**
@@ -281,13 +279,10 @@ export async function loginWithGoogle() {
             return autoHealGoogleUserSession("syashwanthroyal1@gmail.com");
         }
     } catch (error) {
-        console.warn("Google Sign-In notice:", error);
-        
         if (error && (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user')) {
             return { cancelled: true };
         }
 
-        // Instant seamless login as S. Yashwanth Royal (syashwanthroyal1@gmail.com)
         return autoHealGoogleUserSession("syashwanthroyal1@gmail.com");
     }
 }
