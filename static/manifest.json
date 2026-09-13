@@ -1,13 +1,13 @@
 {
-  "name": "VoiceBook - Voice-to-Handwriting Digital Notebook",
+  "name": "VoiceBook",
   "short_name": "VoiceBook",
   "description": "Convert spoken words into realistic handwritten notebook pages instantly with AI voice dictation.",
   "start_url": "/",
   "id": "/",
   "display": "standalone",
-  "orientation": "portrait-primary",
-  "background_color": "#0f172a",
-  "theme_color": "#ea580c",
+  "orientation": "any",
+  "background_color": "#0284c7",
+  "theme_color": "#0284c7",
   "scope": "/",
   "icons": [
     {

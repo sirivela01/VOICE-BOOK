@@ -37,12 +37,39 @@ def root_logo():
 def google_verification():
     return 'google-site-verification: google2a35372545172c1b.html', 200, {'Content-Type': 'text/html'}
 
+@app.route('/manifest.json')
+@app.route('/site.webmanifest')
+def manifest():
+    res = send_from_directory('static', 'manifest.json', mimetype='application/manifest+json')
+    res.headers['Cache-Control'] = 'public, max-age=3600'
+    res.headers['Access-Control-Allow-Origin'] = '*'
+    return res
+
 @app.route('/sw.js')
 @app.route('/service-worker.js')
 def service_worker():
-    # Return self-unregistering script to ensure pure web app behavior
-    unregister_code = "self.addEventListener('install', () => self.skipWaiting()); self.addEventListener('activate', (e) => e.waitUntil(self.registration.unregister()));"
-    res = app.response_class(response=unregister_code, status=200, mimetype='application/javascript')
+    sw_code = """
+const CACHE_NAME = 'voicebook-pwa-v1';
+const urlsToCache = ['/', '/manifest.json', '/static/css/style.css', '/static/js/app.js', '/static/images/logo.png'];
+
+self.addEventListener('install', (event) => {
+    self.skipWaiting();
+    event.waitUntil(
+        caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache).catch(() => {}))
+    );
+});
+
+self.addEventListener('activate', (event) => {
+    event.waitUntil(self.clients.claim());
+});
+
+self.addEventListener('fetch', (event) => {
+    event.respondWith(
+        fetch(event.request).catch(() => caches.match(event.request))
+    );
+});
+"""
+    res = app.response_class(response=sw_code.strip(), status=200, mimetype='application/javascript')
     res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     res.headers['Access-Control-Allow-Origin'] = '*'
     return res
@@ -68,7 +95,7 @@ def get_config():
     res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     res.headers['Access-Control-Allow-Origin'] = '*'
     return res
-CURRENT_APP_VERSION = "v730.0"
+CURRENT_APP_VERSION = "v740.0"
 
 @app.route('/api/version', methods=['GET'])
 def get_app_version():

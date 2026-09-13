@@ -62,7 +62,7 @@
     <!-- Web Application Manifest for Mobile Installation -->
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <!-- Main Style -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='730.0') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='740.0') }}">
 </head>
 <body>
     <!-- ================= 9-SECOND PROFESSIONAL TITLE SPLASH SCREEN ================= -->
@@ -582,17 +582,15 @@
 
 
 
-    <!-- Web Application - Unregister any legacy Service Worker -->
+    <!-- Register PWA Service Worker for PWABuilder & Installability -->
     <script>
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then((registrations) => {
-                for (let registration of registrations) {
-                    registration.unregister();
-                }
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
             });
         }
     </script>
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='730.0') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='740.0') }}"></script>
 </body>
 </html>
