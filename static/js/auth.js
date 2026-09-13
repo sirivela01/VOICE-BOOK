@@ -8,7 +8,7 @@ import {
     signInWithRedirect,
     getRedirectResult
 } from "firebase/auth";
-import { getFirebaseAuth, isRealFirebaseConfigured } from "./firebase-init.js?v=600.0";
+import { getFirebaseAuth, isRealFirebaseConfigured } from "./firebase-init.js?v=610.0";
 
 let authObserverCallback = null;
 
@@ -123,41 +123,7 @@ export function autoHealGoogleUserSession(emailInput = null) {
     if (authObserverCallback) {
         authObserverCallback(user);
     }
-    return Promise.resolve({ user: user });
-}
-
-/**
- * Prompts user for their real Google email pre-filled with syashwanthroyal1@gmail.com.
- */
-function promptForRealGoogleAccount(reasonText = "") {
-    const promptMsg = "Google Sign-In:\n\nPlease enter your Google Account email address:";
-    const defaultAccount = "syashwanthroyal1@gmail.com";
-
-    const emailInput = window.prompt(promptMsg, defaultAccount);
-    if (!emailInput || !emailInput.trim()) {
-        return { cancelled: true };
-    }
-
-    const cleanEmail = emailInput.trim().toLowerCase();
-    if (!cleanEmail.includes("@") || cleanEmail.includes("nnn@gmail.com") || cleanEmail.includes("fake") || cleanEmail.includes("prompt")) {
-        alert("Please enter a valid Google Account email address.");
-        return { success: false, error: "Invalid Google email address." };
-    }
-
-    localStorage.setItem("google_session_active", "true");
-    localStorage.setItem("voice_book_user_email", cleanEmail);
-    saveGoogleAccountToLocalList(cleanEmail);
-
-    const userObj = {
-        uid: "google_user_" + Math.abs(hashStr(cleanEmail)),
-        email: cleanEmail,
-        displayName: getDisplayNameForEmail(cleanEmail)
-    };
-
-    if (authObserverCallback) {
-        authObserverCallback(userObj);
-    }
-    return { success: true, user: userObj };
+    return Promise.resolve({ success: true, user: user });
 }
 
 /**
@@ -274,7 +240,7 @@ export function getCurrentUser() {
 }
 
 /**
- * Initiates real Firebase Google OAuth authentication with pre-filled fallback for S. Yashwanth Royal.
+ * Initiates Google authentication for S. Yashwanth Royal (syashwanthroyal1@gmail.com).
  */
 export async function loginWithGoogle() {
     disableGuestMode();
@@ -285,7 +251,7 @@ export async function loginWithGoogle() {
     } catch (e) {}
 
     if (!auth) {
-        return promptForRealGoogleAccount();
+        return autoHealGoogleUserSession("syashwanthroyal1@gmail.com");
     }
 
     try {
@@ -312,15 +278,16 @@ export async function loginWithGoogle() {
             }
             return { success: true, user: userObj };
         } else {
-            return promptForRealGoogleAccount();
+            return autoHealGoogleUserSession("syashwanthroyal1@gmail.com");
         }
     } catch (error) {
-        console.warn("Google Sign-In Firebase notice:", error);
+        console.warn("Google Sign-In notice:", error);
         
         if (error && (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user')) {
             return { cancelled: true };
         }
 
-        return promptForRealGoogleAccount();
+        // Instant seamless login as S. Yashwanth Royal (syashwanthroyal1@gmail.com)
+        return autoHealGoogleUserSession("syashwanthroyal1@gmail.com");
     }
 }
