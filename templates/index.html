@@ -432,47 +432,47 @@
                     Enter your Firebase Web App credentials below. These values will be securely stored in your browser's local storage and used to connect to your database.
                 </p>
                 <div class="form-group">
-                    <label for="config-raw">Paste Firebase SDK Config Object (Optional)</label>
+                    <label for="config-raw">Paste Firebase SDK Config Object</label>
                     <textarea id="config-raw" rows="4" class="form-control font-code" placeholder='const firebaseConfig = {
-  apiKey: "AIzaSy...",
-  authDomain: "...",
-  ...
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.firebasestorage.app",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };'></textarea>
                 </div>
                 <div class="divider"><span>OR ENTER MANUALLY</span></div>
                 <div class="form-grid">
                     <div class="form-group">
                         <label for="config-api-key">API Key</label>
-                        <input type="text" id="config-api-key" class="form-control">
+                        <input type="text" id="config-api-key" class="form-control" placeholder="e.g. AIzaSy...">
                     </div>
                     <div class="form-group">
                         <label for="config-auth-domain">Auth Domain</label>
-                        <input type="text" id="config-auth-domain" class="form-control">
+                        <input type="text" id="config-auth-domain" class="form-control" placeholder="e.g. myapp.firebaseapp.com">
                     </div>
                     <div class="form-group">
                         <label for="config-project-id">Project ID</label>
-                        <input type="text" id="config-project-id" class="form-control">
+                        <input type="text" id="config-project-id" class="form-control" placeholder="e.g. myapp-12345">
                     </div>
                     <div class="form-group">
                         <label for="config-storage-bucket">Storage Bucket</label>
-                        <input type="text" id="config-storage-bucket" class="form-control">
+                        <input type="text" id="config-storage-bucket" class="form-control" placeholder="e.g. myapp.firebasestorage.app">
                     </div>
                     <div class="form-group">
                         <label for="config-sender-id">Messaging Sender ID</label>
-                        <input type="text" id="config-sender-id" class="form-control">
+                        <input type="text" id="config-sender-id" class="form-control" placeholder="e.g. 1234567890">
                     </div>
                     <div class="form-group">
                         <label for="config-app-id">App ID</label>
-                        <input type="text" id="config-app-id" class="form-control">
+                        <input type="text" id="config-app-id" class="form-control" placeholder="e.g. 1:123456:web:abcd">
                     </div>
                 </div>
             </div>
-            <div class="modal-footer" style="display: flex; gap: 0.5rem; justify-content: space-between; flex-wrap: wrap;">
-                <button id="btn-autofill-config" type="button" class="btn btn-secondary" style="background: #0284c7; color: #fff; border: none; font-weight: 600;">✨ Auto-Fill Defaults</button>
-                <div style="display: flex; gap: 0.5rem;">
-                    <button id="btn-clear-config" class="btn btn-outline">Clear Storage</button>
-                    <button id="btn-save-config" class="btn btn-primary">Save Config</button>
-                </div>
+            <div class="modal-footer" style="display: flex; gap: 0.5rem; justify-content: flex-end; flex-wrap: wrap;">
+                <button id="btn-clear-config" class="btn btn-outline">Clear Storage</button>
+                <button id="btn-save-config" class="btn btn-primary">Save Config</button>
             </div>
         </div>
     </div>
@@ -591,6 +591,6 @@
         }
     </script>
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='660.0') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='670.0') }}"></script>
 </body>
 </html>

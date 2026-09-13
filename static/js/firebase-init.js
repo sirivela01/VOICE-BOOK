@@ -6,6 +6,16 @@ let appInstance = null;
 let authInstance = null;
 let dbInstance = null;
 
+// Self-executing cleanup routine to purge legacy built-in credentials from localStorage
+(function purgeLegacyConfig() {
+    try {
+        const local = localStorage.getItem('firebase_config');
+        if (local && (local.includes("voice-book-5e5f0") || local.includes("AIzaSyDe7EPi"))) {
+            localStorage.removeItem('firebase_config');
+        }
+    } catch (e) {}
+})();
+
 const EMPTY_FIREBASE_CONFIG = {
     apiKey: "",
     authDomain: "",
@@ -24,7 +34,7 @@ export function getSavedFirebaseConfig() {
         const local = localStorage.getItem('firebase_config');
         if (local) {
             const parsed = JSON.parse(local);
-            if (parsed && parsed.apiKey && parsed.apiKey.trim() !== "") {
+            if (parsed && parsed.apiKey && parsed.apiKey.trim() !== "" && !parsed.apiKey.includes("AIzaSyDe7EPi")) {
                 return parsed;
             }
         }
@@ -46,7 +56,7 @@ export async function fetchFirebaseConfig() {
  * @returns {{auth: any, db: any}} auth and firestore instances
  */
 export function initFirebase(config) {
-    if (!config || !config.apiKey || config.apiKey.trim() === "") {
+    if (!config || !config.apiKey || config.apiKey.trim() === "" || config.apiKey.includes("AIzaSyDe7EPi")) {
         return { auth: null, db: null };
     }
     try {
@@ -58,7 +68,7 @@ export function initFirebase(config) {
         }
         return { auth: authInstance, db: dbInstance };
     } catch (e) {
-        console.warn("Firebase initialization warning:", e);
+        console.warn("Firebase initialization notice:", e);
         return { auth: null, db: null };
     }
 }
@@ -103,7 +113,7 @@ export function isFirebaseInitialized() {
  */
 export function isRealFirebaseConfigured() {
     const saved = getSavedFirebaseConfig();
-    return saved !== null && saved.apiKey && saved.apiKey.trim() !== "";
+    return saved !== null && saved.apiKey && saved.apiKey.trim() !== "" && !saved.apiKey.includes("AIzaSyDe7EPi");
 }
 
 /**

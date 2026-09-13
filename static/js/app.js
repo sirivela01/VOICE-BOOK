@@ -1,5 +1,5 @@
 import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=57.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=660.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=670.0";
 import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook, getBookFilledPages } from "./db.js?v=54.0";
 import { startListening, stopListening, isMicActive, isSpeechSupported, setSpeechLanguage } from "./speech.js?v=210.0";
 
@@ -908,34 +908,16 @@ function setupEventListeners() {
         saveFirebaseConfigUI();
     });
     
-    const btnAutoFillConfig = document.getElementById("btn-autofill-config");
-    if (btnAutoFillConfig) {
-        btnAutoFillConfig.addEventListener("click", () => {
-            const rawBox = document.getElementById("config-raw");
-            if (rawBox) {
-                rawBox.value = `const firebaseConfig = {
-  apiKey: "AIzaSyDe7EPi-p6b5gnWFTucVC2Mz-LVJTHiI4",
-  authDomain: "voice-book-5e5f0.firebaseapp.com",
-  projectId: "voice-book-5e5f0",
-  storageBucket: "voice-book-5e5f0.firebasestorage.app",
-  messagingSenderId: "684418710763",
-  appId: "1:684418710763:web:297972050bcab51a4092ae"
-};`;
-            }
-            document.getElementById("config-api-key").value = "AIzaSyDe7EPi-p6b5gnWFTucVC2Mz-LVJTHiI4";
-            document.getElementById("config-auth-domain").value = "voice-book-5e5f0.firebaseapp.com";
-            document.getElementById("config-project-id").value = "voice-book-5e5f0";
-            document.getElementById("config-storage-bucket").value = "voice-book-5e5f0.firebasestorage.app";
-            document.getElementById("config-sender-id").value = "684418710763";
-            document.getElementById("config-app-id").value = "1:684418710763:web:297972050bcab51a4092ae";
-            showToast("Auto-filled VoiceBook credentials! Click Save Config.", "info");
-        });
-    }
-
     document.getElementById("btn-clear-config").addEventListener("click", () => {
         if (confirm("Clear local Firebase configuration?")) {
             localStorage.removeItem('firebase_config');
-            showToast("Local configuration cleared! Reloading page...", "success");
+            const rawBox = document.getElementById("config-raw");
+            if (rawBox) rawBox.value = "";
+            ["config-api-key", "config-auth-domain", "config-project-id", "config-storage-bucket", "config-sender-id", "config-app-id"].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = "";
+            });
+            showToast("Local configuration cleared! Reloading application...", "success");
             setTimeout(() => location.reload(), 1000);
         }
     });
