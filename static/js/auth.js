@@ -309,7 +309,46 @@ export async function loginWithGoogle() {
             return { success: false, error: "Google Sign-In failed: No user account was selected." };
         }
     } catch (error) {
+        // First check if Firebase Auth actually signed the user in despite the popup window closing on mobile!
+        try {
+            const checkAuth = getFirebaseAuth();
+            const activeUser = checkAuth?.currentUser;
+            const activeEmail = activeUser?.email || activeUser?.providerData?.[0]?.email;
+            if (activeUser && activeEmail) {
+                const cleanEmail = activeEmail.trim().toLowerCase();
+                localStorage.setItem("google_session_active", "true");
+                localStorage.setItem("voice_book_user_email", cleanEmail);
+                saveGoogleAccountToLocalList(cleanEmail);
+
+                const userObj = {
+                    uid: activeUser.uid || ("google_user_" + Math.abs(hashStr(cleanEmail))),
+                    email: cleanEmail,
+                    displayName: activeUser.displayName || getDisplayNameForEmail(cleanEmail)
+                };
+
+                if (authObserverCallback) authObserverCallback(userObj);
+                return { success: true, user: userObj };
+            }
+        } catch (e) {}
+
         if (error && (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user')) {
+            // Re-check current user one more time in case Firebase Auth state updated during popup close
+            const checkAuth = getFirebaseAuth();
+            const delayCheck = checkAuth?.currentUser;
+            const delayEmail = delayCheck?.email || delayCheck?.providerData?.[0]?.email;
+            if (delayCheck && delayEmail) {
+                const cleanEmail = delayEmail.trim().toLowerCase();
+                localStorage.setItem("google_session_active", "true");
+                localStorage.setItem("voice_book_user_email", cleanEmail);
+                saveGoogleAccountToLocalList(cleanEmail);
+                const userObj = {
+                    uid: delayCheck.uid || ("google_user_" + Math.abs(hashStr(cleanEmail))),
+                    email: cleanEmail,
+                    displayName: delayCheck.displayName || getDisplayNameForEmail(cleanEmail)
+                };
+                if (authObserverCallback) authObserverCallback(userObj);
+                return { success: true, user: userObj };
+            }
             return { cancelled: true };
         }
 
