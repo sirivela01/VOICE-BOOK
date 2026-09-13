@@ -249,7 +249,7 @@ export async function loginWithGoogle() {
     } catch (e) {}
 
     if (!auth) {
-        return autoHealGoogleUserSession("syashwanthroyal1@gmail.com");
+        return { success: false, error: "Firebase Auth is not available." };
     }
 
     try {
@@ -276,13 +276,13 @@ export async function loginWithGoogle() {
             }
             return { success: true, user: userObj };
         } else {
-            return autoHealGoogleUserSession("syashwanthroyal1@gmail.com");
+            return { success: false, error: "Google Sign-In failed: No user account was selected." };
         }
     } catch (error) {
         if (error && (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user')) {
             return { cancelled: true };
         }
 
-        return autoHealGoogleUserSession("syashwanthroyal1@gmail.com");
+        return { success: false, error: error?.message || "Google Sign-In failed." };
     }
 }
