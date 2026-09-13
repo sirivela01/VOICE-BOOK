@@ -6,28 +6,32 @@ let appInstance = null;
 let authInstance = null;
 let dbInstance = null;
 
-// Self-executing cleanup routine to purge legacy built-in credentials from localStorage
-(function purgeLegacyConfig() {
+const DEFAULT_FIREBASE_CONFIG = {
+    apiKey: "AIzaSyBT1_9Pl1nUKLxlTTz8iyLX2lgIsn-m4GY",
+    authDomain: "voice-book-5e5f0.firebaseapp.com",
+    projectId: "voice-book-5e5f0",
+    storageBucket: "voice-book-5e5f0.firebasestorage.app",
+    messagingSenderId: "684418710763",
+    appId: "1:684418710763:web:5be1ee506cd270634092ae",
+    measurementId: "G-G5D1DHPHF2"
+};
+
+// Purge any stale legacy localStorage configuration on load
+(function cleanupOldConfig() {
     try {
         const local = localStorage.getItem('firebase_config');
-        if (local && (local.includes("voice-book-5e5f0") || local.includes("AIzaSyDe7EPi"))) {
-            localStorage.removeItem('firebase_config');
+        if (local) {
+            const parsed = JSON.parse(local);
+            if (parsed && (!parsed.apiKey || parsed.apiKey.includes("AIzaSyDe7EPi"))) {
+                localStorage.removeItem('firebase_config');
+            }
         }
     } catch (e) {}
 })();
 
-const EMPTY_FIREBASE_CONFIG = {
-    apiKey: "",
-    authDomain: "",
-    projectId: "",
-    storageBucket: "",
-    messagingSenderId: "",
-    appId: ""
-};
-
 /**
- * Attempts to retrieve saved custom Firebase configuration from localStorage.
- * @returns {Object|null} Saved Firebase config or null
+ * Attempts to retrieve saved custom Firebase configuration from localStorage or default.
+ * @returns {Object} Saved Firebase config or DEFAULT_FIREBASE_CONFIG
  */
 export function getSavedFirebaseConfig() {
     try {
@@ -39,15 +43,14 @@ export function getSavedFirebaseConfig() {
             }
         }
     } catch (e) {}
-    return null;
+    return DEFAULT_FIREBASE_CONFIG;
 }
 
 /**
- * Returns custom saved Firebase config or empty default.
+ * Returns active Firebase config.
  */
 export async function fetchFirebaseConfig() {
-    const saved = getSavedFirebaseConfig();
-    return saved || EMPTY_FIREBASE_CONFIG;
+    return getSavedFirebaseConfig();
 }
 
 /**
@@ -55,46 +58,38 @@ export async function fetchFirebaseConfig() {
  * @param {Object} config Firebase configuration parameters
  * @returns {{auth: any, db: any}} auth and firestore instances
  */
-export function initFirebase(config) {
-    if (!config || !config.apiKey || config.apiKey.trim() === "" || config.apiKey.includes("AIzaSyDe7EPi")) {
-        return { auth: null, db: null };
-    }
+export function initFirebase(config = DEFAULT_FIREBASE_CONFIG) {
+    const activeConfig = config || DEFAULT_FIREBASE_CONFIG;
     try {
         if (!appInstance) {
-            appInstance = initializeApp(config);
+            appInstance = initializeApp(activeConfig);
             authInstance = getAuth(appInstance);
             dbInstance = getFirestore(appInstance);
-            console.log("Firebase App initialized successfully with custom configuration.");
+            console.log("Firebase App initialized successfully.");
         }
         return { auth: authInstance, db: dbInstance };
     } catch (e) {
         console.warn("Firebase initialization notice:", e);
-        return { auth: null, db: null };
+        return { auth: authInstance, db: dbInstance };
     }
 }
 
 /**
- * Getter for Firebase Auth instance. Auto-initializes if custom config is saved.
+ * Getter for Firebase Auth instance. Auto-initializes if not ready.
  */
 export function getFirebaseAuth() {
     if (!authInstance) {
-        const saved = getSavedFirebaseConfig();
-        if (saved) {
-            initFirebase(saved);
-        }
+        initFirebase(getSavedFirebaseConfig());
     }
     return authInstance;
 }
 
 /**
- * Getter for Firestore database instance. Auto-initializes if custom config is saved.
+ * Getter for Firestore database instance. Auto-initializes if not ready.
  */
 export function getFirebaseDb() {
     if (!dbInstance) {
-        const saved = getSavedFirebaseConfig();
-        if (saved) {
-            initFirebase(saved);
-        }
+        initFirebase(getSavedFirebaseConfig());
     }
     return dbInstance;
 }
@@ -108,12 +103,12 @@ export function isFirebaseInitialized() {
 }
 
 /**
- * Checks if a real, valid user-configured Firebase API key is loaded.
+ * Checks if a real, valid Firebase API key is loaded.
  * @returns {boolean}
  */
 export function isRealFirebaseConfigured() {
-    const saved = getSavedFirebaseConfig();
-    return saved !== null && saved.apiKey && saved.apiKey.trim() !== "" && !saved.apiKey.includes("AIzaSyDe7EPi");
+    const cfg = getSavedFirebaseConfig();
+    return cfg && cfg.apiKey && cfg.apiKey.trim() !== "";
 }
 
 /**
@@ -126,10 +121,9 @@ export function clearFirebaseConfig() {
     dbInstance = null;
 }
 
-// Auto-initialize if user already saved custom config in localStorage
+// Synchronous auto-initialization at startup
 try {
-    const saved = getSavedFirebaseConfig();
-    if (saved) {
-        initFirebase(saved);
+    if (!appInstance) {
+        initFirebase(getSavedFirebaseConfig());
     }
 } catch (e) {}
