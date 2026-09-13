@@ -1,6 +1,6 @@
 import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=57.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=780.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook, getBookFilledPages } from "./db.js?v=780.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=790.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook, getBookFilledPages } from "./db.js?v=790.0";
 import { startListening, stopListening, isMicActive, isSpeechSupported, setSpeechLanguage } from "./speech.js?v=210.0";
 
 // Auto-purge stale mobile browser & service worker caches on new app version release
@@ -9,7 +9,7 @@ import { startListening, stopListening, isMicActive, isSpeechSupported, setSpeec
         const res = await fetch('/api/version?t=' + Date.now());
         if (res.ok) {
             const data = await res.json();
-            const currentVer = data.version || "v780.0";
+            const currentVer = data.version || "v790.0";
             const lastVer = localStorage.getItem("voice_book_app_version");
             if (lastVer && lastVer !== currentVer) {
                 localStorage.setItem("voice_book_app_version", currentVer);
