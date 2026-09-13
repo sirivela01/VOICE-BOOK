@@ -40,7 +40,34 @@ def google_verification():
 @app.route('/manifest.json')
 @app.route('/site.webmanifest')
 def manifest():
-    res = send_from_directory('static', 'manifest.json', mimetype='application/manifest+json')
+    manifest_data = {
+        "name": "VoiceBook",
+        "short_name": "VoiceBook",
+        "description": "Convert spoken words into realistic handwritten notebook pages instantly with AI voice dictation.",
+        "start_url": "/",
+        "id": "/",
+        "display": "standalone",
+        "orientation": "any",
+        "background_color": "#0284c7",
+        "theme_color": "#0284c7",
+        "scope": "/",
+        "icons": [
+            {
+                "src": "/static/images/logo.png",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "any maskable"
+            },
+            {
+                "src": "/static/images/logo.png",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any maskable"
+            }
+        ]
+    }
+    res = jsonify(manifest_data)
+    res.headers['Content-Type'] = 'application/manifest+json'
     res.headers['Cache-Control'] = 'public, max-age=3600'
     res.headers['Access-Control-Allow-Origin'] = '*'
     return res
@@ -95,7 +122,7 @@ def get_config():
     res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     res.headers['Access-Control-Allow-Origin'] = '*'
     return res
-CURRENT_APP_VERSION = "v740.0"
+CURRENT_APP_VERSION = "v750.0"
 
 @app.route('/api/version', methods=['GET'])
 def get_app_version():
