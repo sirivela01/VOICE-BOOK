@@ -1,6 +1,6 @@
 import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=57.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=710.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook, getBookFilledPages } from "./db.js?v=710.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=720.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook, getBookFilledPages } from "./db.js?v=720.0";
 import { startListening, stopListening, isMicActive, isSpeechSupported, setSpeechLanguage } from "./speech.js?v=210.0";
 
 import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection, eraseStrokesNearPoint } from "./renderer.js?v=190.0";
@@ -505,10 +505,10 @@ async function turnPage(direction) {
         setTimeout(async () => {
             activePageNumber = targetPage;
             await loadActivePage();
-        }, 100);
+        }, 200);
         setTimeout(() => {
             if (paperWrapper) paperWrapper.classList.remove("flip-forward");
-        }, 220);
+        }, 400);
     } else {
         if (activePageNumber <= 1) return;
         const targetPage = activePageNumber - 1;
@@ -516,10 +516,10 @@ async function turnPage(direction) {
         setTimeout(async () => {
             activePageNumber = targetPage;
             await loadActivePage();
-        }, 100);
+        }, 200);
         setTimeout(() => {
             if (paperWrapper) paperWrapper.classList.remove("flip-backward");
-        }, 220);
+        }, 400);
     }
 }
 
@@ -541,10 +541,10 @@ async function goToPage(targetPage) {
     setTimeout(async () => {
         activePageNumber = targetPage;
         await loadActivePage();
-    }, 100);
+    }, 200);
     setTimeout(() => {
         if (paperWrapper) paperWrapper.classList.remove("flip-forward", "flip-backward");
-    }, 220);
+    }, 400);
 }
 
 async function loadActivePage() {
@@ -724,11 +724,11 @@ async function handlePageOverflow(remainingText) {
         pageDisplayCounter.innerText = `Page ${activePageNumber} of 100`;
         await saveActivePageData();
         await updateCurrentPage(activeBookId, activePageNumber);
-    }, 100);
+    }, 200);
     
     setTimeout(() => {
         if (wrapper) wrapper.classList.remove("flip-forward");
-    }, 220);
+    }, 400);
 }
 
 /* ================= 3. CORE UI EVENT BINDINGS ================= */
