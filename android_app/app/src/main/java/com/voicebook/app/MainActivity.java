@@ -3,14 +3,13 @@ package com.voicebook.app;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Message;
 import android.view.View;
 import android.webkit.PermissionRequest;
-import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -89,10 +88,15 @@ public class MainActivity extends AppCompatActivity {
         settings.setUserAgentString(defaultUA.replace("; wv", ""));
 
         mainWebView.setWebViewClient(new WebViewClient() {
+            @Deprecated
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                view.loadUrl(url);
-                return true;
+                return false;
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                return false;
             }
         });
 
@@ -119,8 +123,14 @@ public class MainActivity extends AppCompatActivity {
                 ));
 
                 popupWebView.setWebViewClient(new WebViewClient() {
+                    @Deprecated
                     @Override
                     public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                         return false;
                     }
                 });
