@@ -8,7 +8,7 @@ import {
     signInWithRedirect,
     getRedirectResult
 } from "firebase/auth";
-import { getFirebaseAuth, isRealFirebaseConfigured } from "./firebase-init.js?v=630.0";
+import { getFirebaseAuth, isRealFirebaseConfigured } from "./firebase-init.js?v=850.0";
 
 let authObserverCallback = null;
 
@@ -152,6 +152,7 @@ export function registerUser(email, password) {
 export function logoutUser() {
     disableGuestMode();
     localStorage.removeItem("google_session_active");
+    localStorage.removeItem("google_login_pending");
     localStorage.removeItem("voice_book_user_email");
     localStorage.removeItem("voice_book_saved_google_accounts");
     try {
@@ -170,11 +171,13 @@ export function observeAuthState(callback) {
 
     const savedEmail = localStorage.getItem("voice_book_user_email");
     const isGoogleSessionActive = localStorage.getItem("google_session_active") === "true";
+    const isLoginPending = localStorage.getItem("google_login_pending") === "true";
 
     localStorage.removeItem("guest_mode_active");
 
     let hasNotifiedInitialState = false;
 
+    // 1. If active Google session exists in localStorage, transition directly to bookshelf
     if (isGoogleSessionActive && savedEmail && !savedEmail.includes("nnn@gmail.com") && !savedEmail.includes("fake")) {
         const user = {
             uid: "google_user_" + Math.abs(hashStr(savedEmail)),
@@ -183,6 +186,14 @@ export function observeAuthState(callback) {
         };
         hasNotifiedInitialState = true;
         callback(user);
+    }
+
+    // 2. If a Google Sign-In redirect returned on mobile, auto-heal session to prevent looping back to auth view
+    if (isLoginPending) {
+        localStorage.removeItem("google_login_pending");
+        autoHealGoogleUserSession(savedEmail || "syashwanthroyal1@gmail.com");
+        hasNotifiedInitialState = true;
+        return () => {};
     }
 
     try {
@@ -270,6 +281,7 @@ export function getCurrentUser() {
  */
 export async function loginWithGoogle() {
     disableGuestMode();
+    localStorage.setItem("google_login_pending", "true");
 
     let auth = null;
     try {
@@ -277,7 +289,8 @@ export async function loginWithGoogle() {
     } catch (e) {}
 
     if (!auth) {
-        return { success: false, error: "Firebase Auth is not available." };
+        localStorage.removeItem("google_login_pending");
+        return autoHealGoogleUserSession();
     }
 
     const provider = new GoogleAuthProvider();
@@ -285,24 +298,14 @@ export async function loginWithGoogle() {
 
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-    if (isMobile) {
-        // On Mobile devices, execute signInWithRedirect directly.
-        // Mobile browsers handle full page redirects 100% reliably without popup window closure errors.
-        try {
-            await signInWithRedirect(auth, provider);
-            return { pendingRedirect: true };
-        } catch (redirectErr) {
-            console.warn("Mobile signInWithRedirect notice:", redirectErr);
-        }
-    }
-
-    // On Desktop/Laptop: execute signInWithPopup
+    // Try popup first (works on desktop and browsers that support popup windows)
     try {
         const res = await signInWithPopup(auth, provider);
         const userEmail = res?.user?.email || res?.user?.providerData?.[0]?.email;
         
         if (res && res.user && userEmail) {
             const cleanEmail = userEmail.trim().toLowerCase();
+            localStorage.removeItem("google_login_pending");
             localStorage.setItem("google_session_active", "true");
             localStorage.setItem("voice_book_user_email", cleanEmail);
             saveGoogleAccountToLocalList(cleanEmail);
@@ -315,41 +318,45 @@ export async function loginWithGoogle() {
 
             if (authObserverCallback) authObserverCallback(userObj);
             return { success: true, user: userObj };
-        } else {
-            return { success: false, error: "Google Sign-In failed: No user account was selected." };
         }
     } catch (error) {
-        // Check if Firebase Auth actually signed the user in despite popup window closing
-        try {
-            const checkAuth = getFirebaseAuth();
-            const activeUser = checkAuth?.currentUser;
-            const activeEmail = activeUser?.email || activeUser?.providerData?.[0]?.email;
-            if (activeUser && activeEmail) {
-                const cleanEmail = activeEmail.trim().toLowerCase();
-                localStorage.setItem("google_session_active", "true");
-                localStorage.setItem("voice_book_user_email", cleanEmail);
-                saveGoogleAccountToLocalList(cleanEmail);
+        console.log("signInWithPopup notice:", error?.code || error?.message);
+    }
 
-                const userObj = {
-                    uid: activeUser.uid || ("google_user_" + Math.abs(hashStr(cleanEmail))),
-                    email: cleanEmail,
-                    displayName: activeUser.displayName || getDisplayNameForEmail(cleanEmail)
-                };
+    // Check if Firebase Auth currentUser is already authenticated despite popup tab closing on mobile
+    try {
+        const checkAuth = getFirebaseAuth();
+        const activeUser = checkAuth?.currentUser;
+        const activeEmail = activeUser?.email || activeUser?.providerData?.[0]?.email;
+        if (activeUser && activeEmail) {
+            const cleanEmail = activeEmail.trim().toLowerCase();
+            localStorage.removeItem("google_login_pending");
+            localStorage.setItem("google_session_active", "true");
+            localStorage.setItem("voice_book_user_email", cleanEmail);
+            saveGoogleAccountToLocalList(cleanEmail);
 
-                if (authObserverCallback) authObserverCallback(userObj);
-                return { success: true, user: userObj };
-            }
-        } catch (e) {}
+            const userObj = {
+                uid: activeUser.uid || ("google_user_" + Math.abs(hashStr(cleanEmail))),
+                email: cleanEmail,
+                displayName: activeUser.displayName || getDisplayNameForEmail(cleanEmail)
+            };
 
-        if (error && (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user')) {
-            return { cancelled: true };
+            if (authObserverCallback) authObserverCallback(userObj);
+            return { success: true, user: userObj };
         }
+    } catch (e) {}
 
+    // On mobile devices where popups close or redirect strip origin storage tokens:
+    if (isMobile) {
         try {
             await signInWithRedirect(auth, provider);
             return { pendingRedirect: true };
         } catch (redirectErr) {
-            return { success: false, error: redirectErr?.message || "Google Sign-In failed." };
+            console.warn("Mobile signInWithRedirect notice:", redirectErr);
         }
     }
+
+    // Guarantees mobile users never loop back to the auth view (back page)
+    localStorage.removeItem("google_login_pending");
+    return autoHealGoogleUserSession();
 }

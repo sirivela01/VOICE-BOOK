@@ -62,7 +62,7 @@
     <!-- Web Application Manifest for Mobile Installation -->
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <!-- Main Style -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='790.0') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='850.0') }}">
 </head>
 <body>
     <!-- ================= 9-SECOND PROFESSIONAL TITLE SPLASH SCREEN ================= -->
@@ -586,13 +586,13 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js?v=790.0').then((reg) => {
+                navigator.serviceWorker.register('/sw.js?v=850.0').then((reg) => {
                     reg.update();
                 }).catch(() => {});
             });
         }
     </script>
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='790.0') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='850.0') }}"></script>
 </body>
 </html>
