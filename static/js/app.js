@@ -1,5 +1,5 @@
 import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=57.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=640.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=650.0";
 import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook, getBookFilledPages } from "./db.js?v=54.0";
 import { startListening, stopListening, isMicActive, isSpeechSupported, setSpeechLanguage } from "./speech.js?v=210.0";
 
@@ -160,11 +160,19 @@ function setupAuthListener() {
 }
 
 function showView(viewId) {
-    [viewAuth, viewShelf, viewNotebook].forEach(view => {
-        if (view.id === viewId) {
-            view.classList.add("active-view");
-        } else {
-            view.classList.remove("active-view");
+    const vAuth = viewAuth || document.getElementById("view-auth");
+    const vShelf = viewShelf || document.getElementById("view-shelf");
+    const vNote = viewNotebook || document.getElementById("view-notebook");
+
+    [vAuth, vShelf, vNote].forEach(view => {
+        if (view) {
+            if (view.id === viewId) {
+                view.classList.add("active-view");
+                view.style.setProperty("display", "flex", "important");
+            } else {
+                view.classList.remove("active-view");
+                view.style.setProperty("display", "none", "important");
+            }
         }
     });
 }

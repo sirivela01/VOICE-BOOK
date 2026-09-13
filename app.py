@@ -68,7 +68,7 @@ def get_config():
     res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     res.headers['Access-Control-Allow-Origin'] = '*'
     return res
-CURRENT_APP_VERSION = "v640.0"
+CURRENT_APP_VERSION = "v650.0"
 
 @app.route('/api/version', methods=['GET'])
 def get_app_version():

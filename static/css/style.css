@@ -2806,6 +2806,15 @@ canvas.notebook-canvas {
     }
 }
 
+/* ================= VIEW PANEL TOGGLE STYLES ================= */
+.view-panel {
+    display: none !important;
+}
+
+.view-panel.active-view {
+    display: flex !important;
+}
+
 
 
 
