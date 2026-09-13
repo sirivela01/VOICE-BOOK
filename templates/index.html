@@ -62,7 +62,7 @@
     <!-- Web Application Manifest for Mobile Installation -->
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <!-- Main Style -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='770.0') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='780.0') }}">
 </head>
 <body>
     <!-- ================= 9-SECOND PROFESSIONAL TITLE SPLASH SCREEN ================= -->
@@ -582,15 +582,17 @@
 
 
 
-    <!-- Register PWA Service Worker for PWABuilder & Installability -->
+    <!-- Register PWA Service Worker with Auto-Update -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').catch(() => {});
+                navigator.serviceWorker.register('/sw.js?v=780.0').then((reg) => {
+                    reg.update();
+                }).catch(() => {});
             });
         }
     </script>
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='770.0') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='780.0') }}"></script>
 </body>
 </html>

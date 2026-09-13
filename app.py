@@ -9,9 +9,8 @@ app = Flask(__name__, static_folder='static', template_folder='templates')
 
 @app.after_request
 def add_header(response):
-    # Only set no-cache on API responses, allow static assets & HTML previews to be cached by social media crawlers
     if 'Cache-Control' not in response.headers:
-        response.headers['Cache-Control'] = 'public, max-age=3600'
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     
     # Enterprise Security Headers
     response.headers['X-Content-Type-Options'] = 'nosniff'
@@ -76,18 +75,20 @@ def manifest():
 @app.route('/service-worker.js')
 def service_worker():
     sw_code = """
-const CACHE_NAME = 'voicebook-pwa-v1';
-const urlsToCache = ['/', '/manifest.json', '/static/css/style.css', '/static/js/app.js', '/static/images/logo.png'];
+const CACHE_NAME = 'voicebook-v780.0';
 
 self.addEventListener('install', (event) => {
     self.skipWaiting();
-    event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache).catch(() => {}))
-    );
 });
 
 self.addEventListener('activate', (event) => {
-    event.waitUntil(self.clients.claim());
+    event.waitUntil(
+        caches.keys().then((keys) => {
+            return Promise.all(
+                keys.map((key) => caches.delete(key))
+            );
+        }).then(() => self.clients.claim())
+    );
 });
 
 self.addEventListener('fetch', (event) => {
@@ -122,7 +123,7 @@ def get_config():
     res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     res.headers['Access-Control-Allow-Origin'] = '*'
     return res
-CURRENT_APP_VERSION = "v770.0"
+CURRENT_APP_VERSION = "v780.0"
 
 @app.route('/api/version', methods=['GET'])
 def get_app_version():
