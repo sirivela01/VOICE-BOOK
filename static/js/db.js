@@ -39,11 +39,11 @@ function getUserLocalBooks(userId = "guest_user") {
 
     // Default initial 5 books
     const defaultBooks = [
-        { id: "book_math", userId: userId, name: "math", createdAt: { seconds: Date.now() / 1000 }, currentPage: 1, maxPages: 365, slotIndex: 0 },
-        { id: "book_social", userId: userId, name: "social", createdAt: { seconds: Date.now() / 1000 - 10 }, currentPage: 1, maxPages: 365, slotIndex: 1 },
-        { id: "book_physics", userId: userId, name: "physics", createdAt: { seconds: Date.now() / 1000 - 20 }, currentPage: 1, maxPages: 365, slotIndex: 2 },
-        { id: "book_chemistry", userId: userId, name: "chemistry", createdAt: { seconds: Date.now() / 1000 - 30 }, currentPage: 1, maxPages: 365, slotIndex: 3 },
-        { id: "book_genai", userId: userId, name: "Gen AI", createdAt: { seconds: Date.now() / 1000 - 40 }, currentPage: 1, maxPages: 365, slotIndex: 4 }
+        { id: "book_math", userId: userId, name: "math", createdAt: { seconds: Date.now() / 1000 }, currentPage: 1, maxPages: 100, slotIndex: 0 },
+        { id: "book_social", userId: userId, name: "social", createdAt: { seconds: Date.now() / 1000 - 10 }, currentPage: 1, maxPages: 100, slotIndex: 1 },
+        { id: "book_physics", userId: userId, name: "physics", createdAt: { seconds: Date.now() / 1000 - 20 }, currentPage: 1, maxPages: 100, slotIndex: 2 },
+        { id: "book_chemistry", userId: userId, name: "chemistry", createdAt: { seconds: Date.now() / 1000 - 30 }, currentPage: 1, maxPages: 100, slotIndex: 3 },
+        { id: "book_genai", userId: userId, name: "Gen AI", createdAt: { seconds: Date.now() / 1000 - 40 }, currentPage: 1, maxPages: 100, slotIndex: 4 }
     ];
     localStorage.setItem(storageKey, JSON.stringify(defaultBooks));
     return defaultBooks;
@@ -83,7 +83,7 @@ export async function createBook(rawName, slotIndex = 0) {
         name: name,
         createdAt: { seconds: Date.now() / 1000 },
         currentPage: 1,
-        maxPages: 365,
+        maxPages: 100,
         slotIndex: slotIndex
     };
     localBooks.unshift(newBook);
@@ -99,7 +99,7 @@ export async function createBook(rawName, slotIndex = 0) {
             name: name,
             createdAt: serverTimestamp(),
             currentPage: 1,
-            maxPages: 365,
+            maxPages: 100,
             slotIndex: slotIndex
         };
         const docRef = await addDoc(collection(db, "books"), bookData);
@@ -361,13 +361,13 @@ export async function renameBook(bookId, rawNewName) {
 }
 
 /**
- * Scans all pages (1..365) for a book and returns list of page numbers containing text or drawings.
+ * Scans all pages (1..100) for a book and returns list of page numbers containing text or drawings.
  */
 export async function getBookFilledPages(bookId) {
     const filledPages = new Set();
 
     // 1. Scan LocalStorage for guest/cached page entries
-    for (let i = 1; i <= 365; i++) {
+    for (let i = 1; i <= 100; i++) {
         const text = localStorage.getItem(`guest_page_${bookId}_${i}`) || "";
         const cleanText = text.replace(/\[color:#[0-9a-fA-F]{6}\]/g, "").replace(/\[\/color\]/g, "").trim();
         let drawings = [];
@@ -390,7 +390,7 @@ export async function getBookFilledPages(bookId) {
                 const docSnaps = await getDocs(pagesRef);
                 docSnaps.forEach(docSnap => {
                     const pageNum = parseInt(docSnap.id, 10);
-                    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= 365) {
+                    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= 100) {
                         const data = docSnap.data();
                         const text = (data.textContent || "").replace(/\[color:#[0-9a-fA-F]{6}\]/g, "").replace(/\[\/color\]/g, "").trim();
                         const drawings = data.drawings || [];

@@ -1,6 +1,6 @@
 import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=57.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=690.0";
-import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook, getBookFilledPages } from "./db.js?v=54.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=700.0";
+import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook, getBookFilledPages } from "./db.js?v=700.0";
 import { startListening, stopListening, isMicActive, isSpeechSupported, setSpeechLanguage } from "./speech.js?v=210.0";
 
 import { initRenderer, setRenderOptions, renderText, appendText, clearPage, getPageText, getPlainText, updateFromPlainText, renderPageStatic, setPageFocus, setCursorIndex, findClosestCharIndex, applyFontToSelection, eraseStrokesNearPoint } from "./renderer.js?v=190.0";
@@ -320,7 +320,7 @@ async function loadBookshelf() {
                     const deleteBtn = bookEl.querySelector(".spine-delete-btn");
                     deleteBtn.addEventListener("click", async (e) => {
                         e.stopPropagation();
-                        if (confirm(`Are you sure you want to delete "${book.name}"? This deletes all 365 pages forever.`)) {
+                        if (confirm(`Are you sure you want to delete "${book.name}"? This deletes all 100 pages forever.`)) {
                             try {
                                 await deleteBook(book.id);
                                 showToast(`Notebook "${book.name}" deleted.`, "success");
@@ -496,7 +496,7 @@ async function turnPage(direction) {
     await saveActivePageData();
     
     if (direction === "next") {
-        if (activePageNumber >= 365) {
+        if (activePageNumber >= 100) {
             showToast("You have reached the end of the notebook!", "info");
             return;
         }
@@ -548,7 +548,7 @@ async function goToPage(targetPage) {
 }
 
 async function loadActivePage() {
-    pageDisplayCounter.innerText = `Page ${activePageNumber} of 365`;
+    pageDisplayCounter.innerText = `Page ${activePageNumber} of 100`;
     setSaveStatus("saving", "Loading page...");
     
     let pageText = "";
@@ -696,9 +696,9 @@ async function handlePageOverflow(remainingText) {
     
     await saveActivePageData();
     
-    if (activePageNumber >= 365) {
+    if (activePageNumber >= 100) {
         stopListening();
-        showToast("Notebook is full (page 365 reached)!", "warning");
+        showToast("Notebook is full (page 100 reached)!", "warning");
         return;
     }
     
@@ -721,7 +721,7 @@ async function handlePageOverflow(remainingText) {
         const nextText = existingText ? (existingText + " " + remainingText) : remainingText;
         renderText(nextText, true, handlePageOverflow);
         
-        pageDisplayCounter.innerText = `Page ${activePageNumber} of 365`;
+        pageDisplayCounter.innerText = `Page ${activePageNumber} of 100`;
         await saveActivePageData();
         await updateCurrentPage(activeBookId, activePageNumber);
     }, 250);
@@ -1350,7 +1350,7 @@ function setupEventListeners() {
 /**
  * Parses user input page range strings like "1, 2, 5-10" into sorted unique page numbers.
  */
-function parsePageRange(rangeStr, maxPages = 365) {
+function parsePageRange(rangeStr, maxPages = 100) {
     if (!rangeStr || !rangeStr.trim()) return [];
     const pagesSet = new Set();
     const parts = rangeStr.split(",");
@@ -1406,7 +1406,7 @@ async function handleGeneratePdf() {
         }
     } else if (selectedOption === "custom") {
         const rawRange = inputPdfRange ? inputPdfRange.value : "";
-        targetPages = parsePageRange(rawRange, 365);
+        targetPages = parsePageRange(rawRange, 100);
         if (targetPages.length === 0) {
             showToast("Please enter a valid page range (e.g. 1, 2, 5-10)", "error");
             return;
