@@ -171,45 +171,73 @@ export function observeAuthState(callback) {
     const savedEmail = localStorage.getItem("voice_book_user_email");
     const isGoogleSessionActive = localStorage.getItem("google_session_active") === "true";
 
+    localStorage.removeItem("guest_mode_active");
+
+    let hasNotifiedInitialState = false;
+
     if (isGoogleSessionActive && savedEmail && !savedEmail.includes("nnn@gmail.com") && !savedEmail.includes("fake")) {
         const user = {
             uid: "google_user_" + Math.abs(hashStr(savedEmail)),
             email: savedEmail,
             displayName: getDisplayNameForEmail(savedEmail)
         };
+        hasNotifiedInitialState = true;
         callback(user);
-    } else {
-        callback(null);
     }
-
-    localStorage.removeItem("guest_mode_active");
 
     try {
         const auth = getFirebaseAuth();
         if (auth) {
             getRedirectResult(auth).then((res) => {
-                if (res && res.user && res.user.email) {
-                    const cleanEmail = res.user.email.trim().toLowerCase();
+                const userEmail = res?.user?.email || res?.user?.providerData?.[0]?.email;
+                if (res && res.user && userEmail) {
+                    const cleanEmail = userEmail.trim().toLowerCase();
                     localStorage.setItem("google_session_active", "true");
                     localStorage.setItem("voice_book_user_email", cleanEmail);
                     saveGoogleAccountToLocalList(cleanEmail);
-                    callback(res.user);
+                    
+                    const userObj = {
+                        uid: res.user.uid || ("google_user_" + Math.abs(hashStr(cleanEmail))),
+                        email: cleanEmail,
+                        displayName: res.user.displayName || getDisplayNameForEmail(cleanEmail)
+                    };
+                    hasNotifiedInitialState = true;
+                    if (authObserverCallback) authObserverCallback(userObj);
                 }
             }).catch(() => {});
 
             return onAuthStateChanged(auth, (user) => {
-                if (user && user.email) {
-                    const cleanEmail = user.email.trim().toLowerCase();
+                const userEmail = user?.email || user?.providerData?.[0]?.email;
+                if (user && userEmail) {
+                    const cleanEmail = userEmail.trim().toLowerCase();
                     localStorage.setItem("google_session_active", "true");
                     localStorage.setItem("voice_book_user_email", cleanEmail);
                     saveGoogleAccountToLocalList(cleanEmail);
-                    callback(user);
-                } else if (!localStorage.getItem("google_session_active")) {
-                    callback(null);
+                    
+                    const userObj = {
+                        uid: user.uid || ("google_user_" + Math.abs(hashStr(cleanEmail))),
+                        email: cleanEmail,
+                        displayName: user.displayName || getDisplayNameForEmail(cleanEmail)
+                    };
+                    hasNotifiedInitialState = true;
+                    if (authObserverCallback) authObserverCallback(userObj);
+                } else {
+                    const activeSession = localStorage.getItem("google_session_active") === "true";
+                    const currentEmail = localStorage.getItem("voice_book_user_email");
+                    if (!activeSession || !currentEmail) {
+                        if (!hasNotifiedInitialState) {
+                            hasNotifiedInitialState = true;
+                            if (authObserverCallback) authObserverCallback(null);
+                        }
+                    }
                 }
             });
         }
     } catch (e) {}
+
+    if (!hasNotifiedInitialState && !localStorage.getItem("google_session_active")) {
+        callback(null);
+    }
 
     return () => {};
 }
@@ -252,10 +280,12 @@ export async function loginWithGoogle() {
         return { success: false, error: "Firebase Auth is not available." };
     }
 
-    try {
-        const provider = new GoogleAuthProvider();
-        provider.setCustomParameters({ prompt: 'select_account' });
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
 
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    try {
         const res = await signInWithPopup(auth, provider);
         const userEmail = res?.user?.email || res?.user?.providerData?.[0]?.email;
         
@@ -281,6 +311,16 @@ export async function loginWithGoogle() {
     } catch (error) {
         if (error && (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user')) {
             return { cancelled: true };
+        }
+
+        // On mobile devices or when popup is blocked, seamlessly fallback to Google OAuth redirect
+        if (isMobile || error?.code === 'auth/popup-blocked' || error?.code === 'auth/operation-not-supported-in-this-environment') {
+            try {
+                await signInWithRedirect(auth, provider);
+                return { pendingRedirect: true };
+            } catch (redirectErr) {
+                return { success: false, error: redirectErr?.message || "Google Sign-In failed." };
+            }
         }
 
         return { success: false, error: error?.message || "Google Sign-In failed." };
