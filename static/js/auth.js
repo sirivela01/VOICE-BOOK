@@ -8,7 +8,7 @@ import {
     signInWithRedirect,
     getRedirectResult
 } from "firebase/auth";
-import { getFirebaseAuth, isRealFirebaseConfigured } from "./firebase-init.js?v=850.0";
+import { getFirebaseAuth, isRealFirebaseConfigured } from "./firebase-init.js?v=900.0";
 
 let authObserverCallback = null;
 
@@ -59,9 +59,6 @@ function hashStr(str) {
 function getDisplayNameForEmail(email) {
     if (!email) return "Google User";
     const clean = email.trim().toLowerCase();
-    if (clean === "syashwanthroyal1@gmail.com") {
-        return "S. Yashwanth Royal";
-    }
     const parts = clean.split('@')[0].split('.');
     return parts.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
 }
@@ -101,7 +98,8 @@ export function getSavedGoogleAccountsList() {
 
 export function autoHealGoogleUserSession(emailInput = null) {
     disableGuestMode();
-    const email = emailInput || localStorage.getItem("voice_book_user_email") || "syashwanthroyal1@gmail.com";
+    const email = emailInput || localStorage.getItem("voice_book_user_email");
+    if (!email) return Promise.resolve(null);
 
     const cleanEmail = email.trim().toLowerCase();
     if (cleanEmail.includes("nnn@gmail.com") || cleanEmail.includes("fake") || cleanEmail.includes("prompt")) {
@@ -171,7 +169,6 @@ export function observeAuthState(callback) {
 
     const savedEmail = localStorage.getItem("voice_book_user_email");
     const isGoogleSessionActive = localStorage.getItem("google_session_active") === "true";
-    const isLoginPending = localStorage.getItem("google_login_pending") === "true";
 
     localStorage.removeItem("guest_mode_active");
 
@@ -188,14 +185,6 @@ export function observeAuthState(callback) {
         callback(user);
     }
 
-    // 2. If a Google Sign-In redirect returned on mobile, auto-heal session to prevent looping back to auth view
-    if (isLoginPending) {
-        localStorage.removeItem("google_login_pending");
-        autoHealGoogleUserSession(savedEmail || "syashwanthroyal1@gmail.com");
-        hasNotifiedInitialState = true;
-        return () => {};
-    }
-
     try {
         const auth = getFirebaseAuth();
         if (auth) {
@@ -203,6 +192,7 @@ export function observeAuthState(callback) {
                 const userEmail = res?.user?.email || res?.user?.providerData?.[0]?.email;
                 if (res && res.user && userEmail) {
                     const cleanEmail = userEmail.trim().toLowerCase();
+                    localStorage.removeItem("google_login_pending");
                     localStorage.setItem("google_session_active", "true");
                     localStorage.setItem("voice_book_user_email", cleanEmail);
                     saveGoogleAccountToLocalList(cleanEmail);
@@ -215,12 +205,15 @@ export function observeAuthState(callback) {
                     hasNotifiedInitialState = true;
                     if (authObserverCallback) authObserverCallback(userObj);
                 }
-            }).catch(() => {});
+            }).catch((err) => {
+                console.warn("getRedirectResult notice:", err);
+            });
 
             return onAuthStateChanged(auth, (user) => {
                 const userEmail = user?.email || user?.providerData?.[0]?.email;
                 if (user && userEmail) {
                     const cleanEmail = userEmail.trim().toLowerCase();
+                    localStorage.removeItem("google_login_pending");
                     localStorage.setItem("google_session_active", "true");
                     localStorage.setItem("voice_book_user_email", cleanEmail);
                     saveGoogleAccountToLocalList(cleanEmail);
@@ -235,8 +228,13 @@ export function observeAuthState(callback) {
                 } else {
                     const activeSession = localStorage.getItem("google_session_active") === "true";
                     const currentEmail = localStorage.getItem("voice_book_user_email");
+                    const isPending = localStorage.getItem("google_login_pending") === "true";
+
                     if (!activeSession || !currentEmail) {
-                        if (!hasNotifiedInitialState) {
+                        if (isPending && currentEmail) {
+                            localStorage.removeItem("google_login_pending");
+                            autoHealGoogleUserSession(currentEmail);
+                        } else if (!hasNotifiedInitialState && !isPending) {
                             hasNotifiedInitialState = true;
                             if (authObserverCallback) authObserverCallback(null);
                         }
@@ -246,7 +244,7 @@ export function observeAuthState(callback) {
         }
     } catch (e) {}
 
-    if (!hasNotifiedInitialState && !localStorage.getItem("google_session_active")) {
+    if (!hasNotifiedInitialState && !localStorage.getItem("google_session_active") && !localStorage.getItem("google_login_pending")) {
         callback(null);
     }
 
@@ -277,10 +275,14 @@ export function getCurrentUser() {
 }
 
 /**
- * Initiates Google authentication for S. Yashwanth Royal (syashwanthroyal1@gmail.com).
+ * Initiates Google authentication allowing user to pick any Google account.
  */
 export async function loginWithGoogle() {
     disableGuestMode();
+    
+    // Reset previous session keys before initiating Google account selection
+    localStorage.removeItem("google_session_active");
+    localStorage.removeItem("voice_book_user_email");
     localStorage.setItem("google_login_pending", "true");
 
     let auth = null;
@@ -290,7 +292,7 @@ export async function loginWithGoogle() {
 
     if (!auth) {
         localStorage.removeItem("google_login_pending");
-        return autoHealGoogleUserSession();
+        return { success: false, error: "Firebase Auth is not available." };
     }
 
     const provider = new GoogleAuthProvider();
@@ -298,7 +300,16 @@ export async function loginWithGoogle() {
 
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-    // Try popup first (works on desktop and browsers that support popup windows)
+    if (isMobile) {
+        try {
+            await signInWithRedirect(auth, provider);
+            return { pendingRedirect: true };
+        } catch (redirectErr) {
+            console.warn("Mobile signInWithRedirect notice:", redirectErr);
+        }
+    }
+
+    // On Desktop or fallback: try signInWithPopup
     try {
         const res = await signInWithPopup(auth, provider);
         const userEmail = res?.user?.email || res?.user?.providerData?.[0]?.email;
@@ -323,7 +334,7 @@ export async function loginWithGoogle() {
         console.log("signInWithPopup notice:", error?.code || error?.message);
     }
 
-    // Check if Firebase Auth currentUser is already authenticated despite popup tab closing on mobile
+    // Check if Firebase Auth currentUser is already authenticated
     try {
         const checkAuth = getFirebaseAuth();
         const activeUser = checkAuth?.currentUser;
@@ -346,17 +357,12 @@ export async function loginWithGoogle() {
         }
     } catch (e) {}
 
-    // On mobile devices where popups close or redirect strip origin storage tokens:
-    if (isMobile) {
-        try {
-            await signInWithRedirect(auth, provider);
-            return { pendingRedirect: true };
-        } catch (redirectErr) {
-            console.warn("Mobile signInWithRedirect notice:", redirectErr);
-        }
+    // Fallback on mobile: trigger redirect
+    try {
+        await signInWithRedirect(auth, provider);
+        return { pendingRedirect: true };
+    } catch (err) {
+        localStorage.removeItem("google_login_pending");
+        return { success: false, error: err?.message || "Google Sign-In failed." };
     }
-
-    // Guarantees mobile users never loop back to the auth view (back page)
-    localStorage.removeItem("google_login_pending");
-    return autoHealGoogleUserSession();
 }
