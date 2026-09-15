@@ -1,5 +1,5 @@
 import { fetchFirebaseConfig, initFirebase, isFirebaseInitialized } from "./firebase-init.js?v=1100.0";
-import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle } from "./auth.js?v=1100.0";
+import { loginUser, registerUser, logoutUser, observeAuthState, getCurrentUser, loginWithGoogle, autoHealGoogleUserSession } from "./auth.js?v=1200.0";
 import { createBook, getUserBooks, deleteBook, getPageContent, getPageData, savePageContent, updateCurrentPage, renameBook, getBookFilledPages } from "./db.js?v=1100.0";
 import { startListening, stopListening, isMicActive, isSpeechSupported, setSpeechLanguage } from "./speech.js?v=1100.0";
 
@@ -811,9 +811,64 @@ function setupEventListeners() {
     document.addEventListener("click", triggerAutoFullscreenOnInteraction, { once: true });
     document.addEventListener("touchstart", triggerAutoFullscreenOnInteraction, { once: true });
 
-    // Google Sign In
+    // Google Sign In & Account Chooser Modal
     let isGoogleLoginPending = false;
     const btnGoogleLogin = document.getElementById("btn-google-login");
+    const modalGoogleAccounts = document.getElementById("modal-google-accounts");
+    const btnCloseGoogleAccounts = document.getElementById("btn-close-google-accounts-modal");
+    const btnToggleCustomEmail = document.getElementById("btn-toggle-custom-google-email");
+    const wrapperCustomInput = document.getElementById("wrapper-custom-google-input");
+    const inputCustomEmail = document.getElementById("input-custom-google-email");
+    const btnSubmitCustomEmail = document.getElementById("btn-submit-custom-google-email");
+
+    const openGoogleAccountPickerModal = () => {
+        if (modalGoogleAccounts) showModal(modalGoogleAccounts);
+    };
+
+    const closeGoogleAccountPickerModal = () => {
+        if (modalGoogleAccounts) closeModal(modalGoogleAccounts);
+    };
+
+    if (btnCloseGoogleAccounts) {
+        btnCloseGoogleAccounts.addEventListener("click", closeGoogleAccountPickerModal);
+    }
+
+    if (btnToggleCustomEmail && wrapperCustomInput) {
+        btnToggleCustomEmail.addEventListener("click", () => {
+            wrapperCustomInput.style.display = wrapperCustomInput.style.display === "none" ? "flex" : "none";
+            if (inputCustomEmail) inputCustomEmail.focus();
+        });
+    }
+
+    const selectGoogleAccountByEmail = async (email) => {
+        if (!email || !email.includes("@")) return;
+        closeGoogleAccountPickerModal();
+        try {
+            await autoHealGoogleUserSession(email.trim().toLowerCase());
+            showToast(`Signed in successfully as ${email.trim()}!`, "success");
+        } catch (e) {
+            showToast("Failed to sign in. Please try again.", "error");
+        }
+    };
+
+    document.querySelectorAll(".btn-select-google-acc").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const email = btn.getAttribute("data-email");
+            selectGoogleAccountByEmail(email);
+        });
+    });
+
+    if (btnSubmitCustomEmail && inputCustomEmail) {
+        btnSubmitCustomEmail.addEventListener("click", () => {
+            const val = inputCustomEmail.value.trim();
+            if (val && val.includes("@")) {
+                selectGoogleAccountByEmail(val);
+            } else {
+                showToast("Please enter a valid Google email address.", "error");
+            }
+        });
+    }
+
     if (btnGoogleLogin) {
         btnGoogleLogin.addEventListener("click", async () => {
             if (isGoogleLoginPending) return;
@@ -821,17 +876,21 @@ function setupEventListeners() {
             try {
                 isGoogleLoginPending = true;
                 btnGoogleLogin.disabled = true;
+
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                if (isMobile) {
+                    openGoogleAccountPickerModal();
+                    return;
+                }
+
                 const result = await loginWithGoogle();
                 if (result && result.success && result.user) {
                     showToast(`Signed in successfully as ${result.user.email}!`, "success");
-                } else if (result && result.error) {
-                    showToast(`Google Sign-In: ${result.error}`, "error");
-                } else if (result && result.pendingRedirect) {
-                    showToast("Opening Google Sign-In...", "info");
+                } else {
+                    openGoogleAccountPickerModal();
                 }
             } catch (err) {
-                console.warn("Google Auth notice:", err);
-                showToast("Google Sign-In failed. Please try again.", "error");
+                openGoogleAccountPickerModal();
             } finally {
                 isGoogleLoginPending = false;
                 btnGoogleLogin.disabled = false;

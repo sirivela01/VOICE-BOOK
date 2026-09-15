@@ -75,7 +75,7 @@ def manifest():
 @app.route('/service-worker.js')
 def service_worker():
     sw_code = """
-const CACHE_NAME = 'voicebook-v1100.0';
+const CACHE_NAME = 'voicebook-v1200.0';
 
 self.addEventListener('install', (event) => {
     self.skipWaiting();
@@ -123,7 +123,7 @@ def get_config():
     res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     res.headers['Access-Control-Allow-Origin'] = '*'
     return res
-CURRENT_APP_VERSION = "v1100.0"
+CURRENT_APP_VERSION = "v1200.0"
 
 @app.route('/api/version', methods=['GET'])
 def get_app_version():
