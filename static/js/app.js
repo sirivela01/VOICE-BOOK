@@ -811,131 +811,9 @@ function setupEventListeners() {
     document.addEventListener("click", triggerAutoFullscreenOnInteraction, { once: true });
     document.addEventListener("touchstart", triggerAutoFullscreenOnInteraction, { once: true });
 
-    // Google Sign In & Account Chooser Modal
+    // Google Sign In Button Handler
     let isGoogleLoginPending = false;
     const btnGoogleLogin = document.getElementById("btn-google-login");
-    const modalGoogleAccounts = document.getElementById("modal-google-accounts");
-    const btnCloseGoogleAccounts = document.getElementById("btn-close-google-accounts-modal");
-
-    const getDisplayNameForEmail = (email) => {
-        if (!email) return "Google User";
-        const clean = email.trim().toLowerCase();
-        const parts = clean.split('@')[0].split('.');
-        return parts.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
-    };
-
-    const selectGoogleAccountByEmail = async (email) => {
-        if (!email || !email.includes("@")) return;
-        closeGoogleAccountPickerModal();
-        try {
-            await autoHealGoogleUserSession(email.trim().toLowerCase());
-            showToast(`Signed in successfully as ${email.trim()}!`, "success");
-        } catch (e) {
-            showToast("Failed to sign in. Please try again.", "error");
-        }
-    };
-
-    const openGoogleAccountPickerModal = () => {
-        const container = document.getElementById("google-account-options");
-        if (container) {
-            const savedList = getSavedGoogleAccountsList();
-            let html = "";
-
-            if (savedList && savedList.length > 0) {
-                html += `<div style="font-size: 0.82rem; font-weight: 600; color: #64748b; margin-bottom: 0.3rem;">Saved accounts on this device:</div>`;
-                savedList.forEach(email => {
-                    const dispName = getDisplayNameForEmail(email);
-                    html += `
-                        <button type="button" class="btn btn-outline btn-select-google-acc" data-email="${escapeHTML(email)}" style="width: 100%; display: flex; align-items: center; justify-content: flex-start; gap: 0.7rem; padding: 0.65rem 0.85rem; border-radius: 10px; border: 1px solid #cbd5e1; text-align: left; background: #f8fafc; font-weight: 600; cursor: pointer; transition: all 0.2s ease; margin-bottom: 0.4rem;">
-                            <span style="font-size: 1.25rem;">👤</span>
-                            <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
-                                <div style="color: #0f172a; font-size: 0.92rem; font-weight: 700;">${escapeHTML(dispName)}</div>
-                                <div style="font-size: 0.78rem; color: #64748b; font-weight: 500;">${escapeHTML(email)}</div>
-                            </div>
-                        </button>
-                    `;
-                });
-            } else {
-                html += `
-                    <div style="padding: 0.8rem; background: #f1f5f9; border-radius: 8px; font-size: 0.83rem; color: #64748b; text-align: center;">
-                        No Google account currently saved on this device. Enter your email below to sign in!
-                    </div>
-                `;
-            }
-
-            html += `
-                <div style="margin-top: 0.8rem; border-top: 1px solid #e2e8f0; padding-top: 0.9rem;">
-                    <div style="font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.5rem;">+ Sign in with any Google Account:</div>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <input type="email" id="input-custom-google-email" class="form-control" placeholder="Enter your Google email..." style="flex: 1; padding: 0.5rem 0.75rem; font-size: 0.88rem; border-radius: 8px; border: 1px solid #cbd5e1;" />
-                        <button type="button" id="btn-submit-custom-google-email" class="btn btn-primary" style="background: #4285F4; border-color: #4285F4; padding: 0.5rem 1rem; border-radius: 8px; font-weight: 600; font-size: 0.85rem; white-space: nowrap;">Sign In</button>
-                    </div>
-                </div>
-                <div style="margin-top: 0.9rem; text-align: center;">
-                    <button type="button" id="btn-trigger-real-oauth" class="btn btn-link btn-xs" style="color: #4285F4; text-decoration: underline; cursor: pointer; font-size: 0.8rem; font-weight: 600;">
-                        🌐 Open standard Google OAuth popup / screen
-                    </button>
-                </div>
-            `;
-
-            container.innerHTML = html;
-
-            // Re-bind listeners for dynamic DOM elements
-            container.querySelectorAll(".btn-select-google-acc").forEach(btn => {
-                btn.addEventListener("click", () => {
-                    const email = btn.getAttribute("data-email");
-                    selectGoogleAccountByEmail(email);
-                });
-            });
-
-            const submitBtn = container.querySelector("#btn-submit-custom-google-email");
-            const customInput = container.querySelector("#input-custom-google-email");
-            if (submitBtn && customInput) {
-                const handleCustomSubmit = () => {
-                    const val = customInput.value.trim();
-                    if (val && val.includes("@")) {
-                        selectGoogleAccountByEmail(val);
-                    } else {
-                        showToast("Please enter a valid Google email address.", "error");
-                    }
-                };
-
-                submitBtn.addEventListener("click", handleCustomSubmit);
-                customInput.addEventListener("keydown", (e) => {
-                    if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleCustomSubmit();
-                    }
-                });
-            }
-
-            const oauthBtn = container.querySelector("#btn-trigger-real-oauth");
-            if (oauthBtn) {
-                oauthBtn.addEventListener("click", async () => {
-                    closeGoogleAccountPickerModal();
-                    showToast("Opening Google Sign-In...", "info");
-                    try {
-                        const result = await loginWithGoogle();
-                        if (result && result.success && result.user) {
-                            showToast(`Signed in successfully as ${result.user.email}!`, "success");
-                        }
-                    } catch (err) {
-                        showToast("Google Sign-In prompt closed.", "info");
-                    }
-                });
-            }
-        }
-
-        if (modalGoogleAccounts) showModal(modalGoogleAccounts);
-    };
-
-    const closeGoogleAccountPickerModal = () => {
-        if (modalGoogleAccounts) closeModal(modalGoogleAccounts);
-    };
-
-    if (btnCloseGoogleAccounts) {
-        btnCloseGoogleAccounts.addEventListener("click", closeGoogleAccountPickerModal);
-    }
 
     if (btnGoogleLogin) {
         btnGoogleLogin.addEventListener("click", async () => {
@@ -948,11 +826,11 @@ function setupEventListeners() {
                 const result = await loginWithGoogle();
                 if (result && result.success && result.user) {
                     showToast(`Signed in successfully as ${result.user.email}!`, "success");
-                } else if (!result || !result.pendingRedirect) {
-                    openGoogleAccountPickerModal();
+                } else if (result && result.error) {
+                    showToast(result.error, "error");
                 }
             } catch (err) {
-                openGoogleAccountPickerModal();
+                showToast("Google Sign-In failed. Please try again.", "error");
             } finally {
                 isGoogleLoginPending = false;
                 btnGoogleLogin.disabled = false;

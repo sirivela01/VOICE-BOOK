@@ -224,17 +224,11 @@ export function observeAuthState(callback) {
                     if (authObserverCallback) authObserverCallback(userObj);
                 } else {
                     const activeSession = localStorage.getItem("google_session_active") === "true";
-                    const currentEmail = localStorage.getItem("voice_book_user_email");
                     const isPending = localStorage.getItem("google_login_pending") === "true";
 
-                    if (!activeSession || !currentEmail) {
-                        if (isPending && currentEmail) {
-                            localStorage.removeItem("google_login_pending");
-                            autoHealGoogleUserSession(currentEmail);
-                        } else if (!hasNotifiedInitialState && !isPending) {
-                            hasNotifiedInitialState = true;
-                            if (authObserverCallback) authObserverCallback(null);
-                        }
+                    if (!activeSession && !isPending && !hasNotifiedInitialState) {
+                        hasNotifiedInitialState = true;
+                        if (authObserverCallback) authObserverCallback(null);
                     }
                 }
             });
@@ -282,15 +276,10 @@ export function getCurrentUser() {
 }
 
 /**
- * Initiates Google authentication allowing user to pick any Google account.
+ * Initiates direct Google authentication with standard Google account selection.
  */
 export async function loginWithGoogle() {
     disableGuestMode();
-    
-    // Reset previous session keys before initiating Google account selection
-    localStorage.removeItem("google_session_active");
-    localStorage.removeItem("voice_book_user_email");
-    localStorage.setItem("google_login_pending", "true");
 
     let auth = null;
     try {
@@ -298,25 +287,13 @@ export async function loginWithGoogle() {
     } catch (e) {}
 
     if (!auth) {
-        localStorage.removeItem("google_login_pending");
         return { success: false, error: "Firebase Auth is not available." };
     }
 
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
 
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-    if (isMobile) {
-        try {
-            await signInWithRedirect(auth, provider);
-            return { pendingRedirect: true };
-        } catch (redirectErr) {
-            console.warn("Mobile signInWithRedirect notice:", redirectErr);
-        }
-    }
-
-    // On Desktop or fallback: try signInWithPopup
+    // 1. First attempt: Try standard Google Sign-In popup
     try {
         const res = await signInWithPopup(auth, provider);
         const userEmail = res?.user?.email || res?.user?.providerData?.[0]?.email;
@@ -339,9 +316,12 @@ export async function loginWithGoogle() {
         }
     } catch (error) {
         console.log("signInWithPopup notice:", error?.code || error?.message);
+        if (error?.code === "auth/popup-closed-by-user") {
+            return { success: false, error: "Sign-in cancelled by user." };
+        }
     }
 
-    // Check if Firebase Auth currentUser is already authenticated
+    // 2. Second attempt: Check if currentUser is populated
     try {
         const checkAuth = getFirebaseAuth();
         const activeUser = checkAuth?.currentUser;
@@ -364,8 +344,9 @@ export async function loginWithGoogle() {
         }
     } catch (e) {}
 
-    // Fallback on mobile: trigger redirect
+    // 3. Fallback for browsers blocking popups: standard Google redirect
     try {
+        localStorage.setItem("google_login_pending", "true");
         await signInWithRedirect(auth, provider);
         return { pendingRedirect: true };
     } catch (err) {
