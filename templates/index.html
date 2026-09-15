@@ -586,37 +586,7 @@
             </div>
 
             <div id="google-account-options" style="display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.8rem;">
-                <!-- Account Option 1 -->
-                <button type="button" class="btn-select-google-acc" data-email="syashwanthroyal1@gmail.com" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.85rem; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; cursor: pointer; text-align: left; transition: all 0.2s;">
-                    <div style="width: 36px; height: 36px; background: #0284c7; color: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.95rem;">S</div>
-                    <div>
-                        <div style="font-weight: 600; font-size: 0.88rem; color: #0f172a;">S. Yashwanth Royal</div>
-                        <div style="font-size: 0.78rem; color: #64748b;">syashwanthroyal1@gmail.com</div>
-                    </div>
-                </button>
-
-                <!-- Account Option 2 -->
-                <button type="button" class="btn-select-google-acc" data-email="syashwanthroyal48@gmail.com" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.85rem; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; cursor: pointer; text-align: left; transition: all 0.2s;">
-                    <div style="width: 36px; height: 36px; background: #2563eb; color: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.95rem;">S</div>
-                    <div>
-                        <div style="font-weight: 600; font-size: 0.88rem; color: #0f172a;">S. Yashwanth Royal</div>
-                        <div style="font-size: 0.78rem; color: #64748b;">syashwanthroyal48@gmail.com</div>
-                    </div>
-                </button>
-
-                <!-- Account Option 3: Custom Input toggle -->
-                <div id="wrapper-custom-google-input" style="display: none; flex-direction: column; gap: 0.5rem; margin-top: 0.4rem; padding: 0.75rem; background: #f1f5f9; border-radius: 12px;">
-                    <input type="email" id="input-custom-google-email" placeholder="Enter your Google email address" class="form-control" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; border: 1px solid #94a3b8; border-radius: 8px;">
-                    <button type="button" id="btn-submit-custom-google-email" class="btn btn-primary btn-sm" style="background: #0284c7; font-weight: 600;">Continue with this account</button>
-                </div>
-
-                <button type="button" id="btn-toggle-custom-google-email" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.85rem; background: #ffffff; border: 1px dashed #94a3b8; border-radius: 12px; cursor: pointer; text-align: left; transition: all 0.2s; margin-top: 0.2rem;">
-                    <div style="width: 36px; height: 36px; background: #f1f5f9; color: #475569; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem;">+</div>
-                    <div>
-                        <div style="font-weight: 600; font-size: 0.88rem; color: #0284c7;">Use another Google account</div>
-                        <div style="font-size: 0.78rem; color: #64748b;">Sign in with any email address</div>
-                    </div>
-                </button>
+                <!-- Dynamically populated for each device's actual Google accounts -->
             </div>
         </div>
     </div>
@@ -641,13 +611,13 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js?v=1200.0').then((reg) => {
+                navigator.serviceWorker.register('/sw.js?v=1300.0').then((reg) => {
                     reg.update();
                 }).catch(() => {});
             });
         }
     </script>
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='1200.0') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='1300.0') }}"></script>
 </body>
 </html>
