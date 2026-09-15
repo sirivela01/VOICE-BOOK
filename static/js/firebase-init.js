@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 let appInstance = null;
@@ -54,7 +54,7 @@ export async function fetchFirebaseConfig() {
 }
 
 /**
- * Initializes Firebase with the provided configuration object.
+ * Initializes Firebase with the provided configuration object and sets persistent authentication.
  * @param {Object} config Firebase configuration parameters
  * @returns {{auth: any, db: any}} auth and firestore instances
  */
@@ -64,8 +64,11 @@ export function initFirebase(config = DEFAULT_FIREBASE_CONFIG) {
         if (!appInstance) {
             appInstance = initializeApp(activeConfig);
             authInstance = getAuth(appInstance);
+            try {
+                setPersistence(authInstance, browserLocalPersistence);
+            } catch (pErr) {}
             dbInstance = getFirestore(appInstance);
-            console.log("Firebase App initialized successfully.");
+            console.log("Firebase App initialized with browser local persistence.");
         }
         return { auth: authInstance, db: dbInstance };
     } catch (e) {
