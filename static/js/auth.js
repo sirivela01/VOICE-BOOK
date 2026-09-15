@@ -8,7 +8,7 @@ import {
     signInWithRedirect,
     getRedirectResult
 } from "firebase/auth";
-import { getFirebaseAuth, isRealFirebaseConfigured } from "./firebase-init.js?v=900.0";
+import { getFirebaseAuth, isRealFirebaseConfigured } from "./firebase-init.js?v=950.0";
 
 let authObserverCallback = null;
 
@@ -47,13 +47,10 @@ export function disableGuestMode() {
     localStorage.removeItem("guest_mode_active");
 }
 
-function hashStr(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        hash = (hash << 5) - hash + str.charCodeAt(i);
-        hash |= 0;
-    }
-    return hash;
+function getCanonicalUid(email) {
+    if (!email) return "guest_user";
+    const cleanEmail = email.trim().toLowerCase();
+    return "user_" + cleanEmail.replace(/[^a-z0-9]/g, "_");
 }
 
 function getDisplayNameForEmail(email) {
@@ -113,7 +110,7 @@ export function autoHealGoogleUserSession(emailInput = null) {
     saveGoogleAccountToLocalList(cleanEmail);
     
     const user = {
-        uid: "google_user_" + Math.abs(hashStr(cleanEmail)),
+        uid: getCanonicalUid(cleanEmail),
         email: cleanEmail,
         displayName: getDisplayNameForEmail(cleanEmail)
     };
@@ -177,7 +174,7 @@ export function observeAuthState(callback) {
     // 1. If active Google session exists in localStorage, transition directly to bookshelf
     if (isGoogleSessionActive && savedEmail && !savedEmail.includes("nnn@gmail.com") && !savedEmail.includes("fake")) {
         const user = {
-            uid: "google_user_" + Math.abs(hashStr(savedEmail)),
+            uid: getCanonicalUid(savedEmail),
             email: savedEmail,
             displayName: getDisplayNameForEmail(savedEmail)
         };
@@ -198,7 +195,7 @@ export function observeAuthState(callback) {
                     saveGoogleAccountToLocalList(cleanEmail);
                     
                     const userObj = {
-                        uid: res.user.uid || ("google_user_" + Math.abs(hashStr(cleanEmail))),
+                        uid: getCanonicalUid(cleanEmail),
                         email: cleanEmail,
                         displayName: res.user.displayName || getDisplayNameForEmail(cleanEmail)
                     };
@@ -219,7 +216,7 @@ export function observeAuthState(callback) {
                     saveGoogleAccountToLocalList(cleanEmail);
                     
                     const userObj = {
-                        uid: user.uid || ("google_user_" + Math.abs(hashStr(cleanEmail))),
+                        uid: getCanonicalUid(cleanEmail),
                         email: cleanEmail,
                         displayName: user.displayName || getDisplayNameForEmail(cleanEmail)
                     };
@@ -260,7 +257,7 @@ export function getCurrentUser() {
 
     if (isGoogleSessionActive && savedEmail && !savedEmail.includes("nnn@gmail.com") && !savedEmail.includes("fake")) {
         return {
-            uid: "google_user_" + Math.abs(hashStr(savedEmail)),
+            uid: getCanonicalUid(savedEmail),
             email: savedEmail,
             displayName: getDisplayNameForEmail(savedEmail)
         };
@@ -268,7 +265,17 @@ export function getCurrentUser() {
 
     try {
         const auth = getFirebaseAuth();
-        return auth ? auth.currentUser : null;
+        if (auth && auth.currentUser) {
+            const email = auth.currentUser.email || auth.currentUser.providerData?.[0]?.email;
+            if (email) {
+                return {
+                    uid: getCanonicalUid(email),
+                    email: email.trim().toLowerCase(),
+                    displayName: auth.currentUser.displayName || getDisplayNameForEmail(email)
+                };
+            }
+        }
+        return null;
     } catch (e) {
         return null;
     }
@@ -322,7 +329,7 @@ export async function loginWithGoogle() {
             saveGoogleAccountToLocalList(cleanEmail);
             
             const userObj = {
-                uid: res.user.uid || ("google_user_" + Math.abs(hashStr(cleanEmail))),
+                uid: getCanonicalUid(cleanEmail),
                 email: cleanEmail,
                 displayName: res.user.displayName || getDisplayNameForEmail(cleanEmail)
             };
@@ -347,7 +354,7 @@ export async function loginWithGoogle() {
             saveGoogleAccountToLocalList(cleanEmail);
 
             const userObj = {
-                uid: activeUser.uid || ("google_user_" + Math.abs(hashStr(cleanEmail))),
+                uid: getCanonicalUid(cleanEmail),
                 email: cleanEmail,
                 displayName: activeUser.displayName || getDisplayNameForEmail(cleanEmail)
             };

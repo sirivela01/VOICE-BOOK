@@ -69,17 +69,25 @@ function saveLocalGuestBooks(books) {
 /**
  * Creates a new notebook document in Firestore or LocalStorage.
  */
+/**
+ * Creates a new notebook document in Firestore and LocalStorage.
+ */
 export async function createBook(rawName, slotIndex = 0) {
     const name = sanitizeInput(rawName, 100) || "Untitled Notebook";
     const user = getCurrentUser();
     const userId = user ? user.uid : "guest_user";
+    const userEmail = user ? user.email : "";
     const db = getFirebaseDb();
 
-    // Always create locally first so user experience is instant
+    // Deterministic book ID containing user ID and timestamp
+    const bookId = "book_" + (userId || "guest") + "_" + Date.now();
+
+    // Always save locally for immediate UI responsiveness
     const localBooks = getUserLocalBooks(userId);
     const newBook = {
-        id: "book_" + Date.now(),
+        id: bookId,
         userId: userId,
+        userEmail: userEmail,
         name: name,
         createdAt: { seconds: Date.now() / 1000 },
         currentPage: 1,
@@ -90,32 +98,35 @@ export async function createBook(rawName, slotIndex = 0) {
     saveUserLocalBooks(userId, localBooks);
 
     if (isGuestMode() || !isFirebaseInitialized() || !db) {
-        return newBook.id;
+        return bookId;
     }
 
     try {
         const bookData = {
             userId: userId,
+            userEmail: userEmail,
             name: name,
             createdAt: serverTimestamp(),
             currentPage: 1,
             maxPages: 100,
             slotIndex: slotIndex
         };
-        const docRef = await addDoc(collection(db, "books"), bookData);
-        return docRef.id;
+        const bookDocRef = doc(db, "books", bookId);
+        await setDoc(bookDocRef, bookData, { merge: true });
+        return bookId;
     } catch (e) {
         console.warn("Firestore createBook notice, saved locally:", e);
-        return newBook.id;
+        return bookId;
     }
 }
 
 /**
- * Fetches all books for the current authenticated user or local storage.
+ * Fetches all books for the current authenticated user from Firestore or LocalStorage.
  */
 export async function getUserBooks() {
     const user = getCurrentUser();
     const userId = user ? user.uid : "guest_user";
+    const userEmail = user ? user.email : "";
     const db = getFirebaseDb();
 
     if (isGuestMode() || !isFirebaseInitialized() || !db) {
@@ -129,15 +140,34 @@ export async function getUserBooks() {
         );
         const snapshot = await getDocs(booksQuery);
         const books = [];
-        snapshot.forEach(doc => {
-            books.push({ id: doc.id, ...doc.data() });
+        snapshot.forEach(docSnap => {
+            books.push({ id: docSnap.id, ...docSnap.data() });
         });
         
         if (books.length === 0) {
-            return getUserLocalBooks(userId);
+            // Seed local default books to Firestore for this new user so they sync across all systems
+            const localBooks = getUserLocalBooks(userId);
+            for (const b of localBooks) {
+                try {
+                    const bookDocRef = doc(db, "books", b.id);
+                    await setDoc(bookDocRef, {
+                        userId: userId,
+                        userEmail: userEmail,
+                        name: b.name,
+                        createdAt: serverTimestamp(),
+                        currentPage: b.currentPage || 1,
+                        maxPages: 100,
+                        slotIndex: b.slotIndex || 0
+                    }, { merge: true });
+                } catch (err) {}
+            }
+            return localBooks;
         }
 
-        // Sort by slotIndex or createdAt
+        // Save cloud books to local cache
+        saveUserLocalBooks(userId, books);
+
+        // Sort by slotIndex
         books.sort((a, b) => (a.slotIndex || 0) - (b.slotIndex || 0));
         return books;
     } catch (e) {
@@ -180,68 +210,55 @@ export async function deleteBook(bookId) {
  * Retrieves content for a single page.
  */
 export async function getPageContent(bookId, pageNumber) {
-    const localContent = localStorage.getItem(`guest_page_${bookId}_${pageNumber}`);
-    if (localContent !== null) return localContent;
-
-    if (isGuestMode() || !isFirebaseInitialized()) return "";
-
-    try {
-        const db = getFirebaseDb();
-        if (!db) return "";
-        const pageDocRef = doc(db, "books", bookId, "pages", pageNumber.toString());
-        const docSnap = await getDoc(pageDocRef);
-        if (docSnap.exists()) {
-            return docSnap.data().textContent || "";
-        }
-    } catch (e) {
-        console.warn("Firestore getPageContent notice:", e);
-    }
-    return "";
+    const data = await getPageData(bookId, pageNumber);
+    return data ? data.textContent : "";
 }
 
 /**
  * Retrieves full data object for a single page (including custom date and drawings).
  */
 export async function getPageData(bookId, pageNumber) {
-    const localContent = localStorage.getItem(`guest_page_${bookId}_${pageNumber}`) || "";
-    const localDate = localStorage.getItem(`date_${bookId}_${pageNumber}`) || "";
-    let localDrawings = [];
+    const localContent = localStorage.getItem(`guest_page_${bookId}_${pageNumber}`);
+    const localDate = localStorage.getItem(`date_${bookId}_${pageNumber}`);
+    let localDrawings = null;
     try {
         const raw = localStorage.getItem(`drawings_${bookId}_${pageNumber}`);
         if (raw) localDrawings = JSON.parse(raw);
     } catch (e) {}
 
-    if (isGuestMode() || !isFirebaseInitialized()) {
-        return {
-            textContent: localContent,
-            customDate: localDate,
-            drawings: localDrawings
-        };
-    }
+    if (!isGuestMode() && isFirebaseInitialized()) {
+        try {
+            const db = getFirebaseDb();
+            if (db) {
+                const pageDocRef = doc(db, "books", bookId, "pages", pageNumber.toString());
+                const docSnap = await getDoc(pageDocRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const text = data.textContent !== undefined ? data.textContent : "";
+                    const customDate = data.customDate !== undefined ? data.customDate : "";
+                    const drawings = data.drawings !== undefined ? data.drawings : [];
 
-    try {
-        const db = getFirebaseDb();
-        if (!db) {
-            return { textContent: localContent, customDate: localDate, drawings: localDrawings };
+                    // Cache to local storage for instant offline access
+                    localStorage.setItem(`guest_page_${bookId}_${pageNumber}`, text);
+                    if (customDate) localStorage.setItem(`date_${bookId}_${pageNumber}`, customDate);
+                    if (drawings) localStorage.setItem(`drawings_${bookId}_${pageNumber}`, JSON.stringify(drawings));
+
+                    return {
+                        textContent: text,
+                        customDate: customDate,
+                        drawings: drawings
+                    };
+                }
+            }
+        } catch (e) {
+            console.warn("Firestore getPageData notice:", e);
         }
-        const pageDocRef = doc(db, "books", bookId, "pages", pageNumber.toString());
-        const docSnap = await getDoc(pageDocRef);
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            return {
-                textContent: data.textContent !== undefined ? data.textContent : localContent,
-                customDate: data.customDate !== undefined ? data.customDate : localDate,
-                drawings: data.drawings !== undefined ? data.drawings : localDrawings
-            };
-        }
-    } catch (e) {
-        console.warn("Firestore getPageData notice:", e);
     }
     
     return {
-        textContent: localContent,
-        customDate: localDate,
-        drawings: localDrawings
+        textContent: localContent !== null ? localContent : "",
+        customDate: localDate !== null ? localDate : "",
+        drawings: localDrawings !== null ? localDrawings : []
     };
 }
 
@@ -249,7 +266,10 @@ export async function getPageData(bookId, pageNumber) {
  * Saves content, custom date, and freehand drawings for a single page.
  */
 export async function savePageContent(bookId, pageNumber, textContent, customDate = null, drawings = null) {
-    // ALWAYS save to local backup first so user data is never lost!
+    const user = getCurrentUser();
+    const userId = user ? user.uid : "guest_user";
+
+    // 1. Save to local storage cache for instant user experience
     localStorage.setItem(`guest_page_${bookId}_${pageNumber}`, textContent);
     if (customDate !== null && customDate !== undefined) {
         localStorage.setItem(`date_${bookId}_${pageNumber}`, customDate);
@@ -258,15 +278,16 @@ export async function savePageContent(bookId, pageNumber, textContent, customDat
         localStorage.setItem(`drawings_${bookId}_${pageNumber}`, JSON.stringify(drawings));
     }
 
-    const books = getLocalGuestBooks();
+    const books = getUserLocalBooks(userId);
     const book = books.find(b => b.id === bookId);
     if (book) {
         book.currentPage = pageNumber;
-        saveLocalGuestBooks(books);
+        saveUserLocalBooks(userId, books);
     }
 
     if (isGuestMode() || !isFirebaseInitialized()) return;
 
+    // 2. Save to Firestore under books/{bookId}/pages/{pageNumber} for cross-device sync
     try {
         const db = getFirebaseDb();
         if (!db) return;
@@ -284,10 +305,10 @@ export async function savePageContent(bookId, pageNumber, textContent, customDat
         await setDoc(pageDocRef, payload, { merge: true });
 
         const bookDocRef = doc(db, "books", bookId);
-        await updateDoc(bookDocRef, {
+        await setDoc(bookDocRef, {
             currentPage: pageNumber,
             lastWriteAt: serverTimestamp()
-        });
+        }, { merge: true });
     } catch (e) {
         console.warn("Firestore save failed, local copy preserved:", e);
     }
