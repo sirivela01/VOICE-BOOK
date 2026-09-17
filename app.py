@@ -22,13 +22,21 @@ def add_header(response):
 
 @app.route('/favicon.ico')
 def favicon():
-    return send_from_directory('static/images', 'logo.jpg')
+    res = send_from_directory('static/images', 'logo.png')
+    res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    return res
 
 @app.route('/logo.jpg')
-@app.route('/logo.png')
-def root_logo():
+def root_logo_jpg():
     res = send_from_directory('static/images', 'logo.jpg')
-    res.headers['Cache-Control'] = 'public, max-age=86400'
+    res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    res.headers['Access-Control-Allow-Origin'] = '*'
+    return res
+
+@app.route('/logo.png')
+def root_logo_png():
+    res = send_from_directory('static/images', 'logo.png')
+    res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     res.headers['Access-Control-Allow-Origin'] = '*'
     return res
 
@@ -52,13 +60,13 @@ def manifest():
         "scope": "/",
         "icons": [
             {
-                "src": "/static/images/logo.png",
+                "src": "/static/images/logo.png?v=1650.0",
                 "sizes": "192x192",
                 "type": "image/png",
                 "purpose": "any maskable"
             },
             {
-                "src": "/static/images/logo.png",
+                "src": "/static/images/logo.png?v=1650.0",
                 "sizes": "512x512",
                 "type": "image/png",
                 "purpose": "any maskable"
@@ -67,7 +75,7 @@ def manifest():
     }
     res = jsonify(manifest_data)
     res.headers['Content-Type'] = 'application/manifest+json'
-    res.headers['Cache-Control'] = 'public, max-age=3600'
+    res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     res.headers['Access-Control-Allow-Origin'] = '*'
     return res
 
@@ -75,7 +83,7 @@ def manifest():
 @app.route('/service-worker.js')
 def service_worker():
     sw_code = """
-const CACHE_NAME = 'voicebook-v1600.0';
+const CACHE_NAME = 'voicebook-v1650.0';
 
 self.addEventListener('install', (event) => {
     self.skipWaiting();
@@ -123,7 +131,7 @@ def get_config():
     res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     res.headers['Access-Control-Allow-Origin'] = '*'
     return res
-CURRENT_APP_VERSION = "v1600.0"
+CURRENT_APP_VERSION = "v1650.0"
 
 @app.route('/api/version', methods=['GET'])
 def get_app_version():

@@ -16,9 +16,9 @@
     <meta name="author" content="VoiceBook Team">
 
     <!-- Favicon & Apple Touch Icons for Mobile & Google Search Favicon -->
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/logo.png', v='1600.0') }}">
-    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/logo.png', v='1600.0') }}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='images/logo.png', v='1600.0') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/logo.png', v='1650.0') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/logo.png', v='1650.0') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='images/logo.png', v='1650.0') }}">
 
     <!-- Open Graph / Facebook / WhatsApp Rich Link Preview -->
     <meta property="og:type" content="website">
@@ -60,7 +60,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Caveat:wght@400;700&family=Homemade+Apple&family=Reenie+Beanie&family=Architects+Daughter&family=Indie+Flower&family=Dancing+Script:wght@400;700&family=Shadows+Into+Light&family=Kalam:wght@300;400;700&family=Sacramento&family=Noto+Sans+Telugu:wght@400;600;700&family=Mandali&family=Gidugu&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
     <!-- Web Application Manifest for Mobile Installation -->
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json', v='1650.0') }}">
     <!-- Main Style -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='1200.0') }}">
 </head>
@@ -69,7 +69,7 @@
     <div id="splash-screen-overlay" class="splash-screen-overlay">
         <div class="splash-content-card minimal-card">
             <div class="splash-brand-hero">
-                <img src="{{ url_for('static', filename='images/logo.png', v='1600.0') }}" alt="VoiceBook Logo" style="width: 48px; height: 48px; border-radius: 12px; margin-bottom: 0.6rem;">
+                <img src="{{ url_for('static', filename='images/logo.png', v='1650.0') }}" alt="VoiceBook Logo" style="width: 48px; height: 48px; border-radius: 12px; margin-bottom: 0.6rem;">
                 <h1 class="splash-brand-title">
                     <span class="brand-voice">Voice</span><span class="brand-book">Book</span>
                 </h1>
@@ -90,7 +90,7 @@
         <section id="view-auth" class="view-panel active-view">
             <div class="auth-card">
                 <div class="auth-header">
-                    <img src="{{ url_for('static', filename='images/logo.png', v='1600.0') }}" alt="VoiceBook Logo" style="width: 42px; height: 42px; border-radius: 10px; margin-bottom: 0.6rem;">
+                    <img src="{{ url_for('static', filename='images/logo.png', v='1650.0') }}" alt="VoiceBook Logo" style="width: 42px; height: 42px; border-radius: 10px; margin-bottom: 0.6rem;">
                     <h1 class="splash-brand-title" style="font-size: 2.2rem;">
                         <span class="brand-voice">Voice</span><span class="brand-book">Book</span>
                     </h1>
@@ -120,7 +120,7 @@
         <section id="view-shelf" class="view-panel">
             <header class="shelf-header">
                 <div class="header-logo">
-                    <img src="{{ url_for('static', filename='images/logo.png', v='1600.0') }}" alt="VoiceBook Logo" style="width: 28px; height: 28px; border-radius: 7px; margin-right: 0.4rem;">
+                    <img src="{{ url_for('static', filename='images/logo.png', v='1650.0') }}" alt="VoiceBook Logo" style="width: 28px; height: 28px; border-radius: 7px; margin-right: 0.4rem;">
                     <h2 class="splash-brand-title" style="font-size: 1.8rem; margin: 0; display: flex; align-items: center;">
                         <span class="brand-voice">Voice</span><span class="brand-book">Book</span>
                     </h2>
@@ -586,13 +586,13 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js?v=1600.0').then((reg) => {
+                navigator.serviceWorker.register('/sw.js?v=1650.0').then((reg) => {
                     reg.update();
                 }).catch(() => {});
             });
         }
     </script>
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='1600.0') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='1650.0') }}"></script>
 </body>
 </html>
