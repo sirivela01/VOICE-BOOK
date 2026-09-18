@@ -217,14 +217,18 @@ const triggerAutosave = debounce(async () => {
 async function saveActivePageData() {
     if (!activeBookId) return;
     
-    // Capture snapshot of target book, target page, text, custom date, and drawings RIGHT NOW synchronously!
+    // Capture snapshot of target book, target page, text, custom date, and drawings RIGHT NOW
     const targetBookId = activeBookId;
     const targetPageNum = activePageNumber;
-    const text = getPageText();
+    let text = "";
+    try {
+        text = typeof getPageText === "function" ? getPageText() : "";
+    } catch(e) {}
     const customDate = directDateEditor ? directDateEditor.value : "";
     const strokes = pageStrokes || [];
     
-    // Save to local backup synchronously
+    // Immediate local cache save (synchronous, 0ms lag)
+    localStorage.setItem(`guest_page_${targetBookId}_${targetPageNum}`, text);
     if (text) {
         localStorage.setItem(`backup_${targetBookId}_${targetPageNum}`, text);
     }
@@ -238,12 +242,11 @@ async function saveActivePageData() {
     setSaveStatus("saving", "Saving progress...");
     try {
         await savePageContent(targetBookId, targetPageNum, text, customDate, strokes);
-        // Clear local backup once successfully persisted to Firestore
         localStorage.removeItem(`backup_${targetBookId}_${targetPageNum}`);
         setSaveStatus("saved", "All changes saved");
     } catch (err) {
-        console.error("Autosave error:", err);
-        setSaveStatus("error", "Error saving progress");
+        console.warn("Background cloud save error:", err);
+        setSaveStatus("saved", "Saved locally");
     }
 }
 
@@ -507,134 +510,163 @@ async function openNotebook(bookId, name, pageNum) {
     }
 }
 
+let isPageTurning = false;
+
 async function turnPage(direction) {
-    if (!activeBookId) return;
+    if (!activeBookId || isPageTurning) return;
     
     const paperWrapper = document.getElementById("notebook-paper-wrapper");
-    if (paperWrapper && (paperWrapper.classList.contains("flip-forward") || paperWrapper.classList.contains("flip-backward"))) return;
     
-    if (isMicActive()) {
-        stopListening();
+    if (typeof isMicActive === "function" && isMicActive()) {
+        if (typeof stopListening === "function") stopListening();
     }
     
-    await saveActivePageData();
+    // Instant local save of current active page BEFORE changing page number
+    saveActivePageData();
     
     if (direction === "next") {
         if (activePageNumber >= 100) {
             showToast("You have reached the end of the notebook!", "info");
             return;
         }
-        const targetPage = activePageNumber + 1;
-        if (paperWrapper) paperWrapper.classList.add("flip-forward");
-        setTimeout(async () => {
-            activePageNumber = targetPage;
-            await loadActivePage();
-        }, 200);
-        setTimeout(() => {
-            if (paperWrapper) paperWrapper.classList.remove("flip-forward");
-        }, 400);
+        activePageNumber++;
     } else {
         if (activePageNumber <= 1) return;
-        const targetPage = activePageNumber - 1;
-        if (paperWrapper) paperWrapper.classList.add("flip-backward");
-        setTimeout(async () => {
-            activePageNumber = targetPage;
-            await loadActivePage();
-        }, 200);
+        activePageNumber--;
+    }
+    
+    isPageTurning = true;
+    const flipClass = direction === "next" ? "flip-forward" : "flip-backward";
+    if (paperWrapper) paperWrapper.classList.add(flipClass);
+    
+    try {
+        await loadActivePage();
+    } catch (err) {
+        console.error("Error loading page during turnPage:", err);
+    } finally {
         setTimeout(() => {
-            if (paperWrapper) paperWrapper.classList.remove("flip-backward");
-        }, 400);
+            if (paperWrapper) paperWrapper.classList.remove("flip-forward", "flip-backward");
+            isPageTurning = false;
+        }, 350);
     }
 }
 
 async function goToPage(targetPage) {
-    if (!activeBookId) return;
+    if (!activeBookId || isPageTurning || targetPage === activePageNumber) return;
+    if (targetPage < 1 || targetPage > 100) return;
     
     const paperWrapper = document.getElementById("notebook-paper-wrapper");
-    if (paperWrapper && (paperWrapper.classList.contains("flip-forward") || paperWrapper.classList.contains("flip-backward"))) return;
     
-    if (isMicActive()) {
-        stopListening();
+    if (typeof isMicActive === "function" && isMicActive()) {
+        if (typeof stopListening === "function") stopListening();
     }
     
-    await saveActivePageData();
+    saveActivePageData();
     
     const direction = targetPage > activePageNumber ? "forward" : "backward";
+    activePageNumber = targetPage;
     
-    if (paperWrapper) paperWrapper.classList.add(direction === "forward" ? "flip-forward" : "flip-backward");
-    setTimeout(async () => {
-        activePageNumber = targetPage;
+    isPageTurning = true;
+    const flipClass = direction === "forward" ? "flip-forward" : "flip-backward";
+    if (paperWrapper) paperWrapper.classList.add(flipClass);
+    
+    try {
         await loadActivePage();
-    }, 200);
-    setTimeout(() => {
-        if (paperWrapper) paperWrapper.classList.remove("flip-forward", "flip-backward");
-    }, 400);
+    } catch (err) {
+        console.error("Error loading page during goToPage:", err);
+    } finally {
+        setTimeout(() => {
+            if (paperWrapper) paperWrapper.classList.remove("flip-forward", "flip-backward");
+            isPageTurning = false;
+        }, 350);
+    }
 }
 
 async function loadActivePage() {
-    pageDisplayCounter.innerText = `Page ${activePageNumber} of 100`;
+    if (!activeBookId) return;
+
+    if (pageDisplayCounter) {
+        pageDisplayCounter.innerText = `Page ${activePageNumber} of 100`;
+    }
     setSaveStatus("saving", "Loading page...");
     
-    let pageText = "";
-    let savedDate = "";
+    // 1. Immediate local cache retrieval (0ms UI latency)
+    let pageText = localStorage.getItem(`guest_page_${activeBookId}_${activePageNumber}`) || "";
+    let savedDate = safeLocalStorageGet(`date_${activeBookId}_${activePageNumber}`, "");
     let savedDrawings = [];
     try {
-        const data = await getPageData(activeBookId, activePageNumber);
-        pageText = data.textContent || "";
-        savedDate = data.customDate || "";
-        savedDrawings = data.drawings || [];
-    } catch (err) {
-        console.warn("getPageData failed, using local fallback:", err);
-        pageText = localStorage.getItem(`guest_page_${activeBookId}_${activePageNumber}`) || "";
-        savedDate = safeLocalStorageGet(`date_${activeBookId}_${activePageNumber}`, "");
-        try {
-            const raw = localStorage.getItem(`drawings_${activeBookId}_${activePageNumber}`);
-            if (raw) savedDrawings = JSON.parse(raw);
-        } catch (e) {}
+        const raw = localStorage.getItem(`drawings_${activeBookId}_${activePageNumber}`);
+        if (raw) savedDrawings = JSON.parse(raw);
+    } catch (e) {}
+
+    // Check emergency backup
+    const backupKey = `backup_${activeBookId}_${activePageNumber}`;
+    const backupText = localStorage.getItem(backupKey);
+    if (backupText && backupText.length > pageText.length) {
+        pageText = backupText;
     }
-    
+
     pageStrokes = savedDrawings;
-    
-    try {
-        // Restore local emergency backup if un-synced text exists
-        const backupKey = `backup_${activeBookId}_${activePageNumber}`;
-        const backupText = localStorage.getItem(backupKey);
-        if (backupText && backupText.length > (pageText ? pageText.length : 0)) {
-            pageText = backupText;
-            await savePageContent(activeBookId, activePageNumber, pageText, savedDate, pageStrokes);
-            localStorage.removeItem(backupKey);
-        }
 
-        const canvasEl = document.getElementById("notebook-canvas");
-        const activeInkBtn = document.querySelector(".ink-btn.active");
-        const currentInkColor = activeInkBtn ? activeInkBtn.getAttribute("data-color") : "#1d3d84";
+    const fontVal = (selectFont && selectFont.value) ? selectFont.value : "Homemade Apple";
+    const fontSizeVal = (inputFontSize && inputFontSize.value) ? parseInt(inputFontSize.value) : 23;
+    const jitterVal = (inputJitter && inputJitter.value) ? parseInt(inputJitter.value) : 2;
+    const activeInkBtn = document.querySelector(".ink-btn.active");
+    const currentInkColor = activeInkBtn ? activeInkBtn.getAttribute("data-color") : "#1d3d84";
 
-        if (valFontSize && inputFontSize) valFontSize.innerText = `${inputFontSize.value}px`;
-        if (valJitter && inputJitter) {
-            const jitterMap = { 0: "None", 1: "Low", 2: "Medium", 3: "High" };
-            valJitter.innerText = jitterMap[inputJitter.value] || "Medium";
-        }
+    if (valFontSize && inputFontSize) valFontSize.innerText = `${inputFontSize.value}px`;
+    if (valJitter && inputJitter) {
+        const jitterMap = { 0: "None", 1: "Low", 2: "Medium", 3: "High" };
+        valJitter.innerText = jitterMap[inputJitter.value] || "Medium";
+    }
 
+    const canvasEl = document.getElementById("notebook-canvas");
+    if (canvasEl) {
         initRenderer(canvasEl);
         setRenderOptions({ 
             activePageNumber: activePageNumber,
-            font: selectFont.value,
-            fontSize: parseInt(inputFontSize.value),
-            jitterLevel: parseInt(inputJitter.value),
+            font: fontVal,
+            fontSize: fontSizeVal,
+            jitterLevel: jitterVal,
             activeBookId: activeBookId,
             inkColor: currentInkColor,
             customDate: savedDate,
             strokes: pageStrokes
         });
         renderText(pageText, false);
-        if (directCanvasEditor) directCanvasEditor.value = getPlainText();
-        if (directDateEditor) directDateEditor.value = savedDate;
-        
-        setSaveStatus("saved", "All changes saved");
-        updateCurrentPage(activeBookId, activePageNumber);
+    }
+    if (directCanvasEditor) directCanvasEditor.value = typeof getPlainText === "function" ? getPlainText() : pageText;
+    if (directDateEditor) directDateEditor.value = savedDate;
+    
+    setSaveStatus("saved", "All changes saved");
+    updateCurrentPage(activeBookId, activePageNumber);
+
+    // 2. Query cloud asynchronously in background if available
+    try {
+        const data = await getPageData(activeBookId, activePageNumber);
+        if (data && (data.textContent !== undefined || data.customDate !== undefined || data.drawings !== undefined)) {
+            const cloudText = data.textContent || "";
+            const cloudDate = data.customDate || "";
+            const cloudDrawings = data.drawings || [];
+
+            if (cloudText !== pageText || cloudDate !== savedDate || JSON.stringify(cloudDrawings) !== JSON.stringify(savedDrawings)) {
+                pageText = cloudText;
+                savedDate = cloudDate;
+                pageStrokes = cloudDrawings;
+
+                if (canvasEl) {
+                    setRenderOptions({
+                        customDate: savedDate,
+                        strokes: pageStrokes
+                    });
+                    renderText(pageText, false);
+                }
+                if (directCanvasEditor) directCanvasEditor.value = typeof getPlainText === "function" ? getPlainText() : pageText;
+                if (directDateEditor) directDateEditor.value = savedDate;
+            }
+        }
     } catch (err) {
-        console.error("Critical page initialization error:", err);
-        setSaveStatus("error", "Offline mode active");
+        console.warn("getPageData background fetch notice:", err);
     }
 }
 
@@ -1007,6 +1039,52 @@ function setupEventListeners() {
             turnPage("next");
         });
     }
+
+    // Touch Swipe Gesture Navigation for Mobile Devices (Swipe Left -> Next, Swipe Right -> Prev)
+    const paperWrapperEl = document.getElementById("notebook-paper-wrapper");
+    if (paperWrapperEl) {
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        paperWrapperEl.addEventListener("touchstart", (e) => {
+            if (e.touches && e.touches.length === 1) {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            }
+        }, { passive: true });
+
+        paperWrapperEl.addEventListener("touchend", (e) => {
+            if (e.changedTouches && e.changedTouches.length === 1) {
+                const touchEndX = e.changedTouches[0].clientX;
+                const touchEndY = e.changedTouches[0].clientY;
+                
+                const diffX = touchEndX - touchStartX;
+                const diffY = touchEndY - touchStartY;
+                
+                if (Math.abs(diffX) > 45 && Math.abs(diffY) < 50) {
+                    if (diffX < 0) {
+                        turnPage("next");
+                    } else {
+                        turnPage("prev");
+                    }
+                }
+            }
+        }, { passive: true });
+    }
+
+    // Keyboard Arrow Key Navigation
+    document.addEventListener("keydown", (e) => {
+        const activeEl = document.activeElement;
+        if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || activeEl.isContentEditable)) {
+            return;
+        }
+
+        if (e.key === "ArrowRight") {
+            turnPage("next");
+        } else if (e.key === "ArrowLeft") {
+            turnPage("prev");
+        }
+    });
 
 
 
