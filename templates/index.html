@@ -16,9 +16,9 @@
     <meta name="author" content="VoiceBook Team">
 
     <!-- Favicon & Apple Touch Icons for Mobile & Google Search Favicon -->
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/logo.png', v='3200.0') }}">
-    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/logo.png', v='3200.0') }}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='images/logo.png', v='3200.0') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/logo.png', v='5000.0') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/logo.png', v='5000.0') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='images/logo.png', v='5000.0') }}">
 
     <!-- Open Graph / Facebook / WhatsApp Rich Link Preview -->
     <meta property="og:type" content="website">
@@ -26,19 +26,19 @@
     <meta property="og:url" content="https://voice-book-llh4.onrender.com/">
     <meta property="og:title" content="VoiceBook - Voice-to-Handwriting Digital Notebook">
     <meta property="og:description" content="Convert spoken words into realistic handwritten notebook pages instantly with AI voice dictation.">
-    <meta property="og:image" content="https://voice-book-llh4.onrender.com/logo.jpg?v=3200.0">
-    <meta property="og:image:secure_url" content="https://voice-book-llh4.onrender.com/logo.jpg?v=3200.0">
+    <meta property="og:image" content="https://voice-book-llh4.onrender.com/logo.jpg?v=5000.0">
+    <meta property="og:image:secure_url" content="https://voice-book-llh4.onrender.com/logo.jpg?v=5000.0">
     <meta property="og:image:type" content="image/jpeg">
     <meta property="og:image:width" content="400">
     <meta property="og:image:height" content="400">
-    <link rel="image_src" href="https://voice-book-llh4.onrender.com/logo.jpg?v=3200.0">
+    <link rel="image_src" href="https://voice-book-llh4.onrender.com/logo.jpg?v=5000.0">
 
     <!-- Twitter Card Rich Preview Tags -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:url" content="https://voice-book-llh4.onrender.com/">
     <meta name="twitter:title" content="VoiceBook - Voice-to-Handwriting Digital Notebook">
     <meta name="twitter:description" content="Convert spoken words into realistic handwritten notebook pages instantly with AI voice dictation.">
-    <meta name="twitter:image" content="https://voice-book-llh4.onrender.com/logo.jpg?v=3200.0">
+    <meta name="twitter:image" content="https://voice-book-llh4.onrender.com/logo.jpg?v=5000.0">
 
     <!-- Schema.org Structured Data for Google Search Engine Logo Recognition -->
     <script type="application/ld+json">
@@ -47,8 +47,8 @@
       "@type": "WebApplication",
       "name": "VoiceBook",
       "url": "https://voice-book-llh4.onrender.com/",
-      "logo": "https://voice-book-llh4.onrender.com/logo.jpg?v=3200.0",
-      "image": "https://voice-book-llh4.onrender.com/logo.jpg?v=3200.0",
+      "logo": "https://voice-book-llh4.onrender.com/logo.jpg?v=5000.0",
+      "image": "https://voice-book-llh4.onrender.com/logo.jpg?v=5000.0",
       "description": "Convert spoken words into realistic handwritten notebook pages instantly with AI voice dictation.",
       "applicationCategory": "EducationalApplication",
       "operatingSystem": "All"
@@ -60,16 +60,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Caveat:wght@400;700&family=Homemade+Apple&family=Reenie+Beanie&family=Architects+Daughter&family=Indie+Flower&family=Dancing+Script:wght@400;700&family=Shadows+Into+Light&family=Kalam:wght@300;400;700&family=Sacramento&family=Noto+Sans+Telugu:wght@400;600;700&family=Mandali&family=Gidugu&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
     <!-- Web Application Manifest for Mobile Installation -->
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.json', v='3200.0') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json', v='5000.0') }}">
     <!-- Main Style -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='3200.0') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='5000.0') }}">
 </head>
 <body>
     <!-- ================= 9-SECOND PROFESSIONAL TITLE SPLASH SCREEN ================= -->
     <div id="splash-screen-overlay" class="splash-screen-overlay">
         <div class="splash-content-card minimal-card">
             <div class="splash-brand-hero">
-                <img src="{{ url_for('static', filename='images/logo.png', v='3200.0') }}" alt="VoiceBook Logo" style="width: 48px; height: 48px; border-radius: 12px; margin-bottom: 0.6rem;">
+                <img src="{{ url_for('static', filename='images/logo.png', v='5000.0') }}" alt="VoiceBook Logo" style="width: 48px; height: 48px; border-radius: 12px; margin-bottom: 0.6rem;">
                 <h1 class="splash-brand-title">
                     <span class="brand-voice">Voice</span><span class="brand-book">Book</span>
                 </h1>
@@ -649,13 +649,13 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js?v=3200.0').then((reg) => {
+                navigator.serviceWorker.register('/sw.js?v=5000.0').then((reg) => {
                     reg.update();
                 }).catch(() => {});
             });
         }
     </script>
     <!-- App Modules -->
-    <script type="module" src="{{ url_for('static', filename='js/app.js', v='3200.0') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js', v='5000.0') }}"></script>
 </body>
 </html>

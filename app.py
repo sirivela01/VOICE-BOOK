@@ -60,13 +60,13 @@ def manifest():
         "scope": "/",
         "icons": [
             {
-                "src": "/static/images/logo.png?v=3200.0",
+                "src": "/static/images/logo.png?v=5000.0",
                 "sizes": "192x192",
                 "type": "image/png",
                 "purpose": "any maskable"
             },
             {
-                "src": "/static/images/logo.png?v=3200.0",
+                "src": "/static/images/logo.png?v=5000.0",
                 "sizes": "512x512",
                 "type": "image/png",
                 "purpose": "any maskable"
@@ -83,7 +83,7 @@ def manifest():
 @app.route('/service-worker.js')
 def service_worker():
     sw_code = """
-const CACHE_NAME = 'voicebook-v3200.0';
+const CACHE_NAME = 'voicebook-v5000.0';
 
 self.addEventListener('install', (event) => {
     self.skipWaiting();
@@ -131,7 +131,7 @@ def get_config():
     res.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     res.headers['Access-Control-Allow-Origin'] = '*'
     return res
-CURRENT_APP_VERSION = "v3200.0"
+CURRENT_APP_VERSION = "v5000.0"
 
 @app.route('/api/version', methods=['GET'])
 def get_app_version():
