@@ -1444,6 +1444,69 @@ function setupEventListeners() {
         btnGeneratePdf.addEventListener("click", handleGeneratePdf);
     }
 
+    const btnSharePdf = document.getElementById("btn-share-pdf");
+    if (btnSharePdf) {
+        btnSharePdf.addEventListener("click", handleSharePdf);
+    }
+
+    const btnShareHeader = document.getElementById("btn-share-header");
+    if (btnShareHeader) {
+        btnShareHeader.addEventListener("click", () => {
+            if (modalExportPdf) showModal(modalExportPdf);
+            else openShareModal();
+        });
+    }
+
+    // Share Modal social platform listeners
+    const modalShare = document.getElementById("modal-share");
+    const btnCloseShare = document.getElementById("btn-close-share");
+    const btnCancelShare = document.getElementById("btn-cancel-share");
+
+    if (btnCloseShare) btnCloseShare.addEventListener("click", () => closeModal(modalShare));
+    if (btnCancelShare) btnCancelShare.addEventListener("click", () => closeModal(modalShare));
+
+    const btnShareWhatsapp = document.getElementById("btn-share-whatsapp");
+    if (btnShareWhatsapp) {
+        btnShareWhatsapp.addEventListener("click", () => {
+            const text = encodeURIComponent(`Check out VoiceBook - Spoken words to realistic handwriting!\nhttps://voice-book-llh4.onrender.com/`);
+            window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+        });
+    }
+
+    const btnShareTelegram = document.getElementById("btn-share-telegram");
+    if (btnShareTelegram) {
+        btnShareTelegram.addEventListener("click", () => {
+            const url = encodeURIComponent(`https://voice-book-llh4.onrender.com/`);
+            const text = encodeURIComponent(`VoiceBook - Convert spoken words into realistic handwritten notebooks!`);
+            window.open(`https://t.me/share/url?url=${url}&text=${text}`, '_blank');
+        });
+    }
+
+    const btnShareEmail = document.getElementById("btn-share-email");
+    if (btnShareEmail) {
+        btnShareEmail.addEventListener("click", () => {
+            const subject = encodeURIComponent(`VoiceBook - Handwritten Digital Notebook`);
+            const body = encodeURIComponent(`Check out VoiceBook! Convert spoken words into realistic handwritten notebook pages:\nhttps://voice-book-llh4.onrender.com/`);
+            window.location.href = `mailto:?subject=${subject}&body=${body}`;
+        });
+    }
+
+    const btnShareCopyLink = document.getElementById("btn-share-copy-link");
+    if (btnShareCopyLink) {
+        btnShareCopyLink.addEventListener("click", () => {
+            const appUrl = "https://voice-book-llh4.onrender.com/";
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(appUrl).then(() => {
+                    showToast("Link copied to clipboard!", "success");
+                }).catch(() => {
+                    showToast("App URL: " + appUrl, "info");
+                });
+            } else {
+                showToast("App URL: " + appUrl, "info");
+            }
+        });
+    }
+
     // Initialize speech integration
     setupSpeechRecognition();
 }
@@ -1485,10 +1548,10 @@ function parsePageRange(rangeStr, maxPages = 100) {
 }
 
 /**
- * Handles generating multi-page PDF document containing offscreen-rendered notebook pages.
+ * Helper to build jsPDF document for active notebook.
  */
-async function handleGeneratePdf() {
-    if (!activeBookId) return;
+async function buildPdfDocument() {
+    if (!activeBookId) return null;
 
     const selectedOption = document.querySelector('input[name="pdf-page-option"]:checked')?.value || "current";
     let targetPages = [];
@@ -1510,7 +1573,7 @@ async function handleGeneratePdf() {
         targetPages = parsePageRange(rawRange, 100);
         if (targetPages.length === 0) {
             showToast("Please enter a valid page range (e.g. 1, 2, 5-10)", "error");
-            return;
+            return null;
         }
     }
 
@@ -1518,67 +1581,70 @@ async function handleGeneratePdf() {
         pdfProgressStatus.style.display = "block";
         pdfProgressStatus.textContent = `Preparing PDF (${targetPages.length} page${targetPages.length > 1 ? 's' : ''})...`;
     }
+
+    const jsPDF = window.jspdf ? window.jspdf.jsPDF : null;
+    if (!jsPDF) {
+        showToast("PDF generator library not loaded. Please refresh the page.", "error");
+        if (pdfProgressStatus) pdfProgressStatus.style.display = "none";
+        return null;
+    }
+
+    const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "pt",
+        format: [800, 1000]
+    });
+
+    const offscreenCanvas = document.createElement("canvas");
+    const font = selectFont ? selectFont.value : "Homemade Apple";
+    const fontSize = inputFontSize ? parseInt(inputFontSize.value, 10) : 15;
+    const jitterLevel = inputJitter ? parseInt(inputJitter.value, 10) : 2;
+
+    for (let i = 0; i < targetPages.length; i++) {
+        const pNum = targetPages[i];
+        if (pdfProgressStatus) {
+            pdfProgressStatus.textContent = `Rendering page ${i + 1} of ${targetPages.length} (Page ${pNum})...`;
+        }
+
+        await new Promise(r => setTimeout(r, 15));
+
+        const pageData = await getPageData(activeBookId, pNum);
+
+        renderPageStatic(offscreenCanvas, pageData.textContent, pNum, {
+            customDate: pageData.customDate,
+            strokes: pageData.drawings,
+            font: font,
+            fontSize: fontSize,
+            jitterLevel: jitterLevel
+        });
+
+        const imgData = offscreenCanvas.toDataURL("image/png");
+
+        if (i > 0) {
+            doc.addPage([800, 1000], "portrait");
+        }
+        doc.addImage(imgData, "PNG", 0, 0, 800, 1000);
+    }
+
+    const safeTitle = (activeBookName || "Notebook").replace(/[^a-zA-Z0-9_-]/g, "_");
+    return { doc, safeTitle, targetPages };
+}
+
+/**
+ * Handles generating and downloading multi-page PDF document.
+ */
+async function handleGeneratePdf() {
     if (btnGeneratePdf) {
         btnGeneratePdf.disabled = true;
         btnGeneratePdf.textContent = "Generating PDF...";
     }
-
     try {
-        const jsPDF = window.jspdf ? window.jspdf.jsPDF : null;
-        if (!jsPDF) {
-            showToast("PDF generator library not loaded. Please refresh the page.", "error");
-            if (pdfProgressStatus) pdfProgressStatus.style.display = "none";
-            if (btnGeneratePdf) {
-                btnGeneratePdf.disabled = false;
-                btnGeneratePdf.textContent = "Download PDF";
-            }
-            return;
+        const result = await buildPdfDocument();
+        if (result) {
+            result.doc.save(`${result.safeTitle}_Pages.pdf`);
+            showToast(`Exported ${result.targetPages.length} page(s) to PDF successfully!`, "success");
+            closeModal(modalExportPdf);
         }
-
-        const doc = new jsPDF({
-            orientation: "portrait",
-            unit: "pt",
-            format: [800, 1000]
-        });
-
-        const offscreenCanvas = document.createElement("canvas");
-
-        const font = selectFont ? selectFont.value : "Homemade Apple";
-        const fontSize = inputFontSize ? parseInt(inputFontSize.value, 10) : 15;
-        const jitterLevel = inputJitter ? parseInt(inputJitter.value, 10) : 2;
-
-        for (let i = 0; i < targetPages.length; i++) {
-            const pNum = targetPages[i];
-            if (pdfProgressStatus) {
-                pdfProgressStatus.textContent = `Rendering page ${i + 1} of ${targetPages.length} (Page ${pNum})...`;
-            }
-            
-            await new Promise(r => setTimeout(r, 15));
-
-            const pageData = await getPageData(activeBookId, pNum);
-
-            renderPageStatic(offscreenCanvas, pageData.textContent, pNum, {
-                customDate: pageData.customDate,
-                strokes: pageData.drawings,
-                font: font,
-                fontSize: fontSize,
-                jitterLevel: jitterLevel
-            });
-
-            const imgData = offscreenCanvas.toDataURL("image/png");
-
-            if (i > 0) {
-                doc.addPage([800, 1000], "portrait");
-            }
-            doc.addImage(imgData, "PNG", 0, 0, 800, 1000);
-        }
-
-        const safeTitle = (activeBookName || "Notebook").replace(/[^a-zA-Z0-9_-]/g, "_");
-        doc.save(`${safeTitle}_Pages.pdf`);
-
-        showToast(`Exported ${targetPages.length} page(s) to PDF successfully!`, "success");
-        closeModal(modalExportPdf);
-
     } catch (err) {
         console.error("PDF export error:", err);
         showToast("An error occurred while generating the PDF.", "error");
@@ -1588,6 +1654,76 @@ async function handleGeneratePdf() {
             btnGeneratePdf.disabled = false;
             btnGeneratePdf.textContent = "Download PDF";
         }
+    }
+}
+
+/**
+ * Handles sharing generated PDF to native phone apps (WhatsApp, Instagram, Snapchat, Telegram, etc.)
+ */
+async function handleSharePdf() {
+    const btnSharePdf = document.getElementById("btn-share-pdf");
+    if (btnSharePdf) {
+        btnSharePdf.disabled = true;
+        btnSharePdf.textContent = "Preparing Share...";
+    }
+
+    try {
+        const result = await buildPdfDocument();
+        if (!result) return;
+        const { doc, safeTitle, targetPages } = result;
+
+        const pdfBlob = doc.output("blob");
+        const pdfFile = new File([pdfBlob], `${safeTitle}_Notes.pdf`, { type: "application/pdf" });
+
+        const shareTitle = `VoiceBook: ${activeBookName || "Notebook"}`;
+        const shareText = `Check out my handwritten notes created with VoiceBook! (${targetPages.length} page${targetPages.length > 1 ? 's' : ''})`;
+        const shareUrl = "https://voice-book-llh4.onrender.com/";
+
+        // 1. Try native Web Share API with File payload (Android / iOS native share menu)
+        if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+            await navigator.share({
+                title: shareTitle,
+                text: shareText,
+                files: [pdfFile]
+            });
+            showToast("Shared notebook PDF successfully!", "success");
+            closeModal(modalExportPdf);
+            return;
+        }
+
+        // 2. Web Share API URL fallback
+        if (navigator.share) {
+            await navigator.share({
+                title: shareTitle,
+                text: `${shareText}\n${shareUrl}`,
+                url: shareUrl
+            });
+            showToast("Shared notebook link successfully!", "success");
+            closeModal(modalExportPdf);
+            return;
+        }
+
+        // 3. Desktop Share Modal fallback
+        closeModal(modalExportPdf);
+        openShareModal();
+
+    } catch (err) {
+        if (err.name !== "AbortError") {
+            console.error("Share error:", err);
+            openShareModal();
+        }
+    } finally {
+        if (btnSharePdf) {
+            btnSharePdf.disabled = false;
+            btnSharePdf.textContent = "Share PDF to Apps";
+        }
+    }
+}
+
+function openShareModal() {
+    const modalShare = document.getElementById("modal-share");
+    if (modalShare) {
+        showModal(modalShare);
     }
 }
 
