@@ -72,7 +72,7 @@ function saveLocalGuestBooks(books) {
 /**
  * Creates a new notebook document in Firestore and LocalStorage.
  */
-export async function createBook(rawName, slotIndex = 0) {
+export async function createBook(rawName, slotIndex = 0, isPaid = false) {
     const name = sanitizeInput(rawName, 100) || "Untitled Notebook";
     const user = getCurrentUser();
     const userId = user ? user.uid : "guest_user";
@@ -92,7 +92,8 @@ export async function createBook(rawName, slotIndex = 0) {
         createdAt: { seconds: Date.now() / 1000 },
         currentPage: 1,
         maxPages: 100,
-        slotIndex: slotIndex
+        slotIndex: slotIndex,
+        isPaid: !!isPaid
     };
     localBooks.unshift(newBook);
     saveUserLocalBooks(userId, localBooks);
@@ -109,7 +110,8 @@ export async function createBook(rawName, slotIndex = 0) {
             createdAt: serverTimestamp(),
             currentPage: 1,
             maxPages: 100,
-            slotIndex: slotIndex
+            slotIndex: slotIndex,
+            isPaid: !!isPaid
         };
         const bookDocRef = doc(db, "books", bookId);
         await setDoc(bookDocRef, bookData, { merge: true });

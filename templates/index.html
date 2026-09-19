@@ -16,9 +16,9 @@
     <meta name="author" content="VoiceBook Team">
 
     <!-- Favicon & Apple Touch Icons for Mobile & Google Search Favicon -->
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/logo.png', v='5000.0') }}">
-    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/logo.png', v='5000.0') }}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='images/logo.png', v='5000.0') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/logo.png', v='6000.0') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/logo.png', v='6000.0') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='images/logo.png', v='6000.0') }}">
 
     <!-- Open Graph / Facebook / WhatsApp Rich Link Preview -->
     <meta property="og:type" content="website">
@@ -26,19 +26,19 @@
     <meta property="og:url" content="https://voice-book-llh4.onrender.com/">
     <meta property="og:title" content="VoiceBook - Voice-to-Handwriting Digital Notebook">
     <meta property="og:description" content="Convert spoken words into realistic handwritten notebook pages instantly with AI voice dictation.">
-    <meta property="og:image" content="https://voice-book-llh4.onrender.com/logo.jpg?v=5000.0">
-    <meta property="og:image:secure_url" content="https://voice-book-llh4.onrender.com/logo.jpg?v=5000.0">
+    <meta property="og:image" content="https://voice-book-llh4.onrender.com/logo.jpg?v=6000.0">
+    <meta property="og:image:secure_url" content="https://voice-book-llh4.onrender.com/logo.jpg?v=6000.0">
     <meta property="og:image:type" content="image/jpeg">
     <meta property="og:image:width" content="400">
     <meta property="og:image:height" content="400">
-    <link rel="image_src" href="https://voice-book-llh4.onrender.com/logo.jpg?v=5000.0">
+    <link rel="image_src" href="https://voice-book-llh4.onrender.com/logo.jpg?v=6000.0">
 
     <!-- Twitter Card Rich Preview Tags -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:url" content="https://voice-book-llh4.onrender.com/">
     <meta name="twitter:title" content="VoiceBook - Voice-to-Handwriting Digital Notebook">
     <meta name="twitter:description" content="Convert spoken words into realistic handwritten notebook pages instantly with AI voice dictation.">
-    <meta name="twitter:image" content="https://voice-book-llh4.onrender.com/logo.jpg?v=5000.0">
+    <meta name="twitter:image" content="https://voice-book-llh4.onrender.com/logo.jpg?v=6000.0">
 
     <!-- Schema.org Structured Data for Google Search Engine Logo Recognition -->
     <script type="application/ld+json">
@@ -47,8 +47,8 @@
       "@type": "WebApplication",
       "name": "VoiceBook",
       "url": "https://voice-book-llh4.onrender.com/",
-      "logo": "https://voice-book-llh4.onrender.com/logo.jpg?v=5000.0",
-      "image": "https://voice-book-llh4.onrender.com/logo.jpg?v=5000.0",
+      "logo": "https://voice-book-llh4.onrender.com/logo.jpg?v=6000.0",
+      "image": "https://voice-book-llh4.onrender.com/logo.jpg?v=6000.0",
       "description": "Convert spoken words into realistic handwritten notebook pages instantly with AI voice dictation.",
       "applicationCategory": "EducationalApplication",
       "operatingSystem": "All"
@@ -60,16 +60,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Caveat:wght@400;700&family=Homemade+Apple&family=Reenie+Beanie&family=Architects+Daughter&family=Indie+Flower&family=Dancing+Script:wght@400;700&family=Shadows+Into+Light&family=Kalam:wght@300;400;700&family=Sacramento&family=Noto+Sans+Telugu:wght@400;600;700&family=Mandali&family=Gidugu&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
     <!-- Web Application Manifest for Mobile Installation -->
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.json', v='5000.0') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json', v='6000.0') }}">
     <!-- Main Style -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='5000.0') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='6000.0') }}">
 </head>
 <body>
     <!-- ================= 9-SECOND PROFESSIONAL TITLE SPLASH SCREEN ================= -->
     <div id="splash-screen-overlay" class="splash-screen-overlay">
         <div class="splash-content-card minimal-card">
             <div class="splash-brand-hero">
-                <img src="{{ url_for('static', filename='images/logo.png', v='5000.0') }}" alt="VoiceBook Logo" style="width: 48px; height: 48px; border-radius: 12px; margin-bottom: 0.6rem;">
+                <img src="{{ url_for('static', filename='images/logo.png', v='6000.0') }}" alt="VoiceBook Logo" style="width: 48px; height: 48px; border-radius: 12px; margin-bottom: 0.6rem;">
                 <h1 class="splash-brand-title">
                     <span class="brand-voice">Voice</span><span class="brand-book">Book</span>
                 </h1>
@@ -495,6 +495,12 @@
                         <label for="input-book-name">Notebook Name</label>
                         <input type="text" id="input-book-name" required placeholder="e.g., Daily Thoughts, Lecture Notes" class="form-control" autofocus>
                     </div>
+                    <div class="form-group" style="margin-top: 0.8rem;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.85rem; color: #334155; font-weight: 600;">
+                            <input type="checkbox" id="check-is-paid-book" style="width: 16px; height: 16px; accent-color: #16a34a;" />
+                            <span>🔒 Require ₹30 Payment to Access</span>
+                        </label>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline" id="btn-cancel-create-book">Cancel</button>
@@ -624,6 +630,63 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline" id="btn-cancel-share">Close</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ================= PAY-TO-UNLOCK UPI MONETIZATION MODAL ================= -->
+    <div id="modal-upi-payment" class="modal-overlay">
+        <div class="modal-box modal-sm" style="max-width: 440px; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
+            <div class="modal-header" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: #ffffff; padding: 1rem 1.2rem;">
+                <h3 style="color: #ffffff; display: flex; align-items: center; gap: 0.5rem; margin: 0; font-size: 1.1rem;">
+                    <span>💳 Unlock Premium Notebook</span>
+                </h3>
+                <button class="modal-close" id="btn-close-upi" style="color: #ffffff; font-size: 1.5rem;">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 1.2rem; text-align: center;">
+                <h4 id="upi-book-title" style="margin: 0 0 0.4rem 0; color: #1e293b; font-size: 1.1rem; font-weight: 700;">Notebook Title</h4>
+                <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 1rem;">
+                    Scan the UPI QR Code with PhonePe, Google Pay, Paytm, or BHIM to unlock.
+                </p>
+
+                <!-- Amount Badge -->
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 1.2rem; border-radius: 20px; color: #15803d; font-weight: 800; font-size: 1.2rem; margin-bottom: 1rem;">
+                    <span>Price: ₹30.00 INR</span>
+                </div>
+
+                <!-- Live UPI QR Code Image Container -->
+                <div style="background: #ffffff; padding: 0.8rem; border-radius: 12px; border: 2px dashed #cbd5e1; display: inline-block; margin-bottom: 1rem;">
+                    <img id="upi-qr-image" src="https://api.qrserver.com/v1/create-qr-code/?data=upi%3A%2F%2Fpay%3Fpa%3Dsirivela%40upi%26pn%3DVoiceBook%26am%3D30%26cu%3DINR&size=200x200" alt="UPI Payment QR Code" style="width: 180px; height: 180px; border-radius: 8px; display: block;" />
+                    <span style="font-size: 0.72rem; color: #64748b; display: block; margin-top: 0.4rem;">Scan with PhonePe, GPay, Paytm, BHIM</span>
+                </div>
+
+                <!-- UPI ID & Copy Row -->
+                <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.5rem 0.8rem; border-radius: 10px; margin-bottom: 1rem;">
+                    <span style="font-size: 0.82rem; font-weight: 600; color: #334155;">UPI ID: <strong id="upi-id-display">sirivela@upi</strong></span>
+                    <button type="button" id="btn-copy-upi-id" class="btn btn-xs btn-outline" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">Copy</button>
+                </div>
+
+                <!-- Mobile Direct Intent Link -->
+                <a id="btn-mobile-upi-app" href="upi://pay?pa=sirivela@upi&pn=VoiceBook&am=30&cu=INR" class="btn btn-block" style="background: #16a34a; color: white; font-weight: 700; border-radius: 10px; padding: 0.65rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; text-decoration: none; margin-bottom: 1rem; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);">
+                    ⚡ Pay ₹30 via PhonePe / GPay / Paytm App
+                </a>
+
+                <!-- UTR / Transaction Reference Form -->
+                <div style="border-top: 1px solid #e2e8f0; padding-top: 0.8rem; margin-top: 1rem; text-align: left;">
+                    <label style="font-size: 0.82rem; font-weight: 700; color: #334155; display: block; margin-bottom: 0.3rem;">
+                        Enter 12-Digit UTR / Transaction ID (after payment):
+                    </label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="input-utr-number" placeholder="e.g. 426189023412" maxlength="16" style="flex: 1; padding: 0.55rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem;" />
+                        <button type="button" id="btn-verify-utr" class="btn btn-primary" style="background: #15803d; border-color: #15803d; font-weight: 700; padding: 0.55rem 0.9rem;">
+                            Unlock Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="background: #f8fafc; padding: 0.8rem 1.2rem;">
+                <button type="button" class="btn btn-outline" id="btn-cancel-upi">Cancel</button>
             </div>
         </div>
     </div>

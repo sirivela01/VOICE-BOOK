@@ -323,24 +323,39 @@ async function loadBookshelf() {
                     const colorIdx = hashString(book.id) % spineColors.length;
                     const spineColor = spineColors[colorIdx];
                     
+                    const isPaid = book.isPaid || safeLocalStorageGet(`paid_book_${book.id}`, false);
+                    const isUnlocked = safeLocalStorageGet(`unlocked_book_${book.id}`, false);
+                    
                     const bookEl = document.createElement("div");
                     bookEl.className = `spine-book spine-${spineColor}`;
                     bookEl.setAttribute("data-id", book.id);
                     bookEl.setAttribute("data-slot", slotIndex);
-                    bookEl.title = `Click to open "${book.name}" (Page ${book.currentPage || 1})`;
+                    
+                    const lockBadgeHtml = isPaid && !isUnlocked 
+                        ? `<div class="spine-lock-badge" style="position: absolute; top: 6px; right: 6px; background: #dc2626; color: white; border-radius: 10px; padding: 2px 6px; font-size: 0.68rem; font-weight: 800; box-shadow: 0 2px 6px rgba(0,0,0,0.4); z-index: 2;">🔒 ₹30</div>` 
+                        : (isPaid && isUnlocked 
+                            ? `<div class="spine-lock-badge" style="position: absolute; top: 6px; right: 6px; background: #16a34a; color: white; border-radius: 10px; padding: 2px 6px; font-size: 0.68rem; font-weight: 800; box-shadow: 0 2px 6px rgba(0,0,0,0.4); z-index: 2;">🔓 Paid</div>` 
+                            : '');
+                    
+                    bookEl.title = isPaid && !isUnlocked ? `Paid Notebook - ₹30 to unlock "${book.name}"` : `Click to open "${book.name}" (Page ${book.currentPage || 1})`;
                     
                     bookEl.innerHTML = `
                         <div class="spine-gold-band gold-top"></div>
+                        ${lockBadgeHtml}
                         <div class="spine-title">${escapeHTML(book.name)}</div>
                         <button class="spine-delete-btn" title="Delete notebook">✕</button>
                         <button class="spine-rename-btn" title="Rename notebook"><svg viewBox="0 0 24 24" style="width: 13px; height: 13px; fill: #ffffff;"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
                         <div class="spine-gold-band gold-bottom"></div>
                     `;
                     
-                    // Click handler to open notebook
+                    // Click handler to open notebook or unlock modal
                     bookEl.addEventListener("click", (e) => {
                         if (e.target.closest(".spine-delete-btn") || e.target.closest(".spine-rename-btn")) return;
-                        openNotebook(book.id, book.name, book.currentPage || 1);
+                        if (isPaid && !isUnlocked) {
+                            openUpiPaymentModal(book.id, book.name);
+                        } else {
+                            openNotebook(book.id, book.name, book.currentPage || 1);
+                        }
                     });
                     
                     // Delete confirmation handler
@@ -912,10 +927,19 @@ function setupEventListeners() {
         
         if (modalMode === "create") {
             try {
-                const newId = await createBook(name, targetSlotIndex);
+                const checkPaid = document.getElementById("check-is-paid-book");
+                const isPaid = checkPaid ? checkPaid.checked : false;
+                const newId = await createBook(name, targetSlotIndex, isPaid);
+                if (isPaid) {
+                    safeLocalStorageSet(`paid_book_${newId}`, true);
+                }
                 closeModal(modalCreateBook);
-                showToast("Notebook created!", "success");
-                openNotebook(newId, name, 1);
+                showToast(isPaid ? "Paid Notebook (₹30) created!" : "Notebook created!", "success");
+                if (!isPaid) {
+                    openNotebook(newId, name, 1);
+                } else {
+                    loadBookshelf();
+                }
             } catch (err) {
                 showToast(err.message, "error");
             }
@@ -1507,8 +1531,62 @@ function setupEventListeners() {
         });
     }
 
+    // UPI Payment Modal listeners
+    const modalUpi = document.getElementById("modal-upi-payment");
+    const btnCloseUpi = document.getElementById("btn-close-upi");
+    const btnCancelUpi = document.getElementById("btn-cancel-upi");
+    const btnVerifyUtr = document.getElementById("btn-verify-utr");
+    const btnCopyUpiId = document.getElementById("btn-copy-upi-id");
+
+    if (btnCloseUpi) btnCloseUpi.addEventListener("click", () => closeModal(modalUpi));
+    if (btnCancelUpi) btnCancelUpi.addEventListener("click", () => closeModal(modalUpi));
+    if (btnVerifyUtr) btnVerifyUtr.addEventListener("click", handleVerifyAndUnlockUpi);
+
+    if (btnCopyUpiId) {
+        btnCopyUpiId.addEventListener("click", () => {
+            const upiIdText = document.getElementById("upi-id-display") ? document.getElementById("upi-id-display").innerText : "sirivela@upi";
+            navigator.clipboard.writeText(upiIdText);
+            showToast("UPI ID copied to clipboard!", "success");
+        });
+    }
+
     // Initialize speech integration
     setupSpeechRecognition();
+}
+
+let pendingUnlockBookId = null;
+
+function openUpiPaymentModal(bookId, bookName) {
+    pendingUnlockBookId = bookId;
+    const modalUpi = document.getElementById("modal-upi-payment");
+    const bookTitleEl = document.getElementById("upi-book-title");
+    const inputUtr = document.getElementById("input-utr-number");
+    
+    if (bookTitleEl) bookTitleEl.innerText = bookName || "Notebook";
+    if (inputUtr) inputUtr.value = "";
+    
+    if (modalUpi) showModal(modalUpi);
+}
+
+function handleVerifyAndUnlockUpi() {
+    const inputUtr = document.getElementById("input-utr-number");
+    const utrVal = inputUtr ? inputUtr.value.trim() : "";
+    
+    if (!utrVal || utrVal.length < 6) {
+        showToast("Please enter a valid 12-digit UTR / Transaction reference number!", "error");
+        return;
+    }
+    
+    if (!pendingUnlockBookId) return;
+    
+    safeLocalStorageSet(`unlocked_book_${pendingUnlockBookId}`, true);
+    
+    const modalUpi = document.getElementById("modal-upi-payment");
+    if (modalUpi) closeModal(modalUpi);
+    
+    showToast("🎉 Payment verified! Notebook unlocked permanently.", "success");
+    loadBookshelf();
+    pendingUnlockBookId = null;
 }
 
 /**
