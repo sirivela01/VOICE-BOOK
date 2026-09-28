@@ -382,6 +382,8 @@ async function loadBookshelf() {
                         document.getElementById("modal-create-title").innerText = "Rename Notebook";
                         document.getElementById("btn-submit-create-book").innerText = "Rename Book";
                         document.getElementById("input-book-name").value = book.name;
+                        const checkPaid = document.getElementById("check-is-paid-book");
+                        if (checkPaid && checkPaid.closest(".form-group")) checkPaid.closest(".form-group").style.display = "none";
                         showModal(modalCreateBook);
                     });
                     
@@ -430,6 +432,11 @@ function promptCreateBookAtSlot(slotIndex) {
     document.getElementById("modal-create-title").innerText = "Create New Notebook";
     document.getElementById("btn-submit-create-book").innerText = "Create Book";
     formCreateBook.reset();
+    const checkPaid = document.getElementById("check-is-paid-book");
+    if (checkPaid) {
+        checkPaid.checked = true;
+        if (checkPaid.closest(".form-group")) checkPaid.closest(".form-group").style.display = "block";
+    }
     showModal(modalCreateBook);
 }
 
@@ -971,6 +978,8 @@ function setupEventListeners() {
             document.getElementById("modal-create-title").innerText = "Rename Notebook";
             document.getElementById("btn-submit-create-book").innerText = "Rename Book";
             document.getElementById("input-book-name").value = activeBookName || notebookTitle.innerText;
+            const checkPaid = document.getElementById("check-is-paid-book");
+            if (checkPaid && checkPaid.closest(".form-group")) checkPaid.closest(".form-group").style.display = "none";
             showModal(modalCreateBook);
         });
     }
@@ -1119,6 +1128,8 @@ function setupEventListeners() {
         document.getElementById("modal-create-title").innerText = "Rename Notebook";
         document.getElementById("btn-submit-create-book").innerText = "Rename Book";
         document.getElementById("input-book-name").value = activeBookName;
+        const checkPaid = document.getElementById("check-is-paid-book");
+        if (checkPaid && checkPaid.closest(".form-group")) checkPaid.closest(".form-group").style.display = "none";
         showModal(modalCreateBook);
     });
     
