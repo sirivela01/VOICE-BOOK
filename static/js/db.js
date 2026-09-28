@@ -37,14 +37,8 @@ function getUserLocalBooks(userId = "guest_user") {
         }
     } catch (e) {}
 
-    // Default initial 5 books
-    const defaultBooks = [
-        { id: "book_math", userId: userId, name: "math", createdAt: { seconds: Date.now() / 1000 }, currentPage: 1, maxPages: 100, slotIndex: 0 },
-        { id: "book_social", userId: userId, name: "social", createdAt: { seconds: Date.now() / 1000 - 10 }, currentPage: 1, maxPages: 100, slotIndex: 1 },
-        { id: "book_physics", userId: userId, name: "physics", createdAt: { seconds: Date.now() / 1000 - 20 }, currentPage: 1, maxPages: 100, slotIndex: 2 },
-        { id: "book_chemistry", userId: userId, name: "chemistry", createdAt: { seconds: Date.now() / 1000 - 30 }, currentPage: 1, maxPages: 100, slotIndex: 3 },
-        { id: "book_genai", userId: userId, name: "Gen AI", createdAt: { seconds: Date.now() / 1000 - 40 }, currentPage: 1, maxPages: 100, slotIndex: 4 }
-    ];
+    // Default initial 0 books (bookshelf starts 100% empty)
+    const defaultBooks = [];
     localStorage.setItem(storageKey, JSON.stringify(defaultBooks));
     return defaultBooks;
 }
@@ -147,23 +141,8 @@ export async function getUserBooks() {
         });
         
         if (books.length === 0) {
-            // Seed local default books to Firestore for this new user so they sync across all systems
-            const localBooks = getUserLocalBooks(userId);
-            for (const b of localBooks) {
-                try {
-                    const bookDocRef = doc(db, "books", b.id);
-                    await setDoc(bookDocRef, {
-                        userId: userId,
-                        userEmail: userEmail,
-                        name: b.name,
-                        createdAt: serverTimestamp(),
-                        currentPage: b.currentPage || 1,
-                        maxPages: 100,
-                        slotIndex: b.slotIndex || 0
-                    }, { merge: true });
-                } catch (err) {}
-            }
-            return localBooks;
+            saveUserLocalBooks(userId, []);
+            return [];
         }
 
         // Save cloud books to local cache

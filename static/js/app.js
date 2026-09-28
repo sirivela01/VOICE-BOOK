@@ -935,17 +935,16 @@ function setupEventListeners() {
         if (modalMode === "create") {
             try {
                 const checkPaid = document.getElementById("check-is-paid-book");
-                const isPaid = checkPaid ? checkPaid.checked : false;
+                const isPaid = checkPaid ? checkPaid.checked : true;
                 const newId = await createBook(name, targetSlotIndex, isPaid);
-                if (isPaid) {
-                    safeLocalStorageSet(`paid_book_${newId}`, true);
-                }
                 closeModal(modalCreateBook);
-                showToast(isPaid ? "Paid Notebook (₹30) created!" : "Notebook created!", "success");
-                if (!isPaid) {
-                    openNotebook(newId, name, 1);
+                await loadBookshelf();
+                if (isPaid) {
+                    showToast("Notebook created! Please pay ₹30 to unlock.", "info");
+                    openUpiPaymentModal(newId, name);
                 } else {
-                    loadBookshelf();
+                    showToast("Notebook created!", "success");
+                    openNotebook(newId, name, 1);
                 }
             } catch (err) {
                 showToast(err.message, "error");
