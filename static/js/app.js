@@ -1544,7 +1544,7 @@ function setupEventListeners() {
 
     if (btnCopyUpiId) {
         btnCopyUpiId.addEventListener("click", () => {
-            const upiIdText = document.getElementById("upi-id-display") ? document.getElementById("upi-id-display").innerText : "sirivela@upi";
+            const upiIdText = document.getElementById("upi-id-display") ? document.getElementById("upi-id-display").innerText : "9390135288@ybl";
             navigator.clipboard.writeText(upiIdText);
             showToast("UPI ID copied to clipboard!", "success");
         });
