@@ -323,39 +323,25 @@ async function loadBookshelf() {
                     const colorIdx = hashString(book.id) % spineColors.length;
                     const spineColor = spineColors[colorIdx];
                     
-                    const isPaid = book.isPaid || safeLocalStorageGet(`paid_book_${book.id}`, false);
-                    const isUnlocked = safeLocalStorageGet(`unlocked_book_${book.id}`, false);
-                    
                     const bookEl = document.createElement("div");
                     bookEl.className = `spine-book spine-${spineColor}`;
                     bookEl.setAttribute("data-id", book.id);
                     bookEl.setAttribute("data-slot", slotIndex);
                     
-                    const lockBadgeHtml = isPaid && !isUnlocked 
-                        ? `<div class="spine-lock-badge" style="position: absolute; top: 6px; right: 6px; background: #dc2626; color: white; border-radius: 10px; padding: 2px 6px; font-size: 0.68rem; font-weight: 800; box-shadow: 0 2px 6px rgba(0,0,0,0.4); z-index: 2;">🔒 ₹30</div>` 
-                        : (isPaid && isUnlocked 
-                            ? `<div class="spine-lock-badge" style="position: absolute; top: 6px; right: 6px; background: #16a34a; color: white; border-radius: 10px; padding: 2px 6px; font-size: 0.68rem; font-weight: 800; box-shadow: 0 2px 6px rgba(0,0,0,0.4); z-index: 2;">🔓 Paid</div>` 
-                            : '');
-                    
-                    bookEl.title = isPaid && !isUnlocked ? `Paid Notebook - ₹30 to unlock "${book.name}"` : `Click to open "${book.name}" (Page ${book.currentPage || 1})`;
+                    bookEl.title = `Click to open "${book.name}" (Page ${book.currentPage || 1})`;
                     
                     bookEl.innerHTML = `
                         <div class="spine-gold-band gold-top"></div>
-                        ${lockBadgeHtml}
                         <div class="spine-title">${escapeHTML(book.name)}</div>
                         <button class="spine-delete-btn" title="Delete notebook">✕</button>
                         <button class="spine-rename-btn" title="Rename notebook"><svg viewBox="0 0 24 24" style="width: 13px; height: 13px; fill: #ffffff;"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
                         <div class="spine-gold-band gold-bottom"></div>
                     `;
                     
-                    // Click handler to open notebook or unlock modal
+                    // Click handler to open notebook directly
                     bookEl.addEventListener("click", (e) => {
                         if (e.target.closest(".spine-delete-btn") || e.target.closest(".spine-rename-btn")) return;
-                        if (isPaid && !isUnlocked) {
-                            openUpiPaymentModal(book.id, book.name);
-                        } else {
-                            openNotebook(book.id, book.name, book.currentPage || 1);
-                        }
+                        openNotebook(book.id, book.name, book.currentPage || 1);
                     });
                     
                     // Delete confirmation handler
@@ -382,8 +368,6 @@ async function loadBookshelf() {
                         document.getElementById("modal-create-title").innerText = "Rename Notebook";
                         document.getElementById("btn-submit-create-book").innerText = "Rename Book";
                         document.getElementById("input-book-name").value = book.name;
-                        const checkPaid = document.getElementById("check-is-paid-book");
-                        if (checkPaid && checkPaid.closest(".form-group")) checkPaid.closest(".form-group").style.display = "none";
                         showModal(modalCreateBook);
                     });
                     
@@ -432,11 +416,6 @@ function promptCreateBookAtSlot(slotIndex) {
     document.getElementById("modal-create-title").innerText = "Create New Notebook";
     document.getElementById("btn-submit-create-book").innerText = "Create Book";
     formCreateBook.reset();
-    const checkPaid = document.getElementById("check-is-paid-book");
-    if (checkPaid) {
-        checkPaid.checked = true;
-        if (checkPaid.closest(".form-group")) checkPaid.closest(".form-group").style.display = "block";
-    }
     showModal(modalCreateBook);
 }
 
@@ -934,18 +913,11 @@ function setupEventListeners() {
         
         if (modalMode === "create") {
             try {
-                const checkPaid = document.getElementById("check-is-paid-book");
-                const isPaid = checkPaid ? checkPaid.checked : true;
-                const newId = await createBook(name, targetSlotIndex, isPaid);
+                const newId = await createBook(name, targetSlotIndex, false);
                 closeModal(modalCreateBook);
+                showToast("Notebook created!", "success");
                 await loadBookshelf();
-                if (isPaid) {
-                    showToast("Notebook created! Please pay ₹30 to unlock.", "info");
-                    openUpiPaymentModal(newId, name);
-                } else {
-                    showToast("Notebook created!", "success");
-                    openNotebook(newId, name, 1);
-                }
+                openNotebook(newId, name, 1);
             } catch (err) {
                 showToast(err.message, "error");
             }
@@ -977,8 +949,6 @@ function setupEventListeners() {
             document.getElementById("modal-create-title").innerText = "Rename Notebook";
             document.getElementById("btn-submit-create-book").innerText = "Rename Book";
             document.getElementById("input-book-name").value = activeBookName || notebookTitle.innerText;
-            const checkPaid = document.getElementById("check-is-paid-book");
-            if (checkPaid && checkPaid.closest(".form-group")) checkPaid.closest(".form-group").style.display = "none";
             showModal(modalCreateBook);
         });
     }
@@ -1127,8 +1097,6 @@ function setupEventListeners() {
         document.getElementById("modal-create-title").innerText = "Rename Notebook";
         document.getElementById("btn-submit-create-book").innerText = "Rename Book";
         document.getElementById("input-book-name").value = activeBookName;
-        const checkPaid = document.getElementById("check-is-paid-book");
-        if (checkPaid && checkPaid.closest(".form-group")) checkPaid.closest(".form-group").style.display = "none";
         showModal(modalCreateBook);
     });
     
